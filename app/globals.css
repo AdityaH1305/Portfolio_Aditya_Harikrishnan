@@ -28,3 +28,26 @@ body {
 html {
   scroll-behavior: smooth;
 }
+
+/* Animated background gradient */
+@keyframes gradientShift {
+  0%, 100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+.animated-bg {
+  background: linear-gradient(
+    135deg,
+    #000000 0%,
+    #0a0a1a 25%,
+    #0d0d20 50%,
+    #0a0a1a 75%,
+    #000000 100%
+  );
+  background-size: 400% 400%;
+  animation: gradientShift 15s ease infinite;
+}
