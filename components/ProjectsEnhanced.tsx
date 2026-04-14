@@ -16,8 +16,8 @@ const projects: ProjectData[] = [
             "Published research paper",
         ],
         github: "https://github.com/Aditya11835/Ludex",
-        demo: null,
-        image: "/projects/ludex.webp",
+        demo: "https://ludexsite.onrender.com/",
+        image: "/projects/ludex-new.png",
     },
     {
         title: "PlaySutra",
@@ -31,8 +31,8 @@ const projects: ProjectData[] = [
             "Vibe-based game discovery system",
         ],
         github: "https://github.com/AdityaH1305/PlaySutra",
-        demo: null,
-        image: "/projects/playsutra.webp",
+        demo: "https://playsutra.vercel.app/",
+        image: "/projects/playsutra-new.png",
     },
     {
         title: "Sheriff of Nottingham App",
