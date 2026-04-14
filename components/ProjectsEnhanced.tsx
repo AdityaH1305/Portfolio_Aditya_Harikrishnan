@@ -8,7 +8,7 @@ const projects: ProjectData[] = [
         title: "Ludex",
         tag: "Machine Learning / Research",
         description:
-            "Hybrid recommendation system combining content-based filtering and collaborative filtering to deliver personalized Steam game recommendations.",
+            "Hybrid recommendation engine fusing content-based and collaborative filtering to surface personalized Steam game picks — backed by a published research paper.",
         highlights: [
             "+27% Precision@20 vs pure CBF",
             "+13% Precision@20 vs pure CF",
@@ -23,14 +23,14 @@ const projects: ProjectData[] = [
         title: "PlaySutra",
         tag: "Full Stack / Data Platform",
         description:
-            "Steam analytics platform with real-time pricing, value scoring, and mood-based discovery.",
+            "Real-time Steam analytics dashboard with multi-region price comparison, a custom value-scoring algorithm, and vibe-based game discovery — built for data-driven decision making.",
         highlights: [
             "Real-time Steam API integration",
             "Multi-region price comparison",
             "Custom value score algorithm",
             "Vibe-based game discovery system",
         ],
-        github: null,
+        github: "https://github.com/AdityaH1305/PlaySutra",
         demo: null,
         image: "/projects/playsutra.webp",
     },
@@ -38,11 +38,11 @@ const projects: ProjectData[] = [
         title: "Sheriff of Nottingham App",
         tag: "Backend / Multiplayer",
         description:
-            "Local multiplayer lobby-based implementation of the Sheriff of Nottingham board game.",
+            "Digital adaptation of the Sheriff of Nottingham board game with a lobby-based multiplayer system, real-time game state management, and turn-by-turn logic.",
         highlights: [
-            "Flask backend",
-            "Lobby system for multiplayer",
-            "Game state handling",
+            "Flask backend with WebSocket support",
+            "Lobby system for multiplayer sessions",
+            "Turn-based game state handling",
         ],
         github: "https://github.com/AdityaH1305/Sheriff-of-nottingham-app",
         demo: null,
@@ -59,7 +59,7 @@ export default function ProjectsEnhanced() {
                     Projects
                 </h2>
                 <p className="text-slate-400 mt-3">
-                    Selected work showcasing ML systems and full-stack engineering.
+                    Selected work showcasing ML research, data platforms, and full-stack engineering.
                 </p>
             </div>
 

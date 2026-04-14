@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 export default function About() {
     return (
-        <section id="about" className="py-24 px-6 max-w-5xl mx-auto">
+        <section id="about" className="py-24 px-6 max-w-6xl mx-auto">
 
             {/* Heading */}
             <motion.div
@@ -18,12 +18,12 @@ export default function About() {
                     About Me
                 </h2>
                 <p className="text-slate-400 mt-3">
-                    A bit about who I am and how I approach building systems.
+                    Engineer first, researcher close second — here's the short version.
                 </p>
             </motion.div>
 
             {/* Content */}
-            <div className="mt-12 grid md:grid-cols-2 gap-10 items-center">
+            <div className="mt-14 grid md:grid-cols-2 gap-12 items-start">
 
                 {/* Left: Text */}
                 <motion.div
@@ -34,24 +34,29 @@ export default function About() {
                     className="space-y-5 text-slate-300 leading-relaxed"
                 >
                     <p>
-                        I'm a Computer Science student at IIIT Pune focused on building systems
-                        that combine software engineering with machine learning.
+                        I&apos;m a Computer Science undergrad at IIIT Pune
+                        who builds at the intersection of software engineering
+                        and machine learning — from recommendation systems that
+                        outperform baselines to full-stack data platforms serving
+                        real-time analytics.
                     </p>
 
                     <p>
-                        My work centers around recommendation systems, data-driven platforms,
-                        and scalable backend architectures. I enjoy taking complex problems
-                        and turning them into structured, efficient solutions.
+                        My approach: take a complex, messy problem, architect a
+                        clean solution, then ship it. I care about scalable backends,
+                        well-designed APIs, and ML systems that actually work in
+                        production — not just in a notebook.
                     </p>
 
                     <p>
-                        Recently, I've been exploring retrieval-augmented generation (RAG),
-                        embeddings, and graph-based approaches to understanding large codebases.
+                        Currently diving deeper into retrieval-augmented generation,
+                        embedding-based search, and graph-powered code intelligence
+                        systems.
                     </p>
 
                     <p className="text-white font-medium">
-                        I’m especially interested in building tools that make complex systems
-                        easier to understand and interact with.
+                        I&apos;m drawn to tools that decode complexity — making
+                        large systems legible, navigable, and interactive.
                     </p>
                 </motion.div>
 
@@ -63,28 +68,26 @@ export default function About() {
                     viewport={{ once: true }}
                     className="grid gap-4"
                 >
-
-                    <div className="p-5 rounded-xl border border-slate-800">
-                        <p className="text-sm text-slate-400">Education</p>
-                        <p className="font-medium mt-1">
+                    <div className="p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-200">
+                        <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Education</p>
+                        <p className="font-medium mt-1.5">
                             B.Tech CSE — IIIT Pune
                         </p>
                     </div>
 
-                    <div className="p-5 rounded-xl border border-slate-800">
-                        <p className="text-sm text-slate-400">Focus</p>
-                        <p className="font-medium mt-1">
+                    <div className="p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-200">
+                        <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Focus Areas</p>
+                        <p className="font-medium mt-1.5">
                             ML Systems • Full Stack • Backend Engineering
                         </p>
                     </div>
 
-                    <div className="p-5 rounded-xl border border-slate-800">
-                        <p className="text-sm text-slate-400">Currently Exploring</p>
-                        <p className="font-medium mt-1">
-                            RAG • Embeddings • Code Intelligence Systems
+                    <div className="p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-200">
+                        <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Currently Exploring</p>
+                        <p className="font-medium mt-1.5">
+                            RAG • Embeddings • Code Intelligence
                         </p>
                     </div>
-
                 </motion.div>
             </div>
         </section>

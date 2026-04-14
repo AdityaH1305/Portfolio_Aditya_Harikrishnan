@@ -28,7 +28,7 @@ const projects = [
             "Custom value score algorithm",
             "Vibe-based game discovery system",
         ],
-        github: null,
+        github: "https://github.com/AdityaH1305/steam_db-clone",
         demo: null,
     },
     {

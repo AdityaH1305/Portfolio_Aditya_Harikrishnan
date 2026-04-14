@@ -47,7 +47,7 @@ export default function WhatIBuild() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: i * 0.1 }}
                         viewport={{ once: true }}
-                        className={`p-6 rounded-2xl border border-slate-800 ${item.color} transition duration-300 hover:scale-[1.02]`}
+                        className={`p-6 rounded-2xl border border-slate-800 ${item.color} transition duration-300 hover:-translate-y-0.5`}
                     >
                         <h3 className="text-xl font-semibold">{item.title}</h3>
                         <p className="text-slate-400 mt-2">{item.desc}</p>
