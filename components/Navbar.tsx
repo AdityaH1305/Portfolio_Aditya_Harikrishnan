@@ -70,7 +70,7 @@ export default function Navbar() {
                     : "bg-transparent"
                     }`}
             >
-                <div className="max-w-6xl mx-auto px-6 py-4 flex justify-between items-center">
+                <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
 
                     {/* Logo — easter-egg click target */}
                     <a
@@ -78,7 +78,7 @@ export default function Navbar() {
                         onClick={handleLogoClick}
                         className="font-semibold text-lg tracking-tight hover:text-indigo-400 transition-colors duration-200 select-none"
                     >
-                        Aditya Harikrishnan
+                        Building Intelligent Systems
                     </a>
 
                     {/* Links */}

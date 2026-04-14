@@ -21,9 +21,14 @@ export default function Hero() {
                 </p>
 
                 {/* Heading */}
-                <h1 className="text-5xl md:text-7xl font-bold tracking-tight">
-                    Building Intelligent Systems
-                </h1>
+                <motion.h1
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.7, delay: 0.3, ease: "easeOut" }}
+                    className="text-5xl md:text-7xl font-bold tracking-tight"
+                >
+                    Hi, I&apos;m Aditya
+                </motion.h1>
 
                 {/* Subtext */}
                 <p className="text-lg md:text-xl text-slate-400 leading-relaxed">
