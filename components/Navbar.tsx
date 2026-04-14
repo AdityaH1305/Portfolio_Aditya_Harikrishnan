@@ -31,7 +31,6 @@ export default function Navbar() {
     const [scrolled, setScrolled] = useState(false);
     const [showGame, setShowGame] = useState(false);
 
-    /* Click tracking refs (avoid re-renders on every click) */
     const clickTimestamps = useRef<number[]>([]);
 
     useEffect(() => {
@@ -42,37 +41,33 @@ export default function Navbar() {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    /* ── Handle rapid-click easter egg ── */
-    const handleLogoClick = useCallback(
-        (e: React.MouseEvent) => {
-            e.preventDefault();
+    /* ── Fixed: no preventDefault → allows scroll ── */
+    const handleLogoClick = useCallback(() => {
+        const now = Date.now();
 
-            const now = Date.now();
-            // Keep only clicks within the window
-            clickTimestamps.current = clickTimestamps.current.filter(
-                (t) => now - t < CLICK_WINDOW_MS,
-            );
-            clickTimestamps.current.push(now);
+        clickTimestamps.current = clickTimestamps.current.filter(
+            (t) => now - t < CLICK_WINDOW_MS,
+        );
+        clickTimestamps.current.push(now);
 
-            if (clickTimestamps.current.length >= REQUIRED_CLICKS) {
-                clickTimestamps.current = [];
-                setShowGame(true);
-            }
-        },
-        [],
-    );
+        if (clickTimestamps.current.length >= REQUIRED_CLICKS) {
+            clickTimestamps.current = [];
+            setShowGame(true);
+        }
+    }, []);
 
     return (
         <>
             <nav
                 className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-                    ? "bg-black/70 backdrop-blur-md border-b border-slate-800/80"
-                    : "bg-transparent"
+                        ? "bg-black/70 backdrop-blur-md border-b border-slate-800/80"
+                        : "bg-transparent"
                     }`}
             >
-                <div className="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+                {/* Slightly tighter left padding */}
+                <div className="max-w-6xl mx-auto pl-2 pr-4 py-4 flex justify-between items-center">
 
-                    {/* Logo — easter-egg click target */}
+                    {/* Logo */}
                     <a
                         href="#home"
                         onClick={handleLogoClick}
@@ -99,7 +94,6 @@ export default function Navbar() {
                         <a
                             href="mailto:adityaharikrishnan@gmail.com"
                             className="px-3 py-1.5 text-sm text-slate-300 rounded-md hover:text-white hover:bg-white/5 transition-all duration-200"
-                            title="Send email"
                         >
                             Email
                         </a>
@@ -115,7 +109,7 @@ export default function Navbar() {
                         </a>
                     </div>
 
-                    {/* Mobile: just Resume + Email */}
+                    {/* Mobile */}
                     <div className="flex md:hidden items-center gap-3">
                         <a
                             href="mailto:adityaharikrishnan@gmail.com"
@@ -135,7 +129,7 @@ export default function Navbar() {
                 </div>
             </nav>
 
-            {/* ── Space Invaders Easter Egg Modal ── */}
+            {/* Easter Egg */}
             {showGame && (
                 <SpaceInvadersModal onClose={() => setShowGame(false)} />
             )}
