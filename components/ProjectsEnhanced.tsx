@@ -20,7 +20,7 @@ const projects: ProjectData[] = [
         image: "/projects/ludex-new.png",
     },
     {
-        title: "PlaySutra",
+        title: "LudoScope",
         tag: "Full Stack / Data Platform",
         description:
             "Real-time Steam analytics dashboard with multi-region price comparison, a custom value-scoring algorithm, and vibe-based game discovery — built for data-driven decision making.",
@@ -30,9 +30,9 @@ const projects: ProjectData[] = [
             "Custom value score algorithm",
             "Vibe-based game discovery system",
         ],
-        github: "https://github.com/AdityaH1305/PlaySutra",
-        demo: "https://playsutra.vercel.app/",
-        image: "/projects/playsutra-new.png",
+        github: "https://github.com/AdityaH1305/LudoScope",
+        demo: "https://ludoscope.vercel.app/",
+        image: "/projects/LudoScope-new.png",
     },
     {
         title: "Sheriff of Nottingham App",
