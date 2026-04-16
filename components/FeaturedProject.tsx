@@ -146,6 +146,36 @@ export default function FeaturedProject() {
                             </span>
                         ))}
                     </div>
+
+                    {/* Video Demos */}
+                    <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <p className="text-slate-400 text-sm mb-2">Sign In Flow</p>
+                            <div className="rounded-xl border border-slate-800 overflow-hidden">
+                                <video
+                                    src="/projects/sign_in.mp4"
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    className="w-full h-auto"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <p className="text-slate-400 text-sm mb-2">Dashboard</p>
+                            <div className="rounded-xl border border-slate-800 overflow-hidden">
+                                <video
+                                    src="/projects/dashboard.mp4"
+                                    autoPlay
+                                    loop
+                                    muted
+                                    playsInline
+                                    className="w-full h-auto"
+                                />
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </motion.div>
         </section>
