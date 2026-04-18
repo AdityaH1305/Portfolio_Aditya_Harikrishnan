@@ -13,7 +13,7 @@ const SpaceInvadersModal = dynamic(
 );
 
 const RESUME_URL =
-    "https://drive.google.com/file/d/1_UnsnR92_qbe-n9qLPr7e2Ir79QV8Wjs/view?usp=sharing";
+    "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
 
 const links = [
     { name: "Home", href: "#home" },
@@ -60,8 +60,8 @@ export default function Navbar() {
         <>
             <nav
                 className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-                        ? "bg-black/70 backdrop-blur-md border-b border-slate-800/80"
-                        : "bg-transparent"
+                    ? "bg-black/70 backdrop-blur-md border-b border-slate-800/80"
+                    : "bg-transparent"
                     }`}
             >
                 {/* Slightly tighter left padding */}
