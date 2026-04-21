@@ -18,7 +18,7 @@ const projects = [
         demo: null,
     },
     {
-        title: "LudoScope",
+        title: "PlayNexus",
         tag: "Full Stack / Data Platform",
         description:
             "Steam analytics platform with real-time pricing, value scoring, and mood-based discovery.",
