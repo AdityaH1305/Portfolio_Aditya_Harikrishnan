@@ -35,6 +35,22 @@ const projects: ProjectData[] = [
         image: "/projects/PlayNexus-new.png",
     },
     {
+        title: "SynthRescue",
+        tag: "AI / Computer Vision",
+        description:
+            "AI-powered disaster analysis system for detecting structural damage and assisting rescue operations using computer vision and AI reasoning. Designed for real-time decision support in emergency scenarios.",
+        highlights: [
+            "Real-time image upload and analysis pipeline",
+            "YOLO-based structural damage detection",
+            "AI-generated emergency response reports using Gemini",
+            "Fault-tolerant fallback system for reliability under failure conditions",
+            "Designed for rapid deployment in disaster response environments",
+        ],
+        github: "https://github.com/AdityaH1305/SynthRescue",
+        demo: null,
+        images: ["/projects/synth1.png", "/projects/synth2.png"],
+    },
+    {
         title: "Sheriff of Nottingham App",
         tag: "Backend / Multiplayer",
         description:
