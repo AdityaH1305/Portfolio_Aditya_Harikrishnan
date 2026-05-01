@@ -221,10 +221,11 @@ export default function ProjectCard({
                         `}
                     >
                         <div className={`
-                            relative w-60 h-40 rounded-lg overflow-hidden
+                            relative w-60 h-40 rounded-lg overflow-hidden cursor-pointer
                             transition-all duration-500 delay-100
                             ${hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"}
-                        `}>
+                        `}
+                        onClick={() => setLightboxSrc(project.image!)}>
                             <Image
                                 src={project.image}
                                 alt={`${project.title} preview`}
@@ -238,7 +239,10 @@ export default function ProjectCard({
 
                 {/* Mobile image — single image */}
                 {project.image && !project.images && (
-                    <div className="md:hidden relative w-full h-48 border-t border-slate-800/50">
+                    <div 
+                        className="md:hidden relative w-full h-48 border-t border-slate-800/50 cursor-pointer"
+                        onClick={() => setLightboxSrc(project.image!)}
+                    >
                         <Image
                             src={project.image}
                             alt={`${project.title} preview`}
