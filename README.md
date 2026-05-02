@@ -5,7 +5,7 @@ A modern, interactive developer portfolio built with Next.js, showcasing project
 ---
 
 ## 🌐 Live Website
-🔗 https://playnexus-io.vercel.app
+🔗 https://adityaharikrishnan.vercel.app
 
 ---
 
