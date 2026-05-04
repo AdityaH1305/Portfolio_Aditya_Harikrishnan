@@ -17,7 +17,7 @@ const projects: ProjectData[] = [
         ],
         github: "https://github.com/Aditya11835/Ludex",
         demo: "https://ludexsite.onrender.com/",
-        image: "/projects/ludex-new.png",
+        images: ["/projects/ludex-new.png", "/projects/ludex2.png", "/projects/ludex3.png"],
     },
     {
         title: "PlayNexus",
@@ -32,7 +32,13 @@ const projects: ProjectData[] = [
         ],
         github: "https://github.com/AdityaH1305/PlayNexus",
         demo: "https://playnexus-io.vercel.app",
-        image: "/projects/PlayNexus-new.png",
+        images: [
+            "/projects/playnexus2.png",
+            "/projects/playnexus-new.png",
+            "/projects/playnexus3.png",
+            "/projects/playnexus4.png",
+            "/projects/playnexus5.png",
+        ],
     },
     {
         title: "SynthRescue",
