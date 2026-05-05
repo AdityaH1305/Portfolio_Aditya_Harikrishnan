@@ -96,16 +96,38 @@ function LightboxModal({
     src,
     alt,
     onClose,
+    images,
+    currentIndex,
+    onNavigate,
 }: {
     src: string;
     alt: string;
     onClose: () => void;
+    images?: string[];
+    currentIndex?: number;
+    onNavigate?: (idx: number) => void;
 }) {
+    const canNavigate = images && images.length > 1 && onNavigate;
+
+    const goPrev = useCallback(() => {
+        if (!canNavigate) return;
+        const prevIdx = (currentIndex! - 1 + images!.length) % images!.length;
+        onNavigate!(prevIdx);
+    }, [canNavigate, currentIndex, images, onNavigate]);
+
+    const goNext = useCallback(() => {
+        if (!canNavigate) return;
+        const nextIdx = (currentIndex! + 1) % images!.length;
+        onNavigate!(nextIdx);
+    }, [canNavigate, currentIndex, images, onNavigate]);
+
     const handleKey = useCallback(
         (e: KeyboardEvent) => {
             if (e.key === "Escape") onClose();
+            if (e.key === "ArrowLeft") goPrev();
+            if (e.key === "ArrowRight") goNext();
         },
-        [onClose]
+        [onClose, goPrev, goNext]
     );
 
     useEffect(() => {
@@ -136,6 +158,26 @@ function LightboxModal({
                     alt={alt}
                     className="max-w-full max-h-[85vh] rounded-lg object-contain"
                 />
+
+                {/* Navigation Arrows */}
+                {canNavigate && (
+                    <>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); goPrev(); }}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-black/80 transition-all duration-200 text-lg backdrop-blur-sm"
+                            aria-label="Previous image"
+                        >
+                            ‹
+                        </button>
+                        <button
+                            onClick={(e) => { e.stopPropagation(); goNext(); }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-black/80 transition-all duration-200 text-lg backdrop-blur-sm"
+                            aria-label="Next image"
+                        >
+                            ›
+                        </button>
+                    </>
+                )}
             </motion.div>
         </motion.div>
     );
@@ -149,6 +191,20 @@ export default function ProjectCard({
 }) {
     const [hovered, setHovered] = useState(false);
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+    const [lightboxIndex, setLightboxIndex] = useState(0);
+
+    // Resolve the images array for this project (single or multi)
+    const allImages = project.images ?? (project.image ? [project.image] : []);
+
+    const openLightbox = (idx: number) => {
+        setLightboxIndex(idx);
+        setLightboxSrc(allImages[idx]);
+    };
+
+    const navigateLightbox = (idx: number) => {
+        setLightboxIndex(idx);
+        setLightboxSrc(allImages[idx]);
+    };
 
     return (
         <motion.div
@@ -225,7 +281,7 @@ export default function ProjectCard({
                             transition-all duration-500 delay-100
                             ${hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"}
                         `}
-                        onClick={() => setLightboxSrc(project.image!)}>
+                        onClick={() => openLightbox(0)}>
                             <Image
                                 src={project.image}
                                 alt={`${project.title} preview`}
@@ -241,7 +297,7 @@ export default function ProjectCard({
                 {project.image && !project.images && (
                     <div 
                         className="md:hidden relative w-full h-48 border-t border-slate-800/50 cursor-pointer"
-                        onClick={() => setLightboxSrc(project.image!)}
+                        onClick={() => openLightbox(0)}
                     >
                         <Image
                             src={project.image}
@@ -271,7 +327,7 @@ export default function ProjectCard({
                             <ImageCarousel
                                 images={project.images}
                                 alt={project.title}
-                                onImageClick={(idx) => setLightboxSrc(project.images![idx])}
+                                onImageClick={(idx) => openLightbox(idx)}
                             />
                         </div>
                     </div>
@@ -283,7 +339,7 @@ export default function ProjectCard({
                         <ImageCarousel
                             images={project.images}
                             alt={project.title}
-                            onImageClick={(idx) => setLightboxSrc(project.images![idx])}
+                            onImageClick={(idx) => openLightbox(idx)}
                         />
                     </div>
                 )}
@@ -296,6 +352,9 @@ export default function ProjectCard({
                         src={lightboxSrc}
                         alt={project.title}
                         onClose={() => setLightboxSrc(null)}
+                        images={allImages}
+                        currentIndex={lightboxIndex}
+                        onNavigate={navigateLightbox}
                     />
                 )}
             </AnimatePresence>
