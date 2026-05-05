@@ -89,6 +89,9 @@ export default function SpaceInvadersGame() {
   const raf    = useRef(0);
   const ph     = useRef<Phase>("loading");
 
+  /* ── touch state ── */
+  const touch = useRef<{ active: boolean; targetX: number }>({ active: false, targetX: W / 2 });
+
   const player  = useRef({ x: W / 2 - PW / 2, y: H - PH - 14, w: PW, h: PH, hp: 100, cd: 0 });
   const enemies = useRef<Enemy[]>([]);
   const pBuls   = useRef<Bullet[]>([]);
@@ -178,6 +181,53 @@ export default function SpaceInvadersGame() {
     };
   }, [startGame]);
 
+  /* ── touch / pointer input ── */
+  useEffect(() => {
+    const c = cvs.current;
+    if (!c) return;
+
+    /** Convert pointer clientX to canvas-space X */
+    function toCanvasX(clientX: number) {
+      const rect = c!.getBoundingClientRect();
+      // Map screen position → logical canvas coords (accounts for CSS scaling)
+      return ((clientX - rect.left) / rect.width) * W;
+    }
+
+    function onDown(e: PointerEvent) {
+      e.preventDefault();
+      // Tap to start / restart
+      if (ph.current === "ready" || ph.current === "over") {
+        startGame();
+        return;
+      }
+      touch.current.active = true;
+      touch.current.targetX = toCanvasX(e.clientX);
+    }
+
+    function onMove(e: PointerEvent) {
+      e.preventDefault();
+      if (!touch.current.active) return;
+      touch.current.targetX = toCanvasX(e.clientX);
+    }
+
+    function onUp(e: PointerEvent) {
+      e.preventDefault();
+      touch.current.active = false;
+    }
+
+    c.addEventListener("pointerdown", onDown, { passive: false });
+    c.addEventListener("pointermove", onMove, { passive: false });
+    c.addEventListener("pointerup", onUp, { passive: false });
+    c.addEventListener("pointercancel", onUp, { passive: false });
+
+    return () => {
+      c.removeEventListener("pointerdown", onDown);
+      c.removeEventListener("pointermove", onMove);
+      c.removeEventListener("pointerup", onUp);
+      c.removeEventListener("pointercancel", onUp);
+    };
+  }, [startGame]);
+
   /* ══════════════════════════════════════════
      Main game loop — runs once, never restarts
      ══════════════════════════════════════════ */
@@ -221,16 +271,30 @@ export default function SpaceInvadersGame() {
     function update() {
       const p = player.current;
       const k = keys.current;
+      const t = touch.current;
 
-      // Movement
+      // Keyboard movement (unchanged)
       if ((k.has("ArrowLeft")  || k.has("a")) && p.x > 0)              p.x -= P_SPD;
       if ((k.has("ArrowRight") || k.has("d")) && p.x + p.w < W)        p.x += P_SPD;
       if ((k.has("ArrowUp")   || k.has("w")) && p.y > 0)               p.y -= P_SPD;
       if ((k.has("ArrowDown") || k.has("s")) && p.y + p.h + 10 < H)    p.y += P_SPD;
 
-      // Shoot
+      // Touch movement — smoothly lerp player X toward finger
+      if (t.active) {
+        const goalX = Math.max(0, Math.min(W - p.w, t.targetX - p.w / 2));
+        const dx = goalX - p.x;
+        // Lerp for smooth feel; snap if close enough
+        if (Math.abs(dx) < 1) {
+          p.x = goalX;
+        } else {
+          p.x += dx * 0.25;
+        }
+      }
+
+      // Shoot (keyboard OR touch — same cooldown)
       if (p.cd > 0) p.cd--;
-      if (k.has(" ") && p.cd === 0) {
+      const wantsShoot = k.has(" ") || t.active;
+      if (wantsShoot && p.cd === 0) {
         pBuls.current.push({
           x: p.x + p.w / 2 - BW / 2, y: p.y,
           w: BW, h: BH, dy: -PB_SPD,
@@ -496,14 +560,14 @@ export default function SpaceInvadersGame() {
           width={W}
           height={H}
           className="block"
-          style={{ imageRendering: "pixelated" }}
+          style={{ imageRendering: "pixelated", touchAction: "none" }}
         />
       </div>
 
       {/* Controls bar */}
       <div className="flex items-center justify-between w-full" style={{ maxWidth: W }}>
         <span className="text-[11px] text-slate-500 tracking-wide">
-          Arrow keys / WASD · Space to shoot
+          Arrow keys / WASD · Space to shoot · Touch to play on mobile
         </span>
 
         {phase === "ready" && (
