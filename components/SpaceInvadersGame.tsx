@@ -90,7 +90,7 @@ export default function SpaceInvadersGame() {
   const ph     = useRef<Phase>("loading");
 
   /* ── touch state ── */
-  const touch = useRef<{ active: boolean; targetX: number }>({ active: false, targetX: W / 2 });
+  const touch = useRef<{ active: boolean; targetX: number; targetY: number }>({ active: false, targetX: W / 2, targetY: H - PH / 2 });
 
   const player  = useRef({ x: W / 2 - PW / 2, y: H - PH - 14, w: PW, h: PH, hp: 100, cd: 0 });
   const enemies = useRef<Enemy[]>([]);
@@ -186,11 +186,13 @@ export default function SpaceInvadersGame() {
     const c = cvs.current;
     if (!c) return;
 
-    /** Convert pointer clientX to canvas-space X */
-    function toCanvasX(clientX: number) {
+    /** Convert pointer client coords to canvas-space coords */
+    function toCanvas(clientX: number, clientY: number) {
       const rect = c!.getBoundingClientRect();
-      // Map screen position → logical canvas coords (accounts for CSS scaling)
-      return ((clientX - rect.left) / rect.width) * W;
+      return {
+        x: ((clientX - rect.left) / rect.width) * W,
+        y: ((clientY - rect.top) / rect.height) * H,
+      };
     }
 
     function onDown(e: PointerEvent) {
@@ -200,14 +202,18 @@ export default function SpaceInvadersGame() {
         startGame();
         return;
       }
+      const pos = toCanvas(e.clientX, e.clientY);
       touch.current.active = true;
-      touch.current.targetX = toCanvasX(e.clientX);
+      touch.current.targetX = pos.x;
+      touch.current.targetY = pos.y;
     }
 
     function onMove(e: PointerEvent) {
       e.preventDefault();
       if (!touch.current.active) return;
-      touch.current.targetX = toCanvasX(e.clientX);
+      const pos = toCanvas(e.clientX, e.clientY);
+      touch.current.targetX = pos.x;
+      touch.current.targetY = pos.y;
     }
 
     function onUp(e: PointerEvent) {
@@ -279,16 +285,10 @@ export default function SpaceInvadersGame() {
       if ((k.has("ArrowUp")   || k.has("w")) && p.y > 0)               p.y -= P_SPD;
       if ((k.has("ArrowDown") || k.has("s")) && p.y + p.h + 10 < H)    p.y += P_SPD;
 
-      // Touch movement — smoothly lerp player X toward finger
+      // Touch movement — direct 2D tracking, clamped to canvas bounds
       if (t.active) {
-        const goalX = Math.max(0, Math.min(W - p.w, t.targetX - p.w / 2));
-        const dx = goalX - p.x;
-        // Lerp for smooth feel; snap if close enough
-        if (Math.abs(dx) < 1) {
-          p.x = goalX;
-        } else {
-          p.x += dx * 0.25;
-        }
+        p.x = Math.max(0, Math.min(W - p.w, t.targetX - p.w / 2));
+        p.y = Math.max(0, Math.min(H - p.h, t.targetY - p.h / 2));
       }
 
       // Shoot (keyboard OR touch — same cooldown)
