@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 
 export default function About() {
     return (
-        <section id="about" className="py-24 px-6 max-w-6xl mx-auto">
+        <section id="about" className="py-28 px-6 max-w-6xl mx-auto border-t border-[#141418]">
 
             {/* Heading */}
             <motion.div
@@ -14,7 +14,7 @@ export default function About() {
                 viewport={{ once: true }}
                 className="text-center"
             >
-                <h2 className="text-3xl md:text-4xl font-semibold">
+                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
                     About Me
                 </h2>
                 <p className="text-slate-400 mt-3">
@@ -31,7 +31,7 @@ export default function About() {
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6 }}
                     viewport={{ once: true }}
-                    className="space-y-5 text-slate-300 leading-relaxed"
+                    className="space-y-5 text-slate-300 leading-[1.75]"
                 >
                     <p>
                         I&apos;m a Computer Science undergrad at IIIT Pune
@@ -68,24 +68,31 @@ export default function About() {
                     viewport={{ once: true }}
                     className="grid gap-4"
                 >
-                    <div className="p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-200">
+                    <div className="p-5 rounded-xl border border-[#1e1e22] bg-[#111113] hover:border-[#2a2a30] transition-colors duration-200">
                         <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Education</p>
                         <p className="font-medium mt-1.5">
                             B.Tech CSE — IIIT Pune
                         </p>
                     </div>
 
-                    <div className="p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-200">
+                    <div className="p-5 rounded-xl border border-[#1e1e22] bg-[#111113] hover:border-[#2a2a30] transition-colors duration-200">
                         <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Focus Areas</p>
                         <p className="font-medium mt-1.5">
                             ML Systems • Full Stack • Backend Engineering
                         </p>
                     </div>
 
-                    <div className="p-5 rounded-xl border border-slate-800 hover:border-slate-700 transition-colors duration-200">
+                    <div className="p-5 rounded-xl border border-[#1e1e22] bg-[#111113] hover:border-[#2a2a30] transition-colors duration-200">
                         <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Currently Exploring</p>
                         <p className="font-medium mt-1.5">
                             RAG • Embeddings • Code Intelligence
+                        </p>
+                    </div>
+
+                    <div className="p-5 rounded-xl border border-[#1e1e22] bg-[#111113] hover:border-[#2a2a30] transition-colors duration-200">
+                        <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Status</p>
+                        <p className="font-medium mt-1.5">
+                            Available for Opportunities
                         </p>
                     </div>
                 </motion.div>

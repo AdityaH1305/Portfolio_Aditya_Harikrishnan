@@ -8,7 +8,7 @@ const projects: ProjectData[] = [
         title: "Ludex",
         tag: "Machine Learning / Research",
         description:
-            "Hybrid recommendation engine fusing content-based and collaborative filtering to surface personalized Steam game picks — backed by a published research paper.",
+            "Hybrid recommendation engine that fuses content-based and collaborative filtering to rank personalized Steam game suggestions across a 57K-item catalog — backed by a published research paper.",
         highlights: [
             "+27% Precision@20 vs pure CBF",
             "+13% Precision@20 vs pure CF",
@@ -23,7 +23,7 @@ const projects: ProjectData[] = [
         title: "PlayNexus",
         tag: "Full Stack / Data Platform",
         description:
-            "Real-time Steam analytics dashboard with multi-region price comparison, a custom value-scoring algorithm, and vibe-based game discovery — built for data-driven decision making.",
+            "Real-time Steam analytics platform with multi-region price aggregation, a custom value-scoring algorithm, and vibe-based discovery — engineered for data-driven decision making at scale.",
         highlights: [
             "Real-time Steam API integration",
             "Multi-region price comparison",
@@ -44,7 +44,7 @@ const projects: ProjectData[] = [
         title: "SynthRescue",
         tag: "AI / Computer Vision",
         description:
-            "AI-powered disaster analysis system for detecting structural damage and assisting rescue operations using computer vision and AI reasoning. Designed for real-time decision support in emergency scenarios.",
+            "Designed to accelerate structural assessment during disaster response — combines YOLO-based damage detection with AI-assisted reasoning to generate actionable emergency reports in real time.",
         highlights: [
             "Real-time image upload and analysis pipeline",
             "YOLO-based structural damage detection",
@@ -60,7 +60,7 @@ const projects: ProjectData[] = [
         title: "Sheriff of Nottingham App",
         tag: "Backend / Multiplayer",
         description:
-            "Digital adaptation of the Sheriff of Nottingham board game with a lobby-based multiplayer system, real-time game state management, and turn-by-turn logic.",
+            "Digital adaptation of the Sheriff of Nottingham board game — features lobby-based multiplayer, real-time state synchronization via WebSockets, and turn-by-turn game logic.",
         highlights: [
             "Flask backend with WebSocket support",
             "Lobby system for multiplayer sessions",
@@ -74,10 +74,10 @@ const projects: ProjectData[] = [
 
 export default function ProjectsEnhanced() {
     return (
-        <section id="projects" className="py-24 px-6 max-w-6xl mx-auto">
+        <section id="projects" className="py-28 px-6 max-w-6xl mx-auto border-t border-[#141418]">
             {/* Heading */}
             <div className="text-center">
-                <h2 className="text-3xl md:text-4xl font-semibold">
+                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
                     Projects
                 </h2>
                 <p className="text-slate-400 mt-3">

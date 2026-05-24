@@ -14,7 +14,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
+    --background: #0a0a0b;
     --foreground: #ededed;
   }
 }
@@ -29,7 +29,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Animated background gradient */
+/* Animated background gradient — near-flat dark */
 @keyframes gradientShift {
   0%, 100% {
     background-position: 0% 50%;
@@ -42,14 +42,14 @@ html {
 .animated-bg {
   background: linear-gradient(
     135deg,
-    #000000 0%,
-    #0a0a1a 25%,
-    #0d0d20 50%,
-    #0a0a1a 75%,
-    #000000 100%
+    #0a0a0b 0%,
+    #0a0a0c 25%,
+    #0b0b0e 50%,
+    #0a0a0c 75%,
+    #0a0a0b 100%
   );
   background-size: 400% 400%;
-  animation: gradientShift 15s ease infinite;
+  animation: gradientShift 20s ease infinite;
 }
 
 /* ── Single Orb Section ── */
@@ -98,8 +98,8 @@ html {
 
 /* Orb navigation label buttons */
 .orb-label-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
   color: #94a3b8;
   padding: 6px 18px;
   border-radius: 999px;
@@ -107,31 +107,29 @@ html {
   font-weight: 500;
   letter-spacing: 0.5px;
   cursor: pointer;
-  backdrop-filter: blur(8px);
   transition: all 0.25s ease;
   white-space: nowrap;
   pointer-events: auto;
 }
 
 .orb-label-btn:hover {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: rgba(129, 140, 248, 0.5);
-  color: #c7d2fe;
-  box-shadow: 0 0 16px rgba(99, 102, 241, 0.25);
-  transform: scale(1.1);
+  background: rgba(56, 189, 248, 0.12);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #bae6fd;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+  transform: scale(1.08);
 }
 
 /* Orb skills label */
 .orb-label-skill {
-  background: rgba(99, 102, 241, 0.08);
-  border: 1px solid rgba(99, 102, 241, 0.15);
-  color: #c7d2fe;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.12);
+  color: #bae6fd;
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 11px;
   font-weight: 500;
   letter-spacing: 0.3px;
-  backdrop-filter: blur(6px);
   white-space: nowrap;
   pointer-events: auto;
   transition: all 0.25s ease;
@@ -139,9 +137,9 @@ html {
 }
 
 .orb-label-skill:hover {
-  background: rgba(99, 102, 241, 0.2);
-  border-color: rgba(129, 140, 248, 0.5);
-  color: #e0e7ff;
-  box-shadow: 0 0 12px rgba(99, 102, 241, 0.2);
-  transform: scale(1.08);
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.35);
+  color: #e0f2fe;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.12);
+  transform: scale(1.06);
 }

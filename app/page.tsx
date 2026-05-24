@@ -7,10 +7,12 @@ import FeaturedProject from "@/components/FeaturedProject";
 import ProjectsEnhanced from "@/components/ProjectsEnhanced";
 import Contact from "@/components/Contact";
 import CursorGlow from "@/components/CursorGlow";
+import ScrollProgress from "@/components/ScrollProgress";
 
 export default function Home() {
   return (
     <main className="bg-black text-white min-h-screen animated-bg">
+      <ScrollProgress />
       <CursorGlow />
       <Navbar />
       <Hero />

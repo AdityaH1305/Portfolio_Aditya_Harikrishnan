@@ -47,8 +47,8 @@ function CoreSphere() {
 
     useFrame((_, delta) => {
         if (meshRef.current) {
-            meshRef.current.rotation.y += delta * 0.12;
-            meshRef.current.rotation.x += delta * 0.04;
+            meshRef.current.rotation.y += delta * 0.08;
+            meshRef.current.rotation.x += delta * 0.03;
         }
     });
 
@@ -58,9 +58,9 @@ function CoreSphere() {
             <mesh ref={meshRef}>
                 <icosahedronGeometry args={[1.4, 1]} />
                 <meshStandardMaterial
-                    color="#4f46e5"
-                    emissive="#6366f1"
-                    emissiveIntensity={0.5}
+                    color="#0284c7"
+                    emissive="#0ea5e9"
+                    emissiveIntensity={0.35}
                     wireframe
                     transparent
                     opacity={0.7}
@@ -69,13 +69,13 @@ function CoreSphere() {
             <mesh>
                 <icosahedronGeometry args={[1.75, 1]} />
                 <meshStandardMaterial
-                    color="#818cf8"
+                    color="#38bdf8"
                     transparent
                     opacity={0.04}
                     side={THREE.BackSide}
                 />
             </mesh>
-            <pointLight color="#6366f1" intensity={1.5} distance={10} />
+            <pointLight color="#0ea5e9" intensity={1.0} distance={10} />
         </group>
     );
 }
@@ -148,9 +148,9 @@ function FloatingLabel({
         const t = clock.getElapsedTime();
         
         // Subtle sinusoidal oscillation around the base position
-        groupRef.current.position.x = bx + Math.sin(t * 0.5 + phase) * 0.08;
-        groupRef.current.position.y = by + Math.sin(t * 0.7 + phase * 1.3) * 0.1;
-        groupRef.current.position.z = bz + Math.cos(t * 0.4 + phase * 0.7) * 0.06;
+        groupRef.current.position.x = bx + Math.sin(t * 0.4 + phase) * 0.05;
+        groupRef.current.position.y = by + Math.sin(t * 0.55 + phase * 1.3) * 0.06;
+        groupRef.current.position.z = bz + Math.cos(t * 0.35 + phase * 0.7) * 0.04;
 
         // Depth perspective logic
         const wp = new THREE.Vector3();

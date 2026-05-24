@@ -60,7 +60,7 @@ export default function Navbar() {
         <>
             <nav
                 className={`fixed top-0 w-full z-50 transition-all duration-300 ${scrolled
-                    ? "bg-black/70 backdrop-blur-md border-b border-slate-800/80"
+                    ? "bg-[#0a0a0b]/80 backdrop-blur-sm border-b border-[#1e1e22]"
                     : "bg-transparent"
                     }`}
             >
@@ -71,7 +71,7 @@ export default function Navbar() {
                     <a
                         href="#home"
                         onClick={handleLogoClick}
-                        className="font-semibold text-lg tracking-tight hover:text-indigo-400 transition-colors duration-200 select-none"
+                        className="font-semibold text-lg tracking-tight hover:text-sky-400 transition-colors duration-200 select-none"
                     >
                         Building Intelligent Systems
                     </a>
@@ -103,7 +103,7 @@ export default function Navbar() {
                             href={RESUME_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="ml-1 px-4 py-1.5 text-sm font-medium rounded-full border border-indigo-500/50 text-indigo-300 hover:bg-indigo-500/10 hover:border-indigo-400 transition-all duration-200"
+                            className="ml-1 px-4 py-1.5 text-sm font-medium rounded-full border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 hover:border-sky-400 transition-all duration-200"
                         >
                             Resume
                         </a>
@@ -121,7 +121,7 @@ export default function Navbar() {
                             href={RESUME_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-3 py-1 text-sm font-medium rounded-full border border-indigo-500/50 text-indigo-300 hover:bg-indigo-500/10 transition"
+                            className="px-3 py-1 text-sm font-medium rounded-full border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 transition"
                         >
                             Resume
                         </a>

@@ -46,7 +46,7 @@ function ImageCarousel({
                         src={images[current]}
                         alt={`${alt} ${current + 1}`}
                         fill
-                        className="object-cover"
+                        className="object-cover transition-transform duration-500 ease-out group-hover/carousel:scale-[1.02]"
                         sizes="(max-width: 768px) 100vw, 240px"
                     />
                 </motion.div>
@@ -214,7 +214,7 @@ export default function ProjectCard({
             }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className="group relative rounded-2xl border border-slate-800 hover:border-white/30 transition duration-300 overflow-hidden"
+            className="group relative rounded-2xl border border-[#1e1e22] hover:border-sky-500/25 transition duration-300 overflow-hidden"
         >
             <div className="flex flex-col md:flex-row">
                 {/* Content */}
@@ -224,13 +224,13 @@ export default function ProjectCard({
                         <h3 className="text-2xl font-semibold">
                             {project.title}
                         </h3>
-                        <span className="text-sm text-blue-400 font-mono">
+                        <span className="text-sm text-sky-400 font-mono">
                             {project.tag}
                         </span>
                     </div>
 
                     {/* Description */}
-                    <p className="text-slate-400 mt-4 max-w-3xl">
+                    <p className="text-slate-400 mt-4 max-w-3xl leading-[1.75]">
                         {project.description}
                     </p>
 
@@ -248,7 +248,7 @@ export default function ProjectCard({
                                 href={project.github}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-5 py-2 rounded-full border border-slate-600 text-sm hover:bg-white hover:text-black transition"
+                                className="px-5 py-2 rounded-full border border-[#1e1e22] text-sm hover:border-slate-500 hover:text-white transition-all duration-200"
                             >
                                 GitHub
                             </a>
@@ -258,7 +258,7 @@ export default function ProjectCard({
                                 href={project.demo}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-5 py-2 rounded-full bg-white text-black text-sm hover:scale-105 transition"
+                                className="px-5 py-2 rounded-full bg-white text-black text-sm hover:scale-[1.03] transition-all duration-200"
                             >
                                 Live Demo
                             </a>
@@ -273,7 +273,7 @@ export default function ProjectCard({
                             hidden md:flex items-center justify-center
                             w-0 group-hover:w-72 overflow-hidden
                             transition-all duration-500 ease-out
-                            bg-slate-900/50 border-l border-slate-800/50
+                            bg-[#111113] border-l border-[#1e1e22]/50
                         `}
                     >
                         <div className={`
@@ -286,7 +286,7 @@ export default function ProjectCard({
                                 src={project.image}
                                 alt={`${project.title} preview`}
                                 fill
-                                className="object-cover rounded-lg"
+                                className="object-cover rounded-lg transition-transform duration-500 ease-out hover:scale-[1.02]"
                                 sizes="240px"
                             />
                         </div>
@@ -296,14 +296,14 @@ export default function ProjectCard({
                 {/* Mobile image — single image */}
                 {project.image && !project.images && (
                     <div 
-                        className="md:hidden relative w-full h-48 border-t border-slate-800/50 cursor-pointer"
+                        className="md:hidden relative w-full h-48 border-t border-[#1e1e22]/50 cursor-pointer"
                         onClick={() => openLightbox(0)}
                     >
                         <Image
                             src={project.image}
                             alt={`${project.title} preview`}
                             fill
-                            className="object-cover"
+                            className="object-cover transition-transform duration-500 ease-out hover:scale-[1.02]"
                             sizes="100vw"
                         />
                     </div>
@@ -316,7 +316,7 @@ export default function ProjectCard({
                             hidden md:flex items-center justify-center
                             w-0 group-hover:w-72 overflow-hidden
                             transition-all duration-500 ease-out
-                            bg-slate-900/50 border-l border-slate-800/50
+                            bg-[#111113] border-l border-[#1e1e22]/50
                         `}
                     >
                         <div className={`
@@ -335,7 +335,7 @@ export default function ProjectCard({
 
                 {/* Mobile carousel — multi-image */}
                 {project.images && project.images.length > 0 && (
-                    <div className="md:hidden relative w-full h-48 border-t border-slate-800/50">
+                    <div className="md:hidden relative w-full h-48 border-t border-[#1e1e22]/50">
                         <ImageCarousel
                             images={project.images}
                             alt={project.title}

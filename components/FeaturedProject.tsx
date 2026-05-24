@@ -20,7 +20,7 @@ const techStack = [
 
 export default function FeaturedProject() {
     return (
-        <section id="featured-project" className="py-24 px-6 max-w-6xl mx-auto">
+        <section id="featured-project" className="py-28 px-6 max-w-6xl mx-auto border-t border-[#141418]">
             {/* Heading */}
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
@@ -29,10 +29,10 @@ export default function FeaturedProject() {
                 viewport={{ once: true }}
                 className="text-center"
             >
-                <p className="text-sm text-purple-400 font-mono tracking-widest uppercase">
+                <p className="text-sm text-sky-400 font-mono tracking-widest uppercase">
                     Highlight
                 </p>
-                <h2 className="text-3xl md:text-4xl font-semibold mt-2">
+                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight mt-2">
                     Featured Project
                 </h2>
             </motion.div>
@@ -43,7 +43,7 @@ export default function FeaturedProject() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.15 }}
                 viewport={{ once: true }}
-                className="mt-14 rounded-2xl border border-slate-800 bg-gradient-to-br from-slate-900/60 to-slate-950/80 overflow-hidden"
+                className="mt-14 rounded-2xl border border-[#1e1e22] bg-[#111113] overflow-hidden"
             >
                 <div className="p-8 md:p-12">
                     {/* Header row */}
@@ -52,7 +52,7 @@ export default function FeaturedProject() {
                             <h3 className="text-3xl md:text-4xl font-bold tracking-tight">
                                 Ludex
                             </h3>
-                            <p className="text-sm text-purple-400 font-mono mt-1">
+                            <p className="text-sm text-sky-400 font-mono mt-1">
                                 Machine Learning / Research
                             </p>
                         </div>
@@ -75,7 +75,7 @@ export default function FeaturedProject() {
                                 href="https://ludexsite.onrender.com/"
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-purple-500 text-sm font-medium text-purple-400 hover:bg-purple-500 hover:text-white transition-all duration-200"
+                                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full border border-sky-500/40 text-sm font-medium text-sky-300 hover:bg-sky-500 hover:text-white transition-all duration-200"
                             >
                                 {/* External Link Icon */}
                                 <svg
@@ -96,7 +96,7 @@ export default function FeaturedProject() {
                     </div>
 
                     {/* Description */}
-                    <div className="mt-8 space-y-4 text-slate-300 leading-relaxed max-w-3xl">
+                    <div className="mt-8 space-y-4 text-slate-300 leading-[1.75] max-w-3xl">
                         <p>
                             A hybrid recommendation system that fuses <strong className="text-white">content-based filtering</strong> with{" "}
                             <strong className="text-white">collaborative filtering</strong> to deliver
@@ -123,7 +123,7 @@ export default function FeaturedProject() {
                         {metrics.map((m) => (
                             <div
                                 key={m.label}
-                                className="p-4 rounded-xl border border-slate-800 bg-black/30 text-center"
+                                className="p-4 rounded-xl border border-[#1e1e22] bg-[#0a0a0b] text-center"
                             >
                                 <p className={`text-2xl md:text-3xl font-bold ${m.color}`}>
                                     {m.value}
@@ -140,7 +140,7 @@ export default function FeaturedProject() {
                         {techStack.map((tech) => (
                             <span
                                 key={tech}
-                                className="px-3 py-1 text-xs font-mono rounded-full border border-slate-700 text-slate-400 bg-slate-900/50"
+                                className="px-3 py-1 text-xs font-mono rounded-full border border-[#1e1e22] text-slate-400 bg-[#0a0a0b]"
                             >
                                 {tech}
                             </span>
@@ -151,7 +151,7 @@ export default function FeaturedProject() {
                     <div className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div>
                             <p className="text-slate-400 text-sm mb-2">Sign In Flow</p>
-                            <div className="rounded-xl border border-slate-800 overflow-hidden">
+                            <div className="rounded-xl border border-[#1e1e22] overflow-hidden">
                                 <video
                                     src="/projects/sign_in.mp4"
                                     autoPlay
@@ -164,7 +164,7 @@ export default function FeaturedProject() {
                         </div>
                         <div>
                             <p className="text-slate-400 text-sm mb-2">Dashboard</p>
-                            <div className="rounded-xl border border-slate-800 overflow-hidden">
+                            <div className="rounded-xl border border-[#1e1e22] overflow-hidden">
                                 <video
                                     src="/projects/dashboard.mp4"
                                     autoPlay
