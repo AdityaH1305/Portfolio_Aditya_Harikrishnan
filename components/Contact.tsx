@@ -60,15 +60,22 @@ export default function Contact() {
 
             </motion.div>
 
-            <div className="mt-20 pt-8 border-t border-[#141418] space-y-3">
-                <div className="flex justify-center gap-6">
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Built with Next.js</span>
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Last updated 2026</span>
+            <footer className="mt-20 pt-8 border-t border-[#141418] space-y-4">
+                {/* Metadata micro-details */}
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-1">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Status: Available</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Focus: ML Systems</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Updated: 2026</span>
+                </div>
+
+                {/* Tech + copyright */}
+                <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Built with Next.js + TypeScript</span>
                 </div>
                 <p className="text-sm text-slate-500">
                     © {new Date().getFullYear()} Aditya Harikrishnan
                 </p>
-            </div>
+            </footer>
 
         </section>
     );

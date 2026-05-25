@@ -7,14 +7,20 @@ export default function WhatIBuild() {
         <section id="build" className="py-28 px-6 max-w-6xl mx-auto border-t border-[#141418]">
 
             {/* Heading */}
-            <div className="text-center">
+            <motion.div
+                initial={{ opacity: 0, y: 24 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="text-center"
+            >
                 <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
                     What I Build
                 </h2>
                 <p className="text-slate-400 mt-3 max-w-xl mx-auto">
                     I focus on building systems that combine software engineering with machine learning.
                 </p>
-            </div>
+            </motion.div>
 
             {/* Cards */}
             <div className="grid md:grid-cols-2 gap-6 mt-16">
