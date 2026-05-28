@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 
 const RESUME_URL =
     "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
@@ -24,8 +24,15 @@ interface NavbarProps {
 export default function Navbar({ onOpenGame }: NavbarProps) {
     const scrolledRef = useRef(false);
     const navRef = useRef<HTMLElement>(null);
+    const [mounted, setMounted] = useState(false);
 
     const clickTimestamps = useRef<number[]>([]);
+
+    /* ── System init: navbar fades in first ── */
+    useEffect(() => {
+        const timer = setTimeout(() => setMounted(true), 50);
+        return () => clearTimeout(timer);
+    }, []);
 
     useEffect(() => {
         const handleScroll = () => {
@@ -65,7 +72,9 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
     return (
         <nav
             ref={navRef}
-            className="fixed top-0 w-full z-50 transition-all duration-300 bg-transparent"
+            className={`fixed top-0 w-full z-50 bg-transparent transition-all duration-500 ease-out ${
+                mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
+            }`}
         >
             {/* Slightly tighter left padding */}
             <div className="max-w-6xl mx-auto pl-2 pr-4 py-4 flex justify-between items-center">

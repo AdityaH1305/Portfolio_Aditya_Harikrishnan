@@ -41,14 +41,25 @@ function getDualLayerPositions(count: number) {
     return points;
 }
 
-/* ── Glowing Core Sphere ── */
+/* ── Glowing Core Sphere with subtle breathing ── */
 function CoreSphere() {
     const meshRef = useRef<THREE.Mesh>(null);
+    const glowRef = useRef<THREE.Mesh>(null);
 
     useFrame((_, delta) => {
         if (meshRef.current) {
             meshRef.current.rotation.y += delta * 0.08;
             meshRef.current.rotation.x += delta * 0.03;
+
+            // Subtle emissive breathing
+            const mat = meshRef.current.material as THREE.MeshStandardMaterial;
+            const t = performance.now() * 0.001;
+            mat.emissiveIntensity = 0.3 + Math.sin(t * 0.8) * 0.08;
+        }
+        if (glowRef.current) {
+            const t = performance.now() * 0.001;
+            const mat = glowRef.current.material as THREE.MeshStandardMaterial;
+            mat.opacity = 0.035 + Math.sin(t * 0.6) * 0.015;
         }
     });
 
@@ -66,7 +77,7 @@ function CoreSphere() {
                     opacity={0.7}
                 />
             </mesh>
-            <mesh>
+            <mesh ref={glowRef}>
                 <icosahedronGeometry args={[1.75, 1]} />
                 <meshStandardMaterial
                     color="#38bdf8"

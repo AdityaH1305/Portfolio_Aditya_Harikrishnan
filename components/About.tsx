@@ -4,13 +4,13 @@ import { motion } from "framer-motion";
 
 export default function About() {
     return (
-        <section id="about" className="py-28 px-6 max-w-5xl mx-auto border-t border-[#141418]">
+        <section id="about" className="py-28 px-6 max-w-5xl mx-auto border-t border-[#141418] signal-divider">
 
             {/* Heading — left-aligned */}
             <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
             >
                 <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
@@ -26,9 +26,9 @@ export default function About() {
 
                 {/* Left: Text */}
                 <motion.div
-                    initial={{ opacity: 0, x: -40 }}
+                    initial={{ opacity: 0, x: -24 }}
                     whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                     viewport={{ once: true }}
                     className="space-y-5 text-slate-300 leading-[1.75]"
                 >
@@ -61,9 +61,9 @@ export default function About() {
 
                 {/* Right: Info — ruled lines instead of cards */}
                 <motion.div
-                    initial={{ opacity: 0, x: 40 }}
+                    initial={{ opacity: 0, x: 24 }}
                     whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.6 }}
+                    transition={{ duration: 0.5, delay: 0.08, ease: [0.25, 0.1, 0.25, 1] }}
                     viewport={{ once: true }}
                     className="grid gap-0"
                 >

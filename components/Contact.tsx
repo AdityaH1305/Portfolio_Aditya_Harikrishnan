@@ -8,9 +8,9 @@ export default function Contact() {
 
             {/* Heading */}
             <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
             >
                 <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
@@ -23,9 +23,9 @@ export default function Contact() {
 
             {/* Contact Links */}
             <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.2 }}
+                transition={{ duration: 0.45, delay: 0.1, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
                 className="mt-10 flex flex-col md:flex-row justify-center gap-4"
             >

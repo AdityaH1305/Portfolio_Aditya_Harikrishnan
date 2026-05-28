@@ -2,31 +2,34 @@
 
 import { motion } from "framer-motion";
 
+/* ── System activation easing — snappy, engineered feel ── */
+const EASE_INIT: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
+
 export default function Hero() {
     return (
         <section id="home" className="pt-28 min-h-[85vh] flex flex-col items-center justify-center px-6 text-center relative overflow-hidden">
 
             <motion.div
-                initial={{ opacity: 0, y: 40 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.1 }}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.4, delay: 0.15 }}
                 className="space-y-6 max-w-4xl"
             >
-                {/* Tag */}
+                {/* Tag — first signal */}
                 <motion.p
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.2 }}
+                    initial={{ opacity: 0, y: 8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.25, ease: EASE_INIT }}
                     className="text-sm text-sky-400 font-mono tracking-widest uppercase"
                 >
                     IIIT Pune • B.Tech CSE • 2027
                 </motion.p>
 
-                {/* Heading */}
+                {/* Heading — primary reveal */}
                 <motion.h1
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7, delay: 0.35, ease: "easeOut" }}
+                    transition={{ duration: 0.6, delay: 0.4, ease: EASE_INIT }}
                     className="text-6xl md:text-8xl font-bold tracking-tight leading-[1.05]"
                 >
                     Hi, I&apos;m Aditya
@@ -36,7 +39,7 @@ export default function Hero() {
                 <motion.p
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.55 }}
+                    transition={{ duration: 0.5, delay: 0.6, ease: EASE_INIT }}
                     className="text-base md:text-lg text-slate-400 leading-[1.75] max-w-2xl mx-auto"
                 >
                     Full Stack Developer focused on Machine Learning and scalable systems.
@@ -45,9 +48,9 @@ export default function Hero() {
 
                 {/* Buttons */}
                 <motion.div
-                    initial={{ opacity: 0, y: 10 }}
+                    initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.7 }}
+                    transition={{ duration: 0.45, delay: 0.75, ease: EASE_INIT }}
                     className="flex flex-wrap justify-center gap-4 pt-4"
                 >
                     <a
@@ -67,11 +70,11 @@ export default function Hero() {
                     </a>
                 </motion.div>
 
-                {/* System Metadata */}
+                {/* System Metadata — last to appear */}
                 <motion.div
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
-                    transition={{ duration: 0.5, delay: 0.9 }}
+                    transition={{ duration: 0.5, delay: 0.95, ease: EASE_INIT }}
                     className="flex justify-center gap-6 pt-2"
                 >
                     <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Status: Available</span>

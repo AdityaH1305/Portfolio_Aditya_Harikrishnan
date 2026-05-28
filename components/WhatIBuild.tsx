@@ -8,9 +8,9 @@ export default function WhatIBuild() {
 
             {/* Heading — left-aligned */}
             <motion.div
-                initial={{ opacity: 0, y: 24 }}
+                initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
+                transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
             >
                 <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
@@ -44,9 +44,9 @@ export default function WhatIBuild() {
                 ].map((item, i) => (
                     <motion.div
                         key={i}
-                        initial={{ opacity: 0, y: 30 }}
+                        initial={{ opacity: 0, y: 16 }}
                         whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: i * 0.1 }}
+                        transition={{ duration: 0.45, delay: i * 0.07, ease: [0.25, 0.1, 0.25, 1] }}
                         viewport={{ once: true }}
                         className="pl-5 border-l-2 border-[#1e1e22]"
                     >

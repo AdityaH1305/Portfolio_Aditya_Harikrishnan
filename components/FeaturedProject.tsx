@@ -20,12 +20,12 @@ const techStack = [
 
 export default function FeaturedProject() {
     return (
-        <section id="featured-project" className="py-28 px-6 max-w-5xl mx-auto border-t border-[#141418]">
+        <section id="featured-project" className="py-28 px-6 max-w-5xl mx-auto border-t border-[#141418] signal-divider">
             {/* Label + Title — left-aligned, editorial */}
             <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6 }}
+                transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
             >
                 <p className="text-xs text-sky-400 font-mono tracking-widest uppercase">
@@ -41,9 +41,9 @@ export default function FeaturedProject() {
 
             {/* Description — tight after header */}
             <motion.div
-                initial={{ opacity: 0, y: 20 }}
+                initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1 }}
+                transition={{ duration: 0.5, delay: 0.08, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
                 className="mt-8 space-y-3.5 text-slate-300 leading-[1.75] max-w-2xl"
             >
@@ -70,9 +70,9 @@ export default function FeaturedProject() {
 
             {/* Media — contained, below description */}
             <motion.div
-                initial={{ opacity: 0, y: 30 }}
+                initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.7, delay: 0.15 }}
+                transition={{ duration: 0.6, delay: 0.12, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
                 className="mt-10 grid grid-cols-1 md:grid-cols-2 gap-5"
             >
@@ -106,9 +106,9 @@ export default function FeaturedProject() {
 
             {/* Metrics — inline row with left-border dividers, toned colors */}
             <motion.div
-                initial={{ opacity: 0, y: 16 }}
+                initial={{ opacity: 0, y: 12 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.2 }}
+                transition={{ duration: 0.45, delay: 0.16, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
                 className="mt-10 flex flex-wrap gap-y-5"
             >
