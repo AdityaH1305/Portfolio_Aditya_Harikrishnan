@@ -74,14 +74,13 @@ const projects: ProjectData[] = [
 
 export default function ProjectsEnhanced() {
     return (
-        <section id="projects" className="py-28 px-6 max-w-6xl mx-auto border-t border-[#141418]">
-            {/* Heading */}
+        <section id="projects" className="py-28 px-6 max-w-5xl mx-auto border-t border-[#141418]">
+            {/* Heading — left-aligned */}
             <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="text-center"
             >
                 <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
                     Projects
@@ -91,9 +90,9 @@ export default function ProjectsEnhanced() {
                 </p>
             </motion.div>
 
-            {/* Projects */}
+            {/* Projects — increased spacing for breathing room */}
             <motion.div
-                className="mt-16 space-y-12"
+                className="mt-14 space-y-14"
                 initial="hidden"
                 whileInView="visible"
                 viewport={{ once: true }}
@@ -106,7 +105,13 @@ export default function ProjectsEnhanced() {
                 }}
             >
                 {projects.map((project, index) => (
-                    <ProjectCard key={index} project={project} />
+                    <div key={index} className="relative">
+                        {/* Subtle project index */}
+                        <span className="absolute -left-0 -top-8 text-[11px] font-mono text-slate-600 tracking-wider">
+                            {String(index + 1).padStart(2, "0")}
+                        </span>
+                        <ProjectCard project={project} />
+                    </div>
                 ))}
             </motion.div>
         </section>

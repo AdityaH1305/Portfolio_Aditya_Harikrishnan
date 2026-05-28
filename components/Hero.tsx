@@ -10,7 +10,7 @@ export default function Hero() {
                 initial={{ opacity: 0, y: 40 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.7, delay: 0.1 }}
-                className="space-y-8 max-w-4xl"
+                className="space-y-6 max-w-4xl"
             >
                 {/* Tag */}
                 <motion.p

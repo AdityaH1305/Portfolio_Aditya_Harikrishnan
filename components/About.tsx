@@ -4,15 +4,14 @@ import { motion } from "framer-motion";
 
 export default function About() {
     return (
-        <section id="about" className="py-28 px-6 max-w-6xl mx-auto border-t border-[#141418]">
+        <section id="about" className="py-28 px-6 max-w-5xl mx-auto border-t border-[#141418]">
 
-            {/* Heading */}
+            {/* Heading — left-aligned */}
             <motion.div
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.6 }}
                 viewport={{ once: true }}
-                className="text-center"
             >
                 <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
                     About Me
@@ -23,7 +22,7 @@ export default function About() {
             </motion.div>
 
             {/* Content */}
-            <div className="mt-14 grid md:grid-cols-2 gap-12 items-start">
+            <div className="mt-12 grid md:grid-cols-2 gap-12 items-start">
 
                 {/* Left: Text */}
                 <motion.div
@@ -60,36 +59,36 @@ export default function About() {
                     </p>
                 </motion.div>
 
-                {/* Right: Info Cards */}
+                {/* Right: Info — ruled lines instead of cards */}
                 <motion.div
                     initial={{ opacity: 0, x: 40 }}
                     whileInView={{ opacity: 1, x: 0 }}
                     transition={{ duration: 0.6 }}
                     viewport={{ once: true }}
-                    className="grid gap-4"
+                    className="grid gap-0"
                 >
-                    <div className="p-5 rounded-xl border border-[#1e1e22] bg-[#111113] hover:border-[#2a2a30] transition-colors duration-200">
+                    <div className="py-5 border-b border-[#1e1e22] hover:border-[#2a2a30] transition-colors duration-200">
                         <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Education</p>
                         <p className="font-medium mt-1.5">
                             B.Tech CSE — IIIT Pune
                         </p>
                     </div>
 
-                    <div className="p-5 rounded-xl border border-[#1e1e22] bg-[#111113] hover:border-[#2a2a30] transition-colors duration-200">
+                    <div className="py-5 border-b border-[#1e1e22] hover:border-[#2a2a30] transition-colors duration-200">
                         <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Focus Areas</p>
                         <p className="font-medium mt-1.5">
                             ML Systems • Full Stack • Backend Engineering
                         </p>
                     </div>
 
-                    <div className="p-5 rounded-xl border border-[#1e1e22] bg-[#111113] hover:border-[#2a2a30] transition-colors duration-200">
+                    <div className="py-5 border-b border-[#1e1e22] hover:border-[#2a2a30] transition-colors duration-200">
                         <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Currently Exploring</p>
                         <p className="font-medium mt-1.5">
                             RAG • Embeddings • Code Intelligence
                         </p>
                     </div>
 
-                    <div className="p-5 rounded-xl border border-[#1e1e22] bg-[#111113] hover:border-[#2a2a30] transition-colors duration-200">
+                    <div className="py-5 hover:border-[#2a2a30] transition-colors duration-200">
                         <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Status</p>
                         <p className="font-medium mt-1.5">
                             Available for Opportunities

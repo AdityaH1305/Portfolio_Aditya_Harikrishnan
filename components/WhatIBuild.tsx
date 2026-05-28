@@ -4,26 +4,25 @@ import { motion } from "framer-motion";
 
 export default function WhatIBuild() {
     return (
-        <section id="build" className="py-28 px-6 max-w-6xl mx-auto border-t border-[#141418]">
+        <section id="build" className="py-24 px-6 max-w-5xl mx-auto border-t border-[#141418]">
 
-            {/* Heading */}
+            {/* Heading — left-aligned */}
             <motion.div
                 initial={{ opacity: 0, y: 24 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5 }}
                 viewport={{ once: true }}
-                className="text-center"
             >
                 <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
                     What I Build
                 </h2>
-                <p className="text-slate-400 mt-3 max-w-xl mx-auto">
+                <p className="text-slate-400 mt-3 max-w-xl">
                     I focus on building systems that combine software engineering with machine learning.
                 </p>
             </motion.div>
 
-            {/* Cards */}
-            <div className="grid md:grid-cols-2 gap-6 mt-16">
+            {/* Items — left-border accent, no card containers */}
+            <div className="grid md:grid-cols-2 gap-x-12 gap-y-10 mt-12">
 
                 {[
                     {
@@ -49,10 +48,10 @@ export default function WhatIBuild() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.5, delay: i * 0.1 }}
                         viewport={{ once: true }}
-                        className={`p-6 rounded-2xl border border-[#1e1e22] bg-[#111113] hover:border-sky-500/30 transition duration-300 hover:-translate-y-0.5`}
+                        className="pl-5 border-l-2 border-[#1e1e22]"
                     >
-                        <h3 className="text-xl font-semibold">{item.title}</h3>
-                        <p className="text-slate-400 mt-2">{item.desc}</p>
+                        <h3 className="text-lg font-semibold">{item.title}</h3>
+                        <p className="text-slate-400 mt-1.5 text-sm leading-relaxed">{item.desc}</p>
                     </motion.div>
                 ))}
 

@@ -214,7 +214,7 @@ export default function ProjectCard({
             }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className="group relative rounded-2xl border border-[#1e1e22] hover:border-sky-500/25 transition duration-300 overflow-hidden"
+            className="group relative rounded-xl border border-[#18181c] hover:border-sky-500/25 transition duration-300 overflow-hidden"
         >
             <div className="flex flex-col md:flex-row">
                 {/* Content */}
@@ -296,7 +296,7 @@ export default function ProjectCard({
                 {/* Mobile image — single image */}
                 {project.image && !project.images && (
                     <div 
-                        className="md:hidden relative w-full h-48 border-t border-[#1e1e22]/50 cursor-pointer"
+                        className="md:hidden relative w-full h-48 cursor-pointer"
                         onClick={() => openLightbox(0)}
                     >
                         <Image
@@ -335,7 +335,7 @@ export default function ProjectCard({
 
                 {/* Mobile carousel — multi-image */}
                 {project.images && project.images.length > 0 && (
-                    <div className="md:hidden relative w-full h-48 border-t border-[#1e1e22]/50">
+                    <div className="md:hidden relative w-full h-48">
                         <ImageCarousel
                             images={project.images}
                             alt={project.title}
