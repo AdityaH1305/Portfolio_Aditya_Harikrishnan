@@ -13,6 +13,7 @@ import Contact from "@/components/Contact";
 import CursorGlow from "@/components/CursorGlow";
 import ScrollProgress from "@/components/ScrollProgress";
 import CommandPalette from "@/components/CommandPalette";
+import BackgroundAtmosphere from "@/components/BackgroundAtmosphere";
 
 /* ── Lazy-load game modal — zero cost until triggered ── */
 const SpaceInvadersModal = dynamic(
@@ -28,6 +29,7 @@ export default function Home() {
 
     return (
         <main className="bg-black text-white min-h-screen animated-bg">
+            <BackgroundAtmosphere />
             <ScrollProgress />
             <CursorGlow />
             <Navbar onOpenGame={openGame} />
