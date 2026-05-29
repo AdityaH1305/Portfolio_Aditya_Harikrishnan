@@ -80,13 +80,22 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
             <div className="max-w-6xl mx-auto pl-2 pr-4 py-4 flex justify-between items-center">
 
                 {/* Logo */}
-                <a
-                    href="#home"
-                    onClick={handleLogoClick}
-                    className="font-semibold text-lg tracking-tight hover:text-sky-400 transition-colors duration-200 select-none"
-                >
-                    Building Intelligent Systems
-                </a>
+                <div className="relative group">
+                    <a
+                        href="#home"
+                        onClick={handleLogoClick}
+                        className="font-semibold text-lg tracking-tight hover:text-sky-400 transition-colors duration-200 select-none block"
+                    >
+                        Building Intelligent Systems
+                    </a>
+                    {/* Subtle Easter Egg Hint */}
+                    <div className="absolute -bottom-4 left-0 opacity-0 group-hover:opacity-100 transition-all duration-700 translate-y-1 group-hover:translate-y-0 pointer-events-none select-none flex items-center gap-1.5">
+                        <div className="w-1 h-1 bg-sky-500/50 rounded-sm animate-pulse"></div>
+                        <span className="text-[9px] font-mono tracking-[0.2em] text-sky-500/50 uppercase">
+                            sys.anomaly
+                        </span>
+                    </div>
+                </div>
 
                 {/* Links */}
                 <div className="hidden md:flex items-center gap-1">
