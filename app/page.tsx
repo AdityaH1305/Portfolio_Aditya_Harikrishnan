@@ -15,10 +15,14 @@ import ScrollProgress from "@/components/ScrollProgress";
 import CommandPalette from "@/components/CommandPalette";
 import BackgroundAtmosphere from "@/components/BackgroundAtmosphere";
 
-/* ── Lazy-load game modal — zero cost until triggered ── */
+/* ── Lazy-load heavy client-only modules — zero cost until needed ── */
 const SpaceInvadersModal = dynamic(
     () => import("@/components/SpaceInvadersModal"),
     { ssr: false, loading: () => null },
+);
+const SignalField = dynamic(
+    () => import("@/components/SignalField"),
+    { ssr: false },
 );
 
 export default function Home() {
@@ -30,6 +34,7 @@ export default function Home() {
     return (
         <main className="bg-black text-white min-h-screen animated-bg">
             <BackgroundAtmosphere />
+            <SignalField />
             <ScrollProgress />
             <CursorGlow />
             <Navbar onOpenGame={openGame} />

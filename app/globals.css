@@ -225,6 +225,24 @@ html {
 }
 
 /* ══════════════════════════════════════════════════════
+   Signal Field Canvas
+   Fixed behind all content — renders infrastructure traces
+   ══════════════════════════════════════════════════════ */
+
+.signal-field-canvas {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  will-change: transform;
+}
+
+/* GPU-composited parallax for atmosphere layers */
+.atmosphere-parallax {
+  will-change: transform;
+}
+
+/* ══════════════════════════════════════════════════════
    Signal Pulse / Data Flow Microanimations
    ══════════════════════════════════════════════════════ */
 
