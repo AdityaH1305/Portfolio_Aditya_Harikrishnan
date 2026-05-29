@@ -15,7 +15,7 @@ import { useEffect, useRef, useCallback } from "react";
    3. Scroll-Responsive Density — activity shifts per section
    4. Orb Proximity — organic local density increase
    
-   Performance:
+   Performance::
    - Half-resolution canvas (dpr capped at 1.0)
    - ≤15 drawable elements per frame
    - Pre-allocated arrays, zero GC in render loop
