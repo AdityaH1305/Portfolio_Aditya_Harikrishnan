@@ -3,6 +3,8 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --mouse-x: 50%;
+  --mouse-y: 50%;
 }
 
 @theme inline {
@@ -14,7 +16,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0b;
+    --background: #000000;
     --foreground: #ededed;
   }
 }
@@ -29,7 +31,7 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Animated background gradient — near-flat dark */
+/* Animated background gradient — pure black base */
 @keyframes gradientShift {
   0%, 100% {
     background-position: 0% 50%;
@@ -42,11 +44,11 @@ html {
 .animated-bg {
   background: linear-gradient(
     135deg,
-    #0a0a0b 0%,
-    #0a0a0c 25%,
-    #0b0b0e 50%,
-    #0a0a0c 75%,
-    #0a0a0b 100%
+    #000000 0%,
+    #05001a 25%,
+    #0a0015 50%,
+    #05001a 75%,
+    #000000 100%
   );
   background-size: 400% 400%;
   animation: gradientShift 20s ease infinite;
@@ -96,7 +98,7 @@ html {
   cursor: grabbing;
 }
 
-/* Orb navigation label buttons */
+/* Orb navigation label buttons — purple accent */
 .orb-label-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -113,18 +115,18 @@ html {
 }
 
 .orb-label-btn:hover {
-  background: rgba(56, 189, 248, 0.12);
-  border-color: rgba(56, 189, 248, 0.35);
-  color: #bae6fd;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
+  background: rgba(139, 92, 246, 0.12);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #c4b5fd;
+  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
   transform: scale(1.08);
 }
 
-/* Orb skills label */
+/* Orb skills label — purple accent */
 .orb-label-skill {
-  background: rgba(56, 189, 248, 0.06);
-  border: 1px solid rgba(56, 189, 248, 0.12);
-  color: #bae6fd;
+  background: rgba(139, 92, 246, 0.06);
+  border: 1px solid rgba(139, 92, 246, 0.12);
+  color: #c4b5fd;
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 11px;
@@ -137,16 +139,16 @@ html {
 }
 
 .orb-label-skill:hover {
-  background: rgba(56, 189, 248, 0.15);
-  border-color: rgba(56, 189, 248, 0.35);
-  color: #e0f2fe;
-  box-shadow: 0 0 10px rgba(56, 189, 248, 0.12);
+  background: rgba(139, 92, 246, 0.15);
+  border-color: rgba(139, 92, 246, 0.35);
+  color: #ede9fe;
+  box-shadow: 0 0 10px rgba(139, 92, 246, 0.12);
   transform: scale(1.06);
 }
 
 /* ══════════════════════════════════════════════════════
    Background Atmosphere System
-   Layered depth: noise → grid → vignette → cyan tints
+   Layered depth: noise → grid → vignette → purple tints
    ══════════════════════════════════════════════════════ */
 
 .atmosphere-root {
@@ -158,6 +160,18 @@ html {
 }
 
 /* ── Layer 1: SVG Noise Texture ── */
+@keyframes driftNoise {
+  0% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 256px 128px;
+  }
+  100% {
+    background-position: 0 0;
+  }
+}
+
 .atmosphere-noise {
   position: absolute;
   inset: 0;
@@ -165,6 +179,7 @@ html {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
+  animation: driftNoise 20s linear infinite;
 }
 
 /* ── Layer 2: Technical Grid ── */
@@ -177,23 +192,33 @@ html {
   background-size: 80px 80px;
 }
 
-/* ── Layer 3: Cinematic Vignette ── */
+/* ── Layer 3: Cinematic Vignette — pitch-black edges ── */
 .atmosphere-vignette {
   position: absolute;
   inset: 0;
   background: radial-gradient(
     ellipse 70% 60% at 50% 50%,
-    transparent 50%,
-    rgba(0, 0, 0, 0.35) 100%
+    transparent 40%,
+    rgba(0, 0, 0, 0.7) 100%
   );
 }
 
-/* ── Layer 4: Localized Cyan Radial Tints ── */
+/* ── Layer 4: Localized Purple Radial Tints ── */
+@keyframes breatheGlow {
+  0% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1.15);
+  }
+}
+
 .atmosphere-glow {
   position: absolute;
   border-radius: 50%;
   filter: blur(120px);
   pointer-events: none;
+  animation: breatheGlow 8s ease-in-out infinite alternate;
 }
 
 /* Behind Hero — top center */
@@ -203,7 +228,8 @@ html {
   top: 5%;
   left: 50%;
   transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.04) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
+  animation: breatheGlow 8s ease-in-out infinite alternate, atmosphereBreathe 8s ease-in-out infinite;
 }
 
 /* Behind Orb / mid-page — offset left */
@@ -212,7 +238,7 @@ html {
   height: 500px;
   top: 35%;
   left: 10%;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.03) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(139, 92, 246, 0.045) 0%, transparent 70%);
 }
 
 /* Near Featured Project — offset right */
@@ -221,7 +247,7 @@ html {
   height: 400px;
   top: 60%;
   right: 5%;
-  background: radial-gradient(circle, rgba(56, 189, 248, 0.035) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(109, 40, 217, 0.05) 0%, transparent 70%);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -252,11 +278,7 @@ html {
   50% { opacity: 0.065; }
 }
 
-.atmosphere-glow--hero {
-  animation: atmosphereBreathe 8s ease-in-out infinite;
-}
-
-/* Subtle signal scan on section dividers */
+/* Subtle signal scan on section dividers — purple */
 @keyframes signalScan {
   0% {
     background-position: -200% 0;
@@ -277,19 +299,75 @@ html {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(56, 189, 248, 0.08) 50%,
+    rgba(124, 58, 237, 0.08) 50%,
     transparent 100%
   );
   background-size: 200% 100%;
   animation: signalScan 12s ease-in-out infinite;
 }
 
-/* Orb section breathing glow */
+/* Orb section breathing glow — purple */
 @keyframes orbBreathe {
-  0%, 100% { box-shadow: 0 0 60px -30px rgba(56, 189, 248, 0); }
-  50% { box-shadow: 0 0 80px -20px rgba(56, 189, 248, 0.06); }
+  0%, 100% { box-shadow: 0 0 60px -30px rgba(124, 58, 237, 0); }
+  50% { box-shadow: 0 0 80px -20px rgba(124, 58, 237, 0.06); }
 }
 
 .orb-container {
   animation: orbBreathe 6s ease-in-out infinite;
+}
+
+/* ══════════════════════════════════════════════════════
+   Glassmorphism Card System (Spotlight Cursor)
+   Cards with dynamic border that responds to --mouse-x/y
+   ══════════════════════════════════════════════════════ */
+
+.glass-card {
+  position: relative;
+  background: rgba(12, 10, 18, 0.6);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+}
+
+.glass-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    600px circle at var(--mouse-x) var(--mouse-y),
+    rgba(139, 92, 246, 0.12) 0%,
+    rgba(139, 92, 246, 0.04) 25%,
+    transparent 50%
+  );
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.glass-card:hover::before {
+  opacity: 1;
+}
+
+/* Inner border glow that follows cursor */
+.glass-card::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: radial-gradient(
+    400px circle at var(--mouse-x) var(--mouse-y),
+    rgba(139, 92, 246, 0.25) 0%,
+    transparent 50%
+  );
+  z-index: -1;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.glass-card:hover::after {
+  opacity: 1;
 }

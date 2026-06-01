@@ -31,6 +31,11 @@ export default function CursorGlow() {
                 el.style.transform = `translate(${current.current.x - 200}px, ${current.current.y - 200}px)`;
             }
 
+            // Update global CSS variables for glass-card spotlight effect
+            const root = document.documentElement;
+            root.style.setProperty("--mouse-x", `${current.current.x}px`);
+            root.style.setProperty("--mouse-y", `${current.current.y}px`);
+
             rafId.current = requestAnimationFrame(animate);
         };
 
@@ -53,7 +58,7 @@ export default function CursorGlow() {
                 height: 400,
                 borderRadius: "50%",
                 background:
-                    "radial-gradient(circle, rgba(56, 189, 248, 0.05) 0%, rgba(56, 189, 248, 0.02) 40%, transparent 70%)",
+                    "radial-gradient(circle, rgba(139, 92, 246, 0.06) 0%, rgba(124, 58, 237, 0.025) 40%, transparent 70%)",
                 mixBlendMode: "screen",
                 willChange: "transform",
             }}

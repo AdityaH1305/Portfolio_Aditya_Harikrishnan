@@ -68,28 +68,28 @@ export default function About() {
                     className="grid gap-0"
                 >
                     <div className="py-5 border-b border-[#1e1e22] hover:border-[#2a2a30] transition-colors duration-200">
-                        <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Education</p>
+                        <p className="text-sm text-violet-400/70 font-mono uppercase tracking-wider">Education</p>
                         <p className="font-medium mt-1.5">
                             B.Tech CSE — IIIT Pune
                         </p>
                     </div>
 
                     <div className="py-5 border-b border-[#1e1e22] hover:border-[#2a2a30] transition-colors duration-200">
-                        <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Focus Areas</p>
+                        <p className="text-sm text-violet-400/70 font-mono uppercase tracking-wider">Focus Areas</p>
                         <p className="font-medium mt-1.5">
                             ML Systems • Full Stack • Backend Engineering
                         </p>
                     </div>
 
                     <div className="py-5 border-b border-[#1e1e22] hover:border-[#2a2a30] transition-colors duration-200">
-                        <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Currently Exploring</p>
+                        <p className="text-sm text-violet-400/70 font-mono uppercase tracking-wider">Currently Exploring</p>
                         <p className="font-medium mt-1.5">
                             RAG • Embeddings • Code Intelligence
                         </p>
                     </div>
 
                     <div className="py-5 hover:border-[#2a2a30] transition-colors duration-200">
-                        <p className="text-sm text-slate-500 font-mono uppercase tracking-wider">Status</p>
+                        <p className="text-sm text-violet-400/70 font-mono uppercase tracking-wider">Status</p>
                         <p className="font-medium mt-1.5">
                             Available for Opportunities
                         </p>

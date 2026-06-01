@@ -80,6 +80,13 @@ function getCommands(onOpenGame: () => void): Command[] {
             },
         },
         {
+            id: "stress-test",
+            label: "Initialize System Stress Test (Game)",
+            section: "System",
+            icon: "▶",
+            action: onOpenGame,
+        },
+        {
             id: "space-invaders",
             label: "Space Invaders",
             section: "Easter Egg",
@@ -212,14 +219,14 @@ export default function CommandPalette({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.96, y: -8 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="w-full max-w-[520px] mx-4 rounded-xl border border-[#1e1e22] bg-[#111113] shadow-2xl overflow-hidden"
+                        className="w-full max-w-[520px] mx-4 rounded-xl border border-violet-500/15 bg-[#0a0812]/95 shadow-2xl shadow-violet-500/5 overflow-hidden backdrop-blur-xl"
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={handleKeyDown}
                     >
                         {/* Search input */}
-                        <div className="flex items-center gap-3 px-4 py-3 border-b border-[#1e1e22]">
+                        <div className="flex items-center gap-3 px-4 py-3 border-b border-violet-500/10">
                             <svg
-                                className="w-4 h-4 text-slate-500 shrink-0"
+                                className="w-4 h-4 text-violet-400/50 shrink-0"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2"
@@ -238,7 +245,7 @@ export default function CommandPalette({
                                 autoComplete="off"
                                 spellCheck={false}
                             />
-                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-slate-500 border border-[#2a2a30] rounded bg-[#0a0a0b]">
+                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-slate-500 border border-violet-500/20 rounded bg-black/50">
                                 ESC
                             </kbd>
                         </div>
@@ -263,11 +270,11 @@ export default function CommandPalette({
                                             onMouseEnter={() => setSelectedIndex(cmd.globalIndex)}
                                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-100 ${
                                                 cmd.globalIndex === selectedIndex
-                                                    ? "bg-white/5 text-white"
-                                                    : "text-slate-300 hover:bg-white/5"
+                                                    ? "bg-violet-500/10 text-white"
+                                                    : "text-slate-300 hover:bg-violet-500/5"
                                             }`}
                                         >
-                                            <span className="w-5 text-center text-xs text-slate-500">
+                                            <span className="w-5 text-center text-xs text-violet-400/60">
                                                 {cmd.icon}
                                             </span>
                                             <span className="flex-1">{cmd.label}</span>
@@ -283,7 +290,7 @@ export default function CommandPalette({
                         </div>
 
                         {/* Footer hint */}
-                        <div className="flex items-center justify-between px-4 py-2 border-t border-[#1e1e22] text-[10px] font-mono text-slate-600">
+                        <div className="flex items-center justify-between px-4 py-2 border-t border-violet-500/10 text-[10px] font-mono text-slate-600">
                             <span>↑↓ navigate</span>
                             <span>↵ select</span>
                             <span>esc close</span>

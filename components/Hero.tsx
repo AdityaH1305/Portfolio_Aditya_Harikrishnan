@@ -20,7 +20,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.25, ease: EASE_INIT }}
-                    className="text-sm text-sky-400 font-mono tracking-widest uppercase"
+                    className="text-sm text-violet-400 font-mono tracking-widest uppercase"
                 >
                     IIIT Pune • B.Tech CSE • 2027
                 </motion.p>
@@ -64,7 +64,7 @@ export default function Hero() {
                         href="https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="border border-[#2a2a30] px-7 py-3 rounded-full text-slate-300 hover:border-sky-500/40 hover:text-sky-300 transition-all duration-200"
+                        className="border border-[#2a2a30] px-7 py-3 rounded-full text-slate-300 hover:border-violet-500/40 hover:text-violet-300 transition-all duration-200"
                     >
                         View Resume
                     </a>

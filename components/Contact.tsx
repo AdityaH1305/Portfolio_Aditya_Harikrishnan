@@ -43,7 +43,7 @@ export default function Contact() {
                     href="https://github.com/AdityaH1305"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3 rounded-full border border-[#1e1e22] hover:border-sky-500/30 hover:text-sky-300 transition-all duration-200"
+                    className="px-6 py-3 rounded-full border border-[#1e1e22] hover:border-violet-500/30 hover:text-violet-300 transition-all duration-200"
                 >
                     GitHub
                 </a>
@@ -53,7 +53,7 @@ export default function Contact() {
                     href="https://www.linkedin.com/in/aditya-harikrishnan-3932192a4/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="px-6 py-3 rounded-full border border-[#1e1e22] hover:border-sky-500/30 hover:text-sky-300 transition-all duration-200"
+                    className="px-6 py-3 rounded-full border border-[#1e1e22] hover:border-violet-500/30 hover:text-violet-300 transition-all duration-200"
                 >
                     LinkedIn
                 </a>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import useMagnetic from "@/hooks/useMagnetic";
 
 const RESUME_URL =
     "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
@@ -19,6 +20,41 @@ const CLICK_WINDOW_MS = 2000;
 
 interface NavbarProps {
     onOpenGame: () => void;
+}
+
+/* ── Magnetic Link wrapper ── */
+function MagneticLink({
+    href,
+    className,
+    children,
+    onClick,
+    target,
+    rel,
+}: {
+    href: string;
+    className: string;
+    children: React.ReactNode;
+    onClick?: () => void;
+    target?: string;
+    rel?: string;
+}) {
+    const magnetic = useMagnetic(40, 10);
+
+    return (
+        <a
+            ref={magnetic.ref as React.RefObject<HTMLAnchorElement>}
+            href={href}
+            className={className}
+            onClick={onClick}
+            target={target}
+            rel={rel}
+            onMouseMove={magnetic.onMouseMove}
+            onMouseLeave={magnetic.onMouseLeave}
+            style={{ display: "inline-block" }}
+        >
+            {children}
+        </a>
+    );
 }
 
 export default function Navbar({ onOpenGame }: NavbarProps) {
@@ -41,10 +77,10 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                 scrolledRef.current = isScrolled;
                 if (navRef.current) {
                     if (isScrolled) {
-                        navRef.current.classList.add("bg-[#0a0a0b]/80", "backdrop-blur-sm", "border-b", "border-[#1e1e22]");
+                        navRef.current.classList.add("bg-black/80", "backdrop-blur-sm", "border-b", "border-[#1e1e22]");
                         navRef.current.classList.remove("bg-transparent");
                     } else {
-                        navRef.current.classList.remove("bg-[#0a0a0b]/80", "backdrop-blur-sm", "border-b", "border-[#1e1e22]");
+                        navRef.current.classList.remove("bg-black/80", "backdrop-blur-sm", "border-b", "border-[#1e1e22]");
                         navRef.current.classList.add("bg-transparent");
                     }
                 }
@@ -84,50 +120,50 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                     <a
                         href="#home"
                         onClick={handleLogoClick}
-                        className="font-semibold text-lg tracking-tight hover:text-sky-400 transition-colors duration-200 select-none block"
+                        className="font-semibold text-lg tracking-tight hover:text-violet-400 transition-colors duration-200 select-none block"
                     >
                         Building Intelligent Systems
                     </a>
                     {/* Subtle Easter Egg Hint */}
                     <div className="absolute -bottom-4 left-0 opacity-0 group-hover:opacity-100 transition-all duration-700 translate-y-1 group-hover:translate-y-0 pointer-events-none select-none flex items-center gap-1.5">
-                        <div className="w-1 h-1 bg-sky-500/50 rounded-sm animate-pulse"></div>
-                        <span className="text-[9px] font-mono tracking-[0.2em] text-sky-500/50 uppercase">
+                        <div className="w-1 h-1 bg-violet-500/50 rounded-sm animate-pulse"></div>
+                        <span className="text-[9px] font-mono tracking-[0.2em] text-violet-500/50 uppercase">
                             sys.anomaly
                         </span>
                     </div>
                 </div>
 
-                {/* Links */}
+                {/* Links — with magnetic effect */}
                 <div className="hidden md:flex items-center gap-1">
                     {links.map((link) => (
-                        <a
+                        <MagneticLink
                             key={link.name}
                             href={link.href}
                             className="px-3 py-1.5 text-sm text-slate-300 rounded-md hover:text-white hover:bg-white/5 transition-all duration-200"
                         >
                             {link.name}
-                        </a>
+                        </MagneticLink>
                     ))}
 
                     <span className="w-px h-5 bg-slate-700 mx-2" />
 
                     {/* Email */}
-                    <a
+                    <MagneticLink
                         href="mailto:adityaharikrishnan@gmail.com"
                         className="px-3 py-1.5 text-sm text-slate-300 rounded-md hover:text-white hover:bg-white/5 transition-all duration-200"
                     >
                         Email
-                    </a>
+                    </MagneticLink>
 
                     {/* Resume */}
-                    <a
+                    <MagneticLink
                         href={RESUME_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-1 px-4 py-1.5 text-sm font-medium rounded-full border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 hover:border-sky-400 transition-all duration-200"
+                        className="ml-1 px-4 py-1.5 text-sm font-medium rounded-full border border-violet-500/40 text-violet-300 hover:bg-violet-500/10 hover:border-violet-400 transition-all duration-200"
                     >
                         Resume
-                    </a>
+                    </MagneticLink>
                 </div>
 
                 {/* Mobile */}
@@ -142,7 +178,7 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                         href={RESUME_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1 text-sm font-medium rounded-full border border-sky-500/40 text-sky-300 hover:bg-sky-500/10 transition"
+                        className="px-3 py-1 text-sm font-medium rounded-full border border-violet-500/40 text-violet-300 hover:bg-violet-500/10 transition"
                     >
                         Resume
                     </a>

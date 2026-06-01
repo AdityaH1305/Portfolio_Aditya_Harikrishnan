@@ -72,6 +72,29 @@ const projects: ProjectData[] = [
     },
 ];
 
+/* ── Stagger animation variants ── */
+const containerVariants = {
+    hidden: {},
+    visible: {
+        transition: {
+            staggerChildren: 0.15,
+            delayChildren: 0.05,
+        },
+    },
+};
+
+const cardWrapperVariants = {
+    hidden: { opacity: 0, y: 30 },
+    visible: {
+        opacity: 1,
+        y: 0,
+        transition: {
+            duration: 0.6,
+            ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
+        },
+    },
+};
+
 export default function ProjectsEnhanced() {
     return (
         <section id="projects" className="py-28 px-6 max-w-5xl mx-auto border-t border-[#141418]">
@@ -90,28 +113,26 @@ export default function ProjectsEnhanced() {
                 </p>
             </motion.div>
 
-            {/* Projects — increased spacing for breathing room */}
+            {/* Projects — staggered cascade scroll-reveal */}
             <motion.div
                 className="mt-14 space-y-14"
+                variants={containerVariants}
                 initial="hidden"
                 whileInView="visible"
-                viewport={{ once: true }}
-                variants={{
-                    visible: {
-                        transition: {
-                            staggerChildren: 0.2,
-                        },
-                    },
-                }}
+                viewport={{ once: true, amount: 0.05 }}
             >
                 {projects.map((project, index) => (
-                    <div key={index} className="relative">
+                    <motion.div
+                        key={index}
+                        className="relative"
+                        variants={cardWrapperVariants}
+                    >
                         {/* Subtle project index */}
                         <span className="absolute -left-0 -top-8 text-[11px] font-mono text-slate-600 tracking-wider">
                             {String(index + 1).padStart(2, "0")}
                         </span>
                         <ProjectCard project={project} />
-                    </div>
+                    </motion.div>
                 ))}
             </motion.div>
         </section>

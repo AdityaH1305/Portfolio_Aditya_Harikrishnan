@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useCallback } from "react";
+import { useEffect, useRef, useCallback, useState } from "react";
 import SpaceInvadersGame from "./SpaceInvadersGame";
 
 interface SpaceInvadersModalProps {
@@ -42,7 +42,7 @@ function Starfield() {
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const s of stars) {
-        ctx.fillStyle = `rgba(255,255,255,${0.3 + s.speed * 0.6})`;
+        ctx.fillStyle = `rgba(200,180,255,${0.3 + s.speed * 0.6})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fill();
@@ -74,7 +74,7 @@ function Starfield() {
 }
 
 export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps) {
-  const overlayRef = useRef<HTMLDivElement>(null);
+  const [mounted, setMounted] = useState(false);
 
   /* ── ESC to close ── */
   const handleKey = useCallback(
@@ -94,17 +94,20 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
     };
   }, [handleKey]);
 
-  /* ── Fade-in on mount ── */
+  /* ── Graceful fade-in on mount ── */
   useEffect(() => {
     requestAnimationFrame(() => {
-      overlayRef.current?.classList.remove("opacity-0", "scale-95");
-      overlayRef.current?.classList.add("opacity-100", "scale-100");
+      requestAnimationFrame(() => {
+        setMounted(true);
+      });
     });
   }, []);
 
   return (
     <div
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 p-4"
+      className={`fixed inset-0 z-[9999] flex items-center justify-center p-4 transition-all duration-500 ease-out ${
+        mounted ? "bg-black/90" : "bg-transparent"
+      }`}
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
@@ -112,23 +115,32 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
       aria-modal="true"
       aria-label="Space Invaders Easter Egg"
     >
-      {/* animated starfield background */}
+      {/* animated starfield background — purple-tinted */}
       <Starfield />
+
+      {/* Purple ambient glow behind modal */}
+      <div
+        className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${
+          mounted ? "opacity-100" : "opacity-0"
+        }`}
+        style={{
+          background: "radial-gradient(ellipse at 50% 50%, rgba(124, 58, 237, 0.08) 0%, transparent 60%)",
+        }}
+      />
 
       {/* modal card */}
       <div
-        ref={overlayRef}
-        className="
+        className={`
           relative z-10
           w-full max-w-[680px]
           max-h-[92vh] overflow-y-auto
           rounded-2xl
-          border border-indigo-500/20
-          bg-gradient-to-b from-slate-900/95 to-black/95
-          backdrop-blur-xl shadow-2xl shadow-indigo-500/10
-          opacity-0 scale-95
+          border border-violet-500/20
+          bg-gradient-to-b from-[#0a0812]/95 to-black/95
+          backdrop-blur-xl shadow-2xl shadow-violet-500/10
           transition-all duration-500 ease-out
-        "
+          ${mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"}
+        `}
       >
         {/* ── Close button ── */}
         <button
@@ -171,8 +183,8 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
               className="
                 shrink-0
                 px-4 py-1.5 rounded-lg text-xs font-medium
-                bg-indigo-500/10 border border-indigo-500/30 text-indigo-300
-                hover:bg-indigo-500/20 hover:border-indigo-400/50 hover:text-indigo-200
+                bg-violet-500/10 border border-violet-500/30 text-violet-300
+                hover:bg-violet-500/20 hover:border-violet-400/50 hover:text-violet-200
                 transition-all duration-200
               "
             >

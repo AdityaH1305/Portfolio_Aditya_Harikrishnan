@@ -4,6 +4,7 @@ import { useRef, useCallback, useEffect, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
 import { Html } from "@react-three/drei";
 import * as THREE from "three";
+import useMagnetic from "@/hooks/useMagnetic";
 
 const SKILLS_ITEMS = [
     "Python", "Java", "C", "C++", "JavaScript",
@@ -41,7 +42,7 @@ function getDualLayerPositions(count: number) {
     return points;
 }
 
-/* ── Glowing Core Sphere with subtle breathing ── */
+/* ── Glowing Core Sphere with subtle breathing — purple ── */
 function CoreSphere() {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
@@ -69,8 +70,8 @@ function CoreSphere() {
             <mesh ref={meshRef}>
                 <icosahedronGeometry args={[1.4, 1]} />
                 <meshStandardMaterial
-                    color="#0284c7"
-                    emissive="#0ea5e9"
+                    color="#6d28d9"
+                    emissive="#8b5cf6"
                     emissiveIntensity={0.35}
                     wireframe
                     transparent
@@ -80,14 +81,52 @@ function CoreSphere() {
             <mesh ref={glowRef}>
                 <icosahedronGeometry args={[1.75, 1]} />
                 <meshStandardMaterial
-                    color="#38bdf8"
+                    color="#a855f7"
                     transparent
                     opacity={0.04}
                     side={THREE.BackSide}
                 />
             </mesh>
-            <pointLight color="#0ea5e9" intensity={1.0} distance={10} />
+            <pointLight color="#8b5cf6" intensity={1.0} distance={10} />
         </group>
+    );
+}
+
+/* ── Magnetic Skill Label — DOM wrapper with magnetic pull ── */
+function MagneticSkillSpan({
+    skill,
+    isOuter,
+    spanRef,
+}: {
+    skill: string;
+    isOuter: boolean;
+    spanRef: React.RefObject<HTMLSpanElement | null>;
+}) {
+    const magnetic = useMagnetic(40, 10);
+
+    return (
+        <span
+            ref={(el) => {
+                // Assign to both the magnetic ref and the parent spanRef
+                (magnetic.ref as React.MutableRefObject<HTMLElement | null>).current = el;
+                (spanRef as React.MutableRefObject<HTMLSpanElement | null>).current = el;
+            }}
+            className={`orb-label-skill max-w-[150px] truncate inline-block ${
+                isOuter ? "font-medium" : "font-normal"
+            }`}
+            style={{
+                // Sizing slightly increased by ~15%
+                fontSize: "11.5px",
+                padding: "4px 12px",
+                pointerEvents: "auto",
+                willChange: "transform, opacity",
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            onMouseMove={magnetic.onMouseMove}
+            onMouseLeave={magnetic.onMouseLeave}
+        >
+            {skill}
+        </span>
     );
 }
 
@@ -113,22 +152,11 @@ function SkillsOrbitLabels({
                 return (
                     <FloatingLabel key={skill} bx={bx} by={by} bz={bz} phase={i * 0.6}>
                         {(spanRef) => (
-                            <span
-                                ref={spanRef}
-                                className={`orb-label-skill max-w-[150px] truncate inline-block ${
-                                    isOuter ? "font-medium" : "font-normal"
-                                }`}
-                                style={{
-                                    // Sizing slightly increased by ~15%
-                                    fontSize: "11.5px",
-                                    padding: "4px 12px",
-                                    pointerEvents: "auto",
-                                    willChange: "transform, opacity",
-                                }}
-                                onPointerDown={(e) => e.stopPropagation()}
-                            >
-                                {skill}
-                            </span>
+                            <MagneticSkillSpan
+                                skill={skill}
+                                isOuter={isOuter}
+                                spanRef={spanRef}
+                            />
                         )}
                     </FloatingLabel>
                 );
@@ -177,7 +205,11 @@ function FloatingLabel({
             const scale = 0.8 + clamped * 0.35;   // 0.8 to 1.15
             
             spanRef.current.style.opacity = opacity.toFixed(3);
-            spanRef.current.style.transform = `scale(${scale.toFixed(3)})`;
+            // Preserve any magnetic transform by only setting scale if no magnetic transform is active
+            const currentTransform = spanRef.current.style.transform;
+            if (!currentTransform.includes("translate")) {
+                spanRef.current.style.transform = `scale(${scale.toFixed(3)})`;
+            }
             spanRef.current.style.zIndex = Math.round(clamped * 100).toString();
         }
     });

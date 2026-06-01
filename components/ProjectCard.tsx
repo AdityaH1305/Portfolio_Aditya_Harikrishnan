@@ -214,9 +214,9 @@ export default function ProjectCard({
             }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className="group relative rounded-xl border border-[#18181c] hover:border-sky-500/25 transition duration-300 overflow-hidden"
+            className="group relative rounded-xl glass-card hover:border-violet-500/25 transition duration-300 overflow-hidden"
         >
-            <div className="flex flex-col md:flex-row">
+            <div className="flex flex-col md:flex-row relative z-[2]">
                 {/* Content */}
                 <div className="p-8 flex-1">
                     {/* Title */}
@@ -224,7 +224,7 @@ export default function ProjectCard({
                         <h3 className="text-2xl font-semibold">
                             {project.title}
                         </h3>
-                        <span className="text-sm text-sky-400 font-mono">
+                        <span className="text-sm text-violet-400 font-mono">
                             {project.tag}
                         </span>
                     </div>
@@ -248,7 +248,7 @@ export default function ProjectCard({
                                 href={project.github}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-5 py-2 rounded-full border border-[#1e1e22] text-sm hover:border-slate-500 hover:text-white transition-all duration-200"
+                                className="px-5 py-2 rounded-full border border-[#1e1e22] text-sm hover:border-violet-500/40 hover:text-violet-300 transition-all duration-200"
                             >
                                 GitHub
                             </a>
@@ -273,7 +273,7 @@ export default function ProjectCard({
                             hidden md:flex items-center justify-center
                             w-0 group-hover:w-72 overflow-hidden
                             transition-all duration-500 ease-out
-                            bg-[#111113] border-l border-[#1e1e22]/50
+                            bg-[#0a0812] border-l border-violet-500/10
                         `}
                     >
                         <div className={`
@@ -316,7 +316,7 @@ export default function ProjectCard({
                             hidden md:flex items-center justify-center
                             w-0 group-hover:w-72 overflow-hidden
                             transition-all duration-500 ease-out
-                            bg-[#111113] border-l border-[#1e1e22]/50
+                            bg-[#0a0812] border-l border-violet-500/10
                         `}
                     >
                         <div className={`
