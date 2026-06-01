@@ -42,7 +42,7 @@ function getDualLayerPositions(count: number) {
     return points;
 }
 
-/* ── Glowing Core Sphere with subtle breathing — purple ── */
+/* ── Glowing Core Sphere with subtle breathing — cyan ── */
 function CoreSphere() {
     const meshRef = useRef<THREE.Mesh>(null);
     const glowRef = useRef<THREE.Mesh>(null);
@@ -70,24 +70,24 @@ function CoreSphere() {
             <mesh ref={meshRef}>
                 <icosahedronGeometry args={[1.4, 1]} />
                 <meshStandardMaterial
-                    color="#6d28d9"
-                    emissive="#8b5cf6"
-                    emissiveIntensity={0.35}
+                    color="#000000"
+                    emissive="#38bdf8"
+                    emissiveIntensity={0.2}
                     wireframe
                     transparent
-                    opacity={0.7}
+                    opacity={0.5}
                 />
             </mesh>
             <mesh ref={glowRef}>
                 <icosahedronGeometry args={[1.75, 1]} />
                 <meshStandardMaterial
-                    color="#a855f7"
+                    color="#0ea5e9"
                     transparent
-                    opacity={0.04}
+                    opacity={0.03}
                     side={THREE.BackSide}
                 />
             </mesh>
-            <pointLight color="#8b5cf6" intensity={1.0} distance={10} />
+            <pointLight color="#38bdf8" intensity={0.5} distance={10} />
         </group>
     );
 }

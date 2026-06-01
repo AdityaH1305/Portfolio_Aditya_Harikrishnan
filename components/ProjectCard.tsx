@@ -57,14 +57,14 @@ function ImageCarousel({
                 <>
                     <button
                         onClick={(e) => { e.stopPropagation(); prev(); }}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 text-white/70 hover:text-white hover:bg-black/70 opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-200 text-sm"
+                        className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-black/70 border border-white/10 text-white/70 hover:text-white hover:bg-black transition-opacity duration-200 text-sm opacity-0 group-hover/carousel:opacity-100"
                         aria-label="Previous image"
                     >
                         ‹
                     </button>
                     <button
                         onClick={(e) => { e.stopPropagation(); next(); }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-black/50 text-white/70 hover:text-white hover:bg-black/70 opacity-0 group-hover/carousel:opacity-100 transition-opacity duration-200 text-sm"
+                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-black/70 border border-white/10 text-white/70 hover:text-white hover:bg-black transition-opacity duration-200 text-sm opacity-0 group-hover/carousel:opacity-100"
                         aria-label="Next image"
                     >
                         ›
@@ -79,8 +79,8 @@ function ImageCarousel({
                         <button
                             key={i}
                             onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
-                            className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${
-                                i === current ? "bg-white" : "bg-white/40"
+                            className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 shadow-sm ${
+                                i === current ? "bg-white" : "bg-white/50"
                             }`}
                             aria-label={`Go to image ${i + 1}`}
                         />
@@ -141,7 +141,7 @@ function LightboxModal({
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 cursor-pointer"
+            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md cursor-pointer"
             onClick={onClose}
         >
             <motion.div
@@ -149,14 +149,14 @@ function LightboxModal({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="relative max-w-[90vw] max-h-[85vh] w-auto h-auto"
+                className="relative max-w-[90vw] max-h-[85vh] w-auto h-auto shadow-2xl shadow-sky-500/10 rounded-lg"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={src}
                     alt={alt}
-                    className="max-w-full max-h-[85vh] rounded-lg object-contain"
+                    className="max-w-full max-h-[85vh] rounded-lg object-contain bg-black"
                 />
 
                 {/* Navigation Arrows */}
@@ -164,14 +164,14 @@ function LightboxModal({
                     <>
                         <button
                             onClick={(e) => { e.stopPropagation(); goPrev(); }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-black/80 transition-all duration-200 text-lg backdrop-blur-sm"
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/80 border border-white/10 text-white/70 hover:text-white hover:bg-black transition-all duration-200 text-xl shadow-md"
                             aria-label="Previous image"
                         >
                             ‹
                         </button>
                         <button
                             onClick={(e) => { e.stopPropagation(); goNext(); }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 flex items-center justify-center rounded-full bg-black/60 text-white/70 hover:text-white hover:bg-black/80 transition-all duration-200 text-lg backdrop-blur-sm"
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/80 border border-white/10 text-white/70 hover:text-white hover:bg-black transition-all duration-200 text-xl shadow-md"
                             aria-label="Next image"
                         >
                             ›
@@ -193,7 +193,6 @@ export default function ProjectCard({
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const [lightboxIndex, setLightboxIndex] = useState(0);
 
-    // Resolve the images array for this project (single or multi)
     const allImages = project.images ?? (project.image ? [project.image] : []);
 
     const openLightbox = (idx: number) => {
@@ -209,35 +208,38 @@ export default function ProjectCard({
     return (
         <motion.div
             variants={{
-                hidden: { opacity: 0, y: 20 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.25, 0.1, 0.25, 1] } },
+                hidden: { opacity: 0, y: 30 },
+                visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } },
             }}
             onMouseEnter={() => setHovered(true)}
             onMouseLeave={() => setHovered(false)}
-            className="group relative rounded-xl glass-card hover:border-violet-500/25 transition duration-300 overflow-hidden"
+            className="group relative rounded-xl glass-card transition duration-300 overflow-hidden"
         >
             <div className="flex flex-col md:flex-row relative z-[2]">
                 {/* Content */}
                 <div className="p-8 flex-1">
                     {/* Title */}
                     <div className="flex flex-col md:flex-row md:justify-between gap-2">
-                        <h3 className="text-2xl font-semibold">
+                        <h3 className="text-2xl font-semibold text-zinc-100 group-hover:text-white transition-colors">
                             {project.title}
                         </h3>
-                        <span className="text-sm text-violet-400 font-mono">
+                        <span className="text-sm text-sky-400 font-mono font-medium">
                             {project.tag}
                         </span>
                     </div>
 
                     {/* Description */}
-                    <p className="text-slate-400 mt-4 max-w-3xl leading-[1.75]">
+                    <p className="text-zinc-400 mt-4 max-w-3xl leading-[1.75]">
                         {project.description}
                     </p>
 
                     {/* Highlights */}
-                    <ul className="mt-6 grid md:grid-cols-2 gap-2 text-sm text-slate-300">
+                    <ul className="mt-6 grid md:grid-cols-2 gap-2 text-sm text-zinc-500">
                         {project.highlights.map((item, i) => (
-                            <li key={i}>• {item}</li>
+                            <li key={i}>
+                                <span className="text-sky-500/50 mr-2">•</span>
+                                {item}
+                            </li>
                         ))}
                     </ul>
 
@@ -248,7 +250,7 @@ export default function ProjectCard({
                                 href={project.github}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-5 py-2 rounded-full border border-[#1e1e22] text-sm hover:border-violet-500/40 hover:text-violet-300 transition-all duration-200"
+                                className="px-5 py-2 rounded-full border border-zinc-800 text-sm text-zinc-400 hover:border-sky-500/50 hover:text-sky-300 transition-all duration-200 bg-black/50"
                             >
                                 GitHub
                             </a>
@@ -258,7 +260,7 @@ export default function ProjectCard({
                                 href={project.demo}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="px-5 py-2 rounded-full bg-white text-black text-sm hover:scale-[1.03] transition-all duration-200"
+                                className="px-5 py-2 rounded-full bg-white text-black text-sm font-medium hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(56,189,248,0.3)] transition-all duration-200 shadow-md"
                             >
                                 Live Demo
                             </a>
@@ -273,12 +275,12 @@ export default function ProjectCard({
                             hidden md:flex items-center justify-center
                             w-0 group-hover:w-72 overflow-hidden
                             transition-all duration-500 ease-out
-                            bg-[#0a0812] border-l border-violet-500/10
+                            bg-zinc-900/50 border-l border-white/5
                         `}
                     >
                         <div className={`
-                            relative w-60 h-40 rounded-lg overflow-hidden cursor-pointer
-                            transition-all duration-500 delay-100
+                            relative w-60 h-40 rounded-lg overflow-hidden cursor-pointer shadow-sm
+                            transition-all duration-500 delay-100 border border-white/5
                             ${hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"}
                         `}
                         onClick={() => openLightbox(0)}>
@@ -296,7 +298,7 @@ export default function ProjectCard({
                 {/* Mobile image — single image */}
                 {project.image && !project.images && (
                     <div 
-                        className="md:hidden relative w-full h-48 cursor-pointer"
+                        className="md:hidden relative w-full h-48 cursor-pointer border-t border-white/5"
                         onClick={() => openLightbox(0)}
                     >
                         <Image
@@ -316,11 +318,11 @@ export default function ProjectCard({
                             hidden md:flex items-center justify-center
                             w-0 group-hover:w-72 overflow-hidden
                             transition-all duration-500 ease-out
-                            bg-[#0a0812] border-l border-violet-500/10
+                            bg-zinc-900/50 border-l border-white/5
                         `}
                     >
                         <div className={`
-                            relative w-60 h-40 rounded-lg overflow-hidden
+                            relative w-60 h-40 rounded-lg overflow-hidden shadow-sm border border-white/5
                             transition-all duration-500 delay-100
                             ${hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"}
                         `}>
@@ -335,7 +337,7 @@ export default function ProjectCard({
 
                 {/* Mobile carousel — multi-image */}
                 {project.images && project.images.length > 0 && (
-                    <div className="md:hidden relative w-full h-48">
+                    <div className="md:hidden relative w-full h-48 border-t border-white/5">
                         <ImageCarousel
                             images={project.images}
                             alt={project.title}

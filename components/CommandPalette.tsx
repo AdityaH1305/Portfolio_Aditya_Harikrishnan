@@ -208,7 +208,7 @@ export default function CommandPalette({
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.15 }}
-                    className="fixed inset-0 z-[9998] flex items-start justify-center pt-[20vh] bg-black/60"
+                    className="fixed inset-0 z-[9998] flex items-start justify-center pt-[20vh] bg-black/60 backdrop-blur-sm"
                     onClick={() => setOpen(false)}
                     role="dialog"
                     aria-modal="true"
@@ -219,14 +219,14 @@ export default function CommandPalette({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.96, y: -8 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="w-full max-w-[520px] mx-4 rounded-xl border border-violet-500/15 bg-[#0a0812]/95 shadow-2xl shadow-violet-500/5 overflow-hidden backdrop-blur-xl"
+                        className="w-full max-w-[520px] mx-4 rounded-xl border border-zinc-800 bg-[#09090b]/95 shadow-2xl shadow-sky-500/10 overflow-hidden backdrop-blur-xl"
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={handleKeyDown}
                     >
                         {/* Search input */}
-                        <div className="flex items-center gap-3 px-4 py-3 border-b border-violet-500/10">
+                        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50">
                             <svg
-                                className="w-4 h-4 text-violet-400/50 shrink-0"
+                                className="w-4 h-4 text-sky-500 shrink-0"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2"
@@ -241,11 +241,11 @@ export default function CommandPalette({
                                 value={query}
                                 onChange={(e) => setQuery(e.target.value)}
                                 placeholder="Type a command…"
-                                className="flex-1 bg-transparent text-sm text-white placeholder:text-slate-500 outline-none"
+                                className="flex-1 bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 outline-none"
                                 autoComplete="off"
                                 spellCheck={false}
                             />
-                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-slate-500 border border-violet-500/20 rounded bg-black/50">
+                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-zinc-500 border border-zinc-800 rounded bg-zinc-900">
                                 ESC
                             </kbd>
                         </div>
@@ -253,14 +253,14 @@ export default function CommandPalette({
                         {/* Results */}
                         <div className="max-h-[320px] overflow-y-auto py-2">
                             {filtered.length === 0 && (
-                                <p className="px-4 py-6 text-sm text-slate-500 text-center">
+                                <p className="px-4 py-6 text-sm text-zinc-500 text-center">
                                     No results found.
                                 </p>
                             )}
 
                             {grouped.map((group) => (
                                 <div key={group.section}>
-                                    <p className="px-4 pt-2 pb-1 text-[10px] font-mono uppercase tracking-widest text-slate-600">
+                                    <p className="px-4 pt-2 pb-1 text-[10px] font-mono uppercase tracking-widest text-sky-400/50">
                                         {group.section}
                                     </p>
                                     {group.items.map((cmd) => (
@@ -270,16 +270,16 @@ export default function CommandPalette({
                                             onMouseEnter={() => setSelectedIndex(cmd.globalIndex)}
                                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-100 ${
                                                 cmd.globalIndex === selectedIndex
-                                                    ? "bg-violet-500/10 text-white"
-                                                    : "text-slate-300 hover:bg-violet-500/5"
+                                                    ? "bg-sky-500/10 text-sky-300 font-medium border-l-2 border-sky-400"
+                                                    : "text-zinc-400 hover:bg-zinc-800/50 border-l-2 border-transparent"
                                             }`}
                                         >
-                                            <span className="w-5 text-center text-xs text-violet-400/60">
+                                            <span className="w-5 text-center text-xs text-zinc-500">
                                                 {cmd.icon}
                                             </span>
                                             <span className="flex-1">{cmd.label}</span>
                                             {cmd.globalIndex === selectedIndex && (
-                                                <span className="text-[10px] text-slate-600 font-mono">
+                                                <span className="text-[10px] text-sky-500 font-mono">
                                                     ↵
                                                 </span>
                                             )}
@@ -290,7 +290,7 @@ export default function CommandPalette({
                         </div>
 
                         {/* Footer hint */}
-                        <div className="flex items-center justify-between px-4 py-2 border-t border-violet-500/10 text-[10px] font-mono text-slate-600">
+                        <div className="flex items-center justify-between px-4 py-2 border-t border-zinc-800/50 text-[10px] font-mono text-zinc-500 bg-black/20">
                             <span>↑↓ navigate</span>
                             <span>↵ select</span>
                             <span>esc close</span>

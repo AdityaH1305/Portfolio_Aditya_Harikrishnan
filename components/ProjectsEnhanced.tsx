@@ -97,7 +97,7 @@ const cardWrapperVariants = {
 
 export default function ProjectsEnhanced() {
     return (
-        <section id="projects" className="py-28 px-6 max-w-5xl mx-auto border-t border-[#141418]">
+        <section id="projects" className="py-28 px-6 max-w-5xl mx-auto border-t border-zinc-900">
             {/* Heading — left-aligned */}
             <motion.div
                 initial={{ opacity: 0, y: 16 }}
@@ -105,10 +105,10 @@ export default function ProjectsEnhanced() {
                 transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
             >
-                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
+                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-zinc-100">
                     Projects
                 </h2>
-                <p className="text-slate-400 mt-3">
+                <p className="text-zinc-500 mt-3">
                     Selected work showcasing ML research, data platforms, and full-stack engineering.
                 </p>
             </motion.div>
@@ -128,7 +128,7 @@ export default function ProjectsEnhanced() {
                         variants={cardWrapperVariants}
                     >
                         {/* Subtle project index */}
-                        <span className="absolute -left-0 -top-8 text-[11px] font-mono text-slate-600 tracking-wider">
+                        <span className="absolute -left-0 -top-8 text-[11px] font-mono text-zinc-600 tracking-wider">
                             {String(index + 1).padStart(2, "0")}
                         </span>
                         <ProjectCard project={project} />

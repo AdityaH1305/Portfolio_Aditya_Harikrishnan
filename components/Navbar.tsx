@@ -77,10 +77,10 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                 scrolledRef.current = isScrolled;
                 if (navRef.current) {
                     if (isScrolled) {
-                        navRef.current.classList.add("bg-black/80", "backdrop-blur-sm", "border-b", "border-[#1e1e22]");
+                        navRef.current.classList.add("bg-black/80", "backdrop-blur-sm", "border-b", "border-white/10");
                         navRef.current.classList.remove("bg-transparent");
                     } else {
-                        navRef.current.classList.remove("bg-black/80", "backdrop-blur-sm", "border-b", "border-[#1e1e22]");
+                        navRef.current.classList.remove("bg-black/80", "backdrop-blur-sm", "border-b", "border-white/10");
                         navRef.current.classList.add("bg-transparent");
                     }
                 }
@@ -90,7 +90,6 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
         return () => window.removeEventListener("scroll", handleScroll);
     }, []);
 
-    /* ── Fixed: no preventDefault → allows scroll ── */
     const handleLogoClick = useCallback(() => {
         const now = Date.now();
 
@@ -112,7 +111,6 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                 mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-2"
             }`}
         >
-            {/* Slightly tighter left padding */}
             <div className="max-w-6xl mx-auto pl-2 pr-4 py-4 flex justify-between items-center">
 
                 {/* Logo */}
@@ -120,14 +118,14 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                     <a
                         href="#home"
                         onClick={handleLogoClick}
-                        className="font-semibold text-lg tracking-tight hover:text-violet-400 transition-colors duration-200 select-none block"
+                        className="font-semibold text-lg tracking-tight hover:text-white transition-colors duration-200 select-none block text-zinc-100"
                     >
                         Building Intelligent Systems
                     </a>
                     {/* Subtle Easter Egg Hint */}
                     <div className="absolute -bottom-4 left-0 opacity-0 group-hover:opacity-100 transition-all duration-700 translate-y-1 group-hover:translate-y-0 pointer-events-none select-none flex items-center gap-1.5">
-                        <div className="w-1 h-1 bg-violet-500/50 rounded-sm animate-pulse"></div>
-                        <span className="text-[9px] font-mono tracking-[0.2em] text-violet-500/50 uppercase">
+                        <div className="w-1 h-1 bg-sky-400/40 rounded-sm animate-pulse"></div>
+                        <span className="text-[9px] font-mono tracking-[0.2em] text-sky-400/40 uppercase">
                             sys.anomaly
                         </span>
                     </div>
@@ -139,18 +137,18 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                         <MagneticLink
                             key={link.name}
                             href={link.href}
-                            className="px-3 py-1.5 text-sm text-slate-300 rounded-md hover:text-white hover:bg-white/5 transition-all duration-200"
+                            className="px-3 py-1.5 text-sm text-zinc-400 rounded-md hover:text-sky-300 hover:bg-sky-400/5 transition-all duration-200"
                         >
                             {link.name}
                         </MagneticLink>
                     ))}
 
-                    <span className="w-px h-5 bg-slate-700 mx-2" />
+                    <span className="w-px h-5 bg-zinc-800 mx-2" />
 
                     {/* Email */}
                     <MagneticLink
                         href="mailto:adityaharikrishnan@gmail.com"
-                        className="px-3 py-1.5 text-sm text-slate-300 rounded-md hover:text-white hover:bg-white/5 transition-all duration-200"
+                        className="px-3 py-1.5 text-sm text-zinc-400 rounded-md hover:text-sky-300 hover:bg-sky-400/5 transition-all duration-200"
                     >
                         Email
                     </MagneticLink>
@@ -160,7 +158,7 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                         href={RESUME_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="ml-1 px-4 py-1.5 text-sm font-medium rounded-full border border-violet-500/40 text-violet-300 hover:bg-violet-500/10 hover:border-violet-400 transition-all duration-200"
+                        className="ml-1 px-4 py-1.5 text-sm font-medium rounded-full border border-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-white hover:border-sky-500 transition-all duration-200"
                     >
                         Resume
                     </MagneticLink>
@@ -170,7 +168,7 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                 <div className="flex md:hidden items-center gap-3">
                     <a
                         href="mailto:adityaharikrishnan@gmail.com"
-                        className="text-sm text-slate-300 hover:text-white transition"
+                        className="text-sm text-zinc-400 hover:text-white transition"
                     >
                         Email
                     </a>
@@ -178,7 +176,7 @@ export default function Navbar({ onOpenGame }: NavbarProps) {
                         href={RESUME_URL}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="px-3 py-1 text-sm font-medium rounded-full border border-violet-500/40 text-violet-300 hover:bg-violet-500/10 transition"
+                        className="px-3 py-1 text-sm font-medium rounded-full border border-sky-500/20 text-sky-400 hover:bg-sky-500 hover:text-white transition"
                     >
                         Resume
                     </a>

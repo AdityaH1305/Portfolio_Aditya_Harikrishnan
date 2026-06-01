@@ -58,21 +58,21 @@ export default function BackgroundAtmosphere() {
         const scrollNorm = docHeight > 0 ? scrollTarget.current / docHeight : 0;
 
         if (heroGlowRef.current) {
-            // Hero glow fades as we scroll past (0.04 → 0.025)
-            const heroOpacity = 0.04 - scrollNorm * 0.015;
-            heroGlowRef.current.style.opacity = Math.max(0.02, heroOpacity).toFixed(4);
+            // Hero glow fades as we scroll past (1.0 → 0.6)
+            const heroOpacity = 1.0 - scrollNorm * 0.4;
+            heroGlowRef.current.style.opacity = Math.max(0.2, heroOpacity).toFixed(4);
         }
         if (midGlowRef.current) {
             // Mid glow peaks around orb section (scrollNorm ~0.4–0.55)
             const orbDistance = Math.abs(scrollNorm - 0.47);
-            const midBoost = Math.max(0, 1 - orbDistance * 4) * 0.012;
-            midGlowRef.current.style.opacity = (0.03 + midBoost).toFixed(4);
+            const midBoost = Math.max(0, 1 - orbDistance * 4);
+            midGlowRef.current.style.opacity = (0.5 + midBoost * 0.5).toFixed(4);
         }
         if (lowerGlowRef.current) {
             // Lower glow peaks near featured project (scrollNorm ~0.55–0.70)
             const fpDistance = Math.abs(scrollNorm - 0.62);
-            const lowerBoost = Math.max(0, 1 - fpDistance * 4) * 0.01;
-            lowerGlowRef.current.style.opacity = (0.035 + lowerBoost).toFixed(4);
+            const lowerBoost = Math.max(0, 1 - fpDistance * 4);
+            lowerGlowRef.current.style.opacity = (0.5 + lowerBoost * 0.5).toFixed(4);
         }
 
         rafId.current = requestAnimationFrame(animate);

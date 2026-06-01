@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #000000;
+  --foreground: #ededed;
   --mouse-x: 50%;
   --mouse-y: 50%;
 }
@@ -12,13 +12,6 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #000000;
-    --foreground: #ededed;
-  }
 }
 
 body {
@@ -45,9 +38,9 @@ html {
   background: linear-gradient(
     135deg,
     #000000 0%,
-    #05001a 25%,
-    #0a0015 50%,
-    #05001a 75%,
+    #000000 25%,
+    #050505 50%,
+    #000000 75%,
     #000000 100%
   );
   background-size: 400% 400%;
@@ -80,7 +73,7 @@ html {
   font-weight: 600;
   letter-spacing: 3px;
   text-transform: uppercase;
-  color: rgba(148, 163, 184, 0.5);
+  color: rgba(255, 255, 255, 0.5); /* light text */
   text-align: center;
 }
 
@@ -98,11 +91,11 @@ html {
   cursor: grabbing;
 }
 
-/* Orb navigation label buttons — purple accent */
+/* Orb navigation label buttons — cyan accent */
 .orb-label-btn {
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94a3b8;
+  color: #a1a1aa; /* zinc-400 */
   padding: 6px 18px;
   border-radius: 999px;
   font-size: 13px;
@@ -115,18 +108,18 @@ html {
 }
 
 .orb-label-btn:hover {
-  background: rgba(139, 92, 246, 0.12);
-  border-color: rgba(139, 92, 246, 0.35);
-  color: #c4b5fd;
-  box-shadow: 0 0 12px rgba(139, 92, 246, 0.15);
+  background: rgba(56, 189, 248, 0.12); /* sky-400 */
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #38bdf8;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.15);
   transform: scale(1.08);
 }
 
-/* Orb skills label — purple accent */
+/* Orb skills label — cyan accent */
 .orb-label-skill {
-  background: rgba(139, 92, 246, 0.06);
-  border: 1px solid rgba(139, 92, 246, 0.12);
-  color: #c4b5fd;
+  background: rgba(56, 189, 248, 0.05);
+  border: 1px solid rgba(56, 189, 248, 0.15);
+  color: #38bdf8; /* sky-400 */
   padding: 4px 12px;
   border-radius: 999px;
   font-size: 11px;
@@ -139,16 +132,16 @@ html {
 }
 
 .orb-label-skill:hover {
-  background: rgba(139, 92, 246, 0.15);
-  border-color: rgba(139, 92, 246, 0.35);
-  color: #ede9fe;
-  box-shadow: 0 0 10px rgba(139, 92, 246, 0.12);
+  background: rgba(56, 189, 248, 0.15);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #7dd3fc; /* sky-300 */
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
   transform: scale(1.06);
 }
 
 /* ══════════════════════════════════════════════════════
    Background Atmosphere System
-   Layered depth: noise → grid → vignette → purple tints
+   Layered depth: noise → grid → vignette → cyan radial tints
    ══════════════════════════════════════════════════════ */
 
 .atmosphere-root {
@@ -159,7 +152,7 @@ html {
   overflow: hidden;
 }
 
-/* ── Layer 1: SVG Noise Texture ── */
+/* ── Layer 1: SVG Noise Texture (White overlay for black bg) ── */
 @keyframes driftNoise {
   0% {
     background-position: 0 0;
@@ -176,6 +169,7 @@ html {
   position: absolute;
   inset: 0;
   opacity: 0.03;
+  /* Standard white noise for dark backgrounds */
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
@@ -187,23 +181,23 @@ html {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.025) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.02) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.02) 1px, transparent 1px);
   background-size: 80px 80px;
 }
 
-/* ── Layer 3: Cinematic Vignette — pitch-black edges ── */
+/* ── Layer 3: Cinematic Vignette — pitch black edges ── */
 .atmosphere-vignette {
   position: absolute;
   inset: 0;
   background: radial-gradient(
     ellipse 70% 60% at 50% 50%,
     transparent 40%,
-    rgba(0, 0, 0, 0.7) 100%
+    rgba(0, 0, 0, 0.9) 100%
   );
 }
 
-/* ── Layer 4: Localized Purple Radial Tints ── */
+/* ── Layer 4: Localized Cyan Tints ── */
 @keyframes breatheGlow {
   0% {
     transform: scale(1);
@@ -228,7 +222,7 @@ html {
   top: 5%;
   left: 50%;
   transform: translateX(-50%);
-  background: radial-gradient(circle, rgba(124, 58, 237, 0.06) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.12) 0%, transparent 70%);
   animation: breatheGlow 8s ease-in-out infinite alternate, atmosphereBreathe 8s ease-in-out infinite;
 }
 
@@ -238,7 +232,7 @@ html {
   height: 500px;
   top: 35%;
   left: 10%;
-  background: radial-gradient(circle, rgba(139, 92, 246, 0.045) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(34, 211, 238, 0.08) 0%, transparent 70%); /* cyan-400 */
 }
 
 /* Near Featured Project — offset right */
@@ -247,7 +241,7 @@ html {
   height: 400px;
   top: 60%;
   right: 5%;
-  background: radial-gradient(circle, rgba(109, 40, 217, 0.05) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(56, 189, 248, 0.08) 0%, transparent 70%);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -274,11 +268,11 @@ html {
 
 /* Slow breathing pulse on hero atmosphere */
 @keyframes atmosphereBreathe {
-  0%, 100% { opacity: 0.04; }
-  50% { opacity: 0.065; }
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
-/* Subtle signal scan on section dividers — purple */
+/* Subtle signal scan on section dividers — cyan line */
 @keyframes signalScan {
   0% {
     background-position: -200% 0;
@@ -299,17 +293,17 @@ html {
   background: linear-gradient(
     90deg,
     transparent 0%,
-    rgba(124, 58, 237, 0.08) 50%,
+    rgba(56, 189, 248, 0.15) 50%, 
     transparent 100%
   );
   background-size: 200% 100%;
   animation: signalScan 12s ease-in-out infinite;
 }
 
-/* Orb section breathing glow — purple */
+/* Orb section breathing glow — cyan shadow */
 @keyframes orbBreathe {
-  0%, 100% { box-shadow: 0 0 60px -30px rgba(124, 58, 237, 0); }
-  50% { box-shadow: 0 0 80px -20px rgba(124, 58, 237, 0.06); }
+  0%, 100% { box-shadow: 0 0 60px -30px rgba(56, 189, 248, 0); }
+  50% { box-shadow: 0 0 80px -20px rgba(56, 189, 248, 0.1); }
 }
 
 .orb-container {
@@ -323,10 +317,10 @@ html {
 
 .glass-card {
   position: relative;
-  background: rgba(12, 10, 18, 0.6);
+  background: rgba(24, 24, 27, 0.4); /* Ultra-dark translucent gray */
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.05); /* very soft persistent border */
   overflow: hidden;
 }
 
@@ -337,8 +331,8 @@ html {
   border-radius: inherit;
   background: radial-gradient(
     600px circle at var(--mouse-x) var(--mouse-y),
-    rgba(139, 92, 246, 0.12) 0%,
-    rgba(139, 92, 246, 0.04) 25%,
+    rgba(56, 189, 248, 0.1) 0%, /* Cyan inner glow */
+    rgba(56, 189, 248, 0.02) 25%,
     transparent 50%
   );
   z-index: 1;
@@ -351,7 +345,7 @@ html {
   opacity: 1;
 }
 
-/* Inner border glow that follows cursor */
+/* Inner border glow that follows cursor — creates the 1px cyan line */
 .glass-card::after {
   content: "";
   position: absolute;
@@ -359,7 +353,7 @@ html {
   border-radius: inherit;
   background: radial-gradient(
     400px circle at var(--mouse-x) var(--mouse-y),
-    rgba(139, 92, 246, 0.25) 0%,
+    rgba(56, 189, 248, 0.3) 0%, /* Crisp cyan spotlight border */
     transparent 50%
   );
   z-index: -1;

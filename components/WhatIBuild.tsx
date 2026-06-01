@@ -46,7 +46,7 @@ const itemVariants = {
 
 export default function WhatIBuild() {
     return (
-        <section id="build" className="py-24 px-6 max-w-5xl mx-auto border-t border-[#141418]">
+        <section id="build" className="py-24 px-6 max-w-5xl mx-auto border-t border-zinc-900">
 
             {/* Heading — left-aligned */}
             <motion.div
@@ -55,10 +55,10 @@ export default function WhatIBuild() {
                 transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
                 viewport={{ once: true }}
             >
-                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight">
+                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-zinc-100">
                     What I Build
                 </h2>
-                <p className="text-slate-400 mt-3 max-w-xl">
+                <p className="text-zinc-500 mt-3 max-w-xl">
                     I focus on building systems that combine software engineering with machine learning.
                 </p>
             </motion.div>
@@ -75,10 +75,10 @@ export default function WhatIBuild() {
                     <motion.div
                         key={i}
                         variants={itemVariants}
-                        className="pl-5 border-l-2 border-[#1e1e22]"
+                        className="pl-5 border-l-2 border-zinc-800 hover:border-sky-400 transition-colors duration-300"
                     >
-                        <h3 className="text-lg font-semibold">{item.title}</h3>
-                        <p className="text-slate-400 mt-1.5 text-sm leading-relaxed">{item.desc}</p>
+                        <h3 className="text-lg font-semibold text-zinc-100">{item.title}</h3>
+                        <p className="text-zinc-500 mt-1.5 text-sm leading-relaxed">{item.desc}</p>
                     </motion.div>
                 ))}
             </motion.div>

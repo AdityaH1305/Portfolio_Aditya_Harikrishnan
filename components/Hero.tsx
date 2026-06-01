@@ -20,7 +20,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 8 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.25, ease: EASE_INIT }}
-                    className="text-sm text-violet-400 font-mono tracking-widest uppercase"
+                    className="text-sm text-sky-400 font-mono tracking-widest uppercase font-medium"
                 >
                     IIIT Pune • B.Tech CSE • 2027
                 </motion.p>
@@ -30,7 +30,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 16 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.6, delay: 0.4, ease: EASE_INIT }}
-                    className="text-6xl md:text-8xl font-bold tracking-tight leading-[1.05]"
+                    className="text-6xl md:text-8xl font-bold tracking-tight leading-[1.05] text-zinc-100"
                 >
                     Hi, I&apos;m Aditya
                 </motion.h1>
@@ -40,7 +40,7 @@ export default function Hero() {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.6, ease: EASE_INIT }}
-                    className="text-base md:text-lg text-slate-400 leading-[1.75] max-w-2xl mx-auto"
+                    className="text-base md:text-lg text-zinc-400 leading-[1.75] max-w-2xl mx-auto"
                 >
                     Full Stack Developer focused on Machine Learning and scalable systems.
                     I build recommendation engines, data-driven platforms, and intelligent applications.
@@ -55,7 +55,7 @@ export default function Hero() {
                 >
                     <a
                         href="#projects"
-                        className="bg-white text-black px-7 py-3 rounded-full font-medium hover:scale-[1.03] transition-all duration-200"
+                        className="bg-white text-black px-7 py-3 rounded-full font-medium hover:scale-[1.03] shadow-[0_0_20px_rgba(56,189,248,0.2)] transition-all duration-200"
                     >
                         View My Work
                     </a>
@@ -64,7 +64,7 @@ export default function Hero() {
                         href="https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing"
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="border border-[#2a2a30] px-7 py-3 rounded-full text-slate-300 hover:border-violet-500/40 hover:text-violet-300 transition-all duration-200"
+                        className="border border-zinc-700 px-7 py-3 rounded-full text-zinc-300 hover:border-sky-400 hover:text-sky-300 hover:bg-sky-950/30 transition-all duration-200"
                     >
                         View Resume
                     </a>
@@ -77,9 +77,9 @@ export default function Hero() {
                     transition={{ duration: 0.5, delay: 0.95, ease: EASE_INIT }}
                     className="flex justify-center gap-6 pt-2"
                 >
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Status: Available</span>
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Focus: ML Systems</span>
-                    <span className="text-[10px] font-mono uppercase tracking-widest text-slate-600">Location: India</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">Status: Available</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">Focus: ML Systems</span>
+                    <span className="text-[10px] font-mono uppercase tracking-widest text-zinc-600">Location: India</span>
                 </motion.div>
             </motion.div>
         </section>
