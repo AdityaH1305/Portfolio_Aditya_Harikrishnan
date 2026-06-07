@@ -24,7 +24,7 @@ import { useEffect, useRef, useCallback } from "react";
 
 // ── Constants ──────────────────────────────────────────
 
-const ACCENT = { r: 56, g: 189, b: 248 }; // cyan-400
+const ACCENT = { r: 212, g: 175, b: 55 }; // gold #D4AF37
 
 const MAX_TRACES = 8;
 const MAX_PULSES = 5;

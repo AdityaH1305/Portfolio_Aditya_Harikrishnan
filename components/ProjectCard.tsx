@@ -4,6 +4,14 @@ import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
+/* ══════════════════════════════════════════════════════
+   ProjectCard — Immersive Full-Width Chapter Layout
+   
+   Replaces the old glass-card design with a chapter-style
+   full-width section. Each project feels like a chapter,
+   not a card or grid item.
+   ══════════════════════════════════════════════════════ */
+
 export interface ProjectData {
     title: string;
     tag: string;
@@ -15,7 +23,7 @@ export interface ProjectData {
     images?: string[];
 }
 
-/* ── Image Carousel (only for projects with images[]) ───────── */
+/* ── Image Carousel (preserved from original) ── */
 function ImageCarousel({
     images,
     alt,
@@ -27,7 +35,8 @@ function ImageCarousel({
 }) {
     const [current, setCurrent] = useState(0);
 
-    const prev = () => setCurrent((c) => (c - 1 + images.length) % images.length);
+    const prev = () =>
+        setCurrent((c) => (c - 1 + images.length) % images.length);
     const next = () => setCurrent((c) => (c + 1) % images.length);
 
     return (
@@ -47,7 +56,7 @@ function ImageCarousel({
                         alt={`${alt} ${current + 1}`}
                         fill
                         className="object-cover transition-transform duration-500 ease-out group-hover/carousel:scale-[1.02]"
-                        sizes="(max-width: 768px) 100vw, 240px"
+                        sizes="(max-width: 768px) 100vw, 50vw"
                     />
                 </motion.div>
             </AnimatePresence>
@@ -56,15 +65,29 @@ function ImageCarousel({
             {images.length > 1 && (
                 <>
                     <button
-                        onClick={(e) => { e.stopPropagation(); prev(); }}
-                        className="absolute left-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-black/70 border border-white/10 text-white/70 hover:text-white hover:bg-black transition-opacity duration-200 text-sm opacity-0 group-hover/carousel:opacity-100"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            prev();
+                        }}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center
+                                   bg-[#050505]/80 border border-[rgba(255,255,255,0.1)]
+                                   text-white/70 hover:text-white hover:bg-[#050505]
+                                   transition-opacity duration-200 text-sm
+                                   opacity-0 group-hover/carousel:opacity-100"
                         aria-label="Previous image"
                     >
                         ‹
                     </button>
                     <button
-                        onClick={(e) => { e.stopPropagation(); next(); }}
-                        className="absolute right-2 top-1/2 -translate-y-1/2 w-7 h-7 flex items-center justify-center rounded-full bg-black/70 border border-white/10 text-white/70 hover:text-white hover:bg-black transition-opacity duration-200 text-sm opacity-0 group-hover/carousel:opacity-100"
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            next();
+                        }}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 flex items-center justify-center
+                                   bg-[#050505]/80 border border-[rgba(255,255,255,0.1)]
+                                   text-white/70 hover:text-white hover:bg-[#050505]
+                                   transition-opacity duration-200 text-sm
+                                   opacity-0 group-hover/carousel:opacity-100"
                         aria-label="Next image"
                     >
                         ›
@@ -74,13 +97,18 @@ function ImageCarousel({
 
             {/* Dots */}
             {images.length > 1 && (
-                <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1.5">
+                <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-2">
                     {images.map((_, i) => (
                         <button
                             key={i}
-                            onClick={(e) => { e.stopPropagation(); setCurrent(i); }}
-                            className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 shadow-sm ${
-                                i === current ? "bg-white" : "bg-white/50"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                setCurrent(i);
+                            }}
+                            className={`w-1.5 h-1.5 rounded-full transition-colors duration-200 ${
+                                i === current
+                                    ? "bg-[var(--accent)]"
+                                    : "bg-white/30"
                             }`}
                             aria-label={`Go to image ${i + 1}`}
                         />
@@ -91,7 +119,7 @@ function ImageCarousel({
     );
 }
 
-/* ── Lightbox Modal ─────────────────────────────────────────── */
+/* ── Lightbox Modal (preserved from original) ── */
 function LightboxModal({
     src,
     alt,
@@ -111,7 +139,8 @@ function LightboxModal({
 
     const goPrev = useCallback(() => {
         if (!canNavigate) return;
-        const prevIdx = (currentIndex! - 1 + images!.length) % images!.length;
+        const prevIdx =
+            (currentIndex! - 1 + images!.length) % images!.length;
         onNavigate!(prevIdx);
     }, [canNavigate, currentIndex, images, onNavigate]);
 
@@ -149,29 +178,43 @@ function LightboxModal({
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.9, opacity: 0 }}
                 transition={{ duration: 0.25 }}
-                className="relative max-w-[90vw] max-h-[85vh] w-auto h-auto shadow-2xl shadow-sky-500/10 rounded-lg"
+                className="relative max-w-[90vw] max-h-[85vh] w-auto h-auto shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                     src={src}
                     alt={alt}
-                    className="max-w-full max-h-[85vh] rounded-lg object-contain bg-black"
+                    className="max-w-full max-h-[85vh] object-contain bg-black"
                 />
 
                 {/* Navigation Arrows */}
                 {canNavigate && (
                     <>
                         <button
-                            onClick={(e) => { e.stopPropagation(); goPrev(); }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/80 border border-white/10 text-white/70 hover:text-white hover:bg-black transition-all duration-200 text-xl shadow-md"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                goPrev();
+                            }}
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10
+                                       flex items-center justify-center
+                                       bg-black/80 border border-white/10
+                                       text-white/70 hover:text-white hover:bg-black
+                                       transition-all duration-200 text-xl shadow-md"
                             aria-label="Previous image"
                         >
                             ‹
                         </button>
                         <button
-                            onClick={(e) => { e.stopPropagation(); goNext(); }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10 flex items-center justify-center rounded-full bg-black/80 border border-white/10 text-white/70 hover:text-white hover:bg-black transition-all duration-200 text-xl shadow-md"
+                            onClick={(e) => {
+                                e.stopPropagation();
+                                goNext();
+                            }}
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10
+                                       flex items-center justify-center
+                                       bg-black/80 border border-white/10
+                                       text-white/70 hover:text-white hover:bg-black
+                                       transition-all duration-200 text-xl shadow-md"
                             aria-label="Next image"
                         >
                             ›
@@ -183,17 +226,21 @@ function LightboxModal({
     );
 }
 
-/* ── ProjectCard ────────────────────────────────────────────── */
+/* ══════════════════════════════════════════════════════
+   ProjectCard — Chapter-Style Immersive Layout
+   ══════════════════════════════════════════════════════ */
 export default function ProjectCard({
     project,
+    index,
 }: {
     project: ProjectData;
+    index: number;
 }) {
-    const [hovered, setHovered] = useState(false);
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const [lightboxIndex, setLightboxIndex] = useState(0);
 
-    const allImages = project.images ?? (project.image ? [project.image] : []);
+    const allImages =
+        project.images ?? (project.image ? [project.image] : []);
 
     const openLightbox = (idx: number) => {
         setLightboxIndex(idx);
@@ -205,149 +252,139 @@ export default function ProjectCard({
         setLightboxSrc(allImages[idx]);
     };
 
+    const EASE: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
+
     return (
-        <motion.div
-            variants={{
-                hidden: { opacity: 0, y: 30 },
-                visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.25, 0.1, 0.25, 1] } },
-            }}
-            onMouseEnter={() => setHovered(true)}
-            onMouseLeave={() => setHovered(false)}
-            className="group relative rounded-xl glass-card transition duration-300 overflow-hidden"
-        >
-            <div className="flex flex-col md:flex-row relative z-[2]">
-                {/* Content */}
-                <div className="p-8 flex-1">
-                    {/* Title */}
-                    <div className="flex flex-col md:flex-row md:justify-between gap-2">
-                        <h3 className="text-2xl font-semibold text-zinc-100 group-hover:text-white transition-colors">
-                            {project.title}
-                        </h3>
-                        <span className="text-sm text-sky-400 font-mono font-medium">
+        <div className="project-chapter">
+            {/* Giant faded number */}
+            <span className="project-number">
+                {String(index + 1).padStart(2, "0")}
+            </span>
+
+            <div className="section-container">
+                <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-start">
+                    {/* ── Content ── */}
+                    <div>
+                        {/* Tag */}
+                        <motion.p
+                            initial={{ opacity: 0, y: 8 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, ease: EASE }}
+                            viewport={{ once: true }}
+                            className="label"
+                        >
                             {project.tag}
-                        </span>
+                        </motion.p>
+
+                        {/* Title */}
+                        <motion.h3
+                            initial={{ opacity: 0, y: 16 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.05, ease: EASE }}
+                            viewport={{ once: true }}
+                            className="heading-md mt-3"
+                        >
+                            {project.title}
+                        </motion.h3>
+
+                        {/* Description */}
+                        <motion.p
+                            initial={{ opacity: 0, y: 12 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
+                            viewport={{ once: true }}
+                            className="body-lg mt-6 max-w-lg"
+                        >
+                            {project.description}
+                        </motion.p>
+
+                        {/* Highlights */}
+                        <motion.ul
+                            initial={{ opacity: 0, y: 12 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.5, delay: 0.15, ease: EASE }}
+                            viewport={{ once: true }}
+                            className="mt-8 space-y-2.5"
+                        >
+                            {project.highlights.map((item, i) => (
+                                <li
+                                    key={i}
+                                    className="flex items-start gap-3 text-sm text-[var(--text-secondary)]"
+                                >
+                                    <span className="text-[var(--accent)] mt-0.5 text-xs">
+                                        ─
+                                    </span>
+                                    {item}
+                                </li>
+                            ))}
+                        </motion.ul>
+
+                        {/* Buttons */}
+                        <motion.div
+                            initial={{ opacity: 0, y: 8 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.4, delay: 0.2, ease: EASE }}
+                            viewport={{ once: true }}
+                            className="mt-8 flex gap-4 flex-wrap"
+                        >
+                            {project.github && (
+                                <a
+                                    href={project.github}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-secondary"
+                                >
+                                    GitHub
+                                </a>
+                            )}
+                            {project.demo && (
+                                <a
+                                    href={project.demo}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="btn-primary"
+                                >
+                                    Live Demo
+                                </a>
+                            )}
+                        </motion.div>
                     </div>
 
-                    {/* Description */}
-                    <p className="text-zinc-400 mt-4 max-w-3xl leading-[1.75]">
-                        {project.description}
-                    </p>
-
-                    {/* Highlights */}
-                    <ul className="mt-6 grid md:grid-cols-2 gap-2 text-sm text-zinc-500">
-                        {project.highlights.map((item, i) => (
-                            <li key={i}>
-                                <span className="text-sky-500/50 mr-2">•</span>
-                                {item}
-                            </li>
-                        ))}
-                    </ul>
-
-                    {/* Buttons */}
-                    <div className="mt-6 flex gap-4 flex-wrap">
-                        {project.github && (
-                            <a
-                                href={project.github}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-5 py-2 rounded-full border border-zinc-800 text-sm text-zinc-400 hover:border-sky-500/50 hover:text-sky-300 transition-all duration-200 bg-black/50"
-                            >
-                                GitHub
-                            </a>
-                        )}
-                        {project.demo && (
-                            <a
-                                href={project.demo}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="px-5 py-2 rounded-full bg-white text-black text-sm font-medium hover:scale-[1.03] hover:shadow-[0_0_20px_rgba(56,189,248,0.3)] transition-all duration-200 shadow-md"
-                            >
-                                Live Demo
-                            </a>
-                        )}
-                    </div>
+                    {/* ── Images ── */}
+                    {allImages.length > 0 && (
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            whileInView={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
+                            viewport={{ once: true }}
+                            className="relative w-full aspect-[4/3] border border-[rgba(255,255,255,0.06)] overflow-hidden bg-black/30"
+                        >
+                            {allImages.length > 1 ? (
+                                <ImageCarousel
+                                    images={allImages}
+                                    alt={project.title}
+                                    onImageClick={openLightbox}
+                                />
+                            ) : (
+                                <div
+                                    className="relative w-full h-full cursor-pointer"
+                                    onClick={() => openLightbox(0)}
+                                >
+                                    <Image
+                                        src={allImages[0]}
+                                        alt={`${project.title} preview`}
+                                        fill
+                                        className="object-cover transition-transform duration-500 ease-out hover:scale-[1.02]"
+                                        sizes="(max-width: 768px) 100vw, 50vw"
+                                    />
+                                </div>
+                            )}
+                        </motion.div>
+                    )}
                 </div>
-
-                {/* Image Preview — single image (slides in on hover) */}
-                {project.image && !project.images && (
-                    <div
-                        className={`
-                            hidden md:flex items-center justify-center
-                            w-0 group-hover:w-72 overflow-hidden
-                            transition-all duration-500 ease-out
-                            bg-zinc-900/50 border-l border-white/5
-                        `}
-                    >
-                        <div className={`
-                            relative w-60 h-40 rounded-lg overflow-hidden cursor-pointer shadow-sm
-                            transition-all duration-500 delay-100 border border-white/5
-                            ${hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"}
-                        `}
-                        onClick={() => openLightbox(0)}>
-                            <Image
-                                src={project.image}
-                                alt={`${project.title} preview`}
-                                fill
-                                className="object-cover rounded-lg transition-transform duration-500 ease-out hover:scale-[1.02]"
-                                sizes="240px"
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Mobile image — single image */}
-                {project.image && !project.images && (
-                    <div 
-                        className="md:hidden relative w-full h-48 cursor-pointer border-t border-white/5"
-                        onClick={() => openLightbox(0)}
-                    >
-                        <Image
-                            src={project.image}
-                            alt={`${project.title} preview`}
-                            fill
-                            className="object-cover transition-transform duration-500 ease-out hover:scale-[1.02]"
-                            sizes="100vw"
-                        />
-                    </div>
-                )}
-
-                {/* Image Carousel — multi-image (desktop, slides in on hover) */}
-                {project.images && project.images.length > 0 && (
-                    <div
-                        className={`
-                            hidden md:flex items-center justify-center
-                            w-0 group-hover:w-72 overflow-hidden
-                            transition-all duration-500 ease-out
-                            bg-zinc-900/50 border-l border-white/5
-                        `}
-                    >
-                        <div className={`
-                            relative w-60 h-40 rounded-lg overflow-hidden shadow-sm border border-white/5
-                            transition-all duration-500 delay-100
-                            ${hovered ? "opacity-100 scale-100" : "opacity-0 scale-95"}
-                        `}>
-                            <ImageCarousel
-                                images={project.images}
-                                alt={project.title}
-                                onImageClick={(idx) => openLightbox(idx)}
-                            />
-                        </div>
-                    </div>
-                )}
-
-                {/* Mobile carousel — multi-image */}
-                {project.images && project.images.length > 0 && (
-                    <div className="md:hidden relative w-full h-48 border-t border-white/5">
-                        <ImageCarousel
-                            images={project.images}
-                            alt={project.title}
-                            onImageClick={(idx) => openLightbox(idx)}
-                        />
-                    </div>
-                )}
             </div>
 
-            {/* Lightbox Modal */}
+            {/* Lightbox Modal (preserved) */}
             <AnimatePresence>
                 {lightboxSrc && (
                     <LightboxModal
@@ -360,6 +397,6 @@ export default function ProjectCard({
                     />
                 )}
             </AnimatePresence>
-        </motion.div>
+        </div>
     );
 }

@@ -17,30 +17,21 @@ interface Command {
 function getCommands(onOpenGame: () => void): Command[] {
     return [
         {
-            id: "home",
-            label: "Home",
+            id: "intro",
+            label: "Intro",
             section: "Navigate",
             icon: "↑",
             action: () => {
-                document.getElementById("home")?.scrollIntoView({ behavior: "smooth" });
+                document.getElementById("intro")?.scrollIntoView({ behavior: "smooth" });
             },
         },
         {
-            id: "about",
-            label: "About",
-            section: "Navigate",
-            icon: "→",
-            action: () => {
-                document.getElementById("about")?.scrollIntoView({ behavior: "smooth" });
-            },
-        },
-        {
-            id: "featured",
-            label: "Featured Project",
+            id: "work",
+            label: "Ludex Showcase",
             section: "Navigate",
             icon: "★",
             action: () => {
-                document.getElementById("featured-project")?.scrollIntoView({ behavior: "smooth" });
+                document.getElementById("work")?.scrollIntoView({ behavior: "smooth" });
             },
         },
         {
@@ -50,6 +41,24 @@ function getCommands(onOpenGame: () => void): Command[] {
             icon: "◆",
             action: () => {
                 document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" });
+            },
+        },
+        {
+            id: "research",
+            label: "Research Mindset",
+            section: "Navigate",
+            icon: "→",
+            action: () => {
+                document.getElementById("research")?.scrollIntoView({ behavior: "smooth" });
+            },
+        },
+        {
+            id: "journey",
+            label: "Journey",
+            section: "Navigate",
+            icon: "→",
+            action: () => {
+                document.getElementById("journey")?.scrollIntoView({ behavior: "smooth" });
             },
         },
         {
@@ -219,14 +228,14 @@ export default function CommandPalette({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.96, y: -8 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="w-full max-w-[520px] mx-4 rounded-xl border border-zinc-800 bg-[#09090b]/95 shadow-2xl shadow-sky-500/10 overflow-hidden backdrop-blur-xl"
+                        className="w-full max-w-[520px] mx-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#09090b]/95 shadow-2xl shadow-[rgba(212,175,55,0.05)] overflow-hidden backdrop-blur-xl"
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={handleKeyDown}
                     >
                         {/* Search input */}
                         <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50">
                             <svg
-                                className="w-4 h-4 text-sky-500 shrink-0"
+                                className="w-4 h-4 text-[var(--accent)] shrink-0"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2"
@@ -260,7 +269,7 @@ export default function CommandPalette({
 
                             {grouped.map((group) => (
                                 <div key={group.section}>
-                                    <p className="px-4 pt-2 pb-1 text-[10px] font-mono uppercase tracking-widest text-sky-400/50">
+                                    <p className="px-4 pt-2 pb-1 text-[10px] font-mono uppercase tracking-widest text-[rgba(212,175,55,0.5)]">
                                         {group.section}
                                     </p>
                                     {group.items.map((cmd) => (
@@ -270,8 +279,8 @@ export default function CommandPalette({
                                             onMouseEnter={() => setSelectedIndex(cmd.globalIndex)}
                                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-100 ${
                                                 cmd.globalIndex === selectedIndex
-                                                    ? "bg-sky-500/10 text-sky-300 font-medium border-l-2 border-sky-400"
-                                                    : "text-zinc-400 hover:bg-zinc-800/50 border-l-2 border-transparent"
+                                                    ? "bg-[rgba(212,175,55,0.08)] text-[var(--accent)] font-medium border-l-2 border-[var(--accent)]"
+                                                    : "text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.03)] border-l-2 border-transparent"
                                             }`}
                                         >
                                             <span className="w-5 text-center text-xs text-zinc-500">
@@ -279,7 +288,7 @@ export default function CommandPalette({
                                             </span>
                                             <span className="flex-1">{cmd.label}</span>
                                             {cmd.globalIndex === selectedIndex && (
-                                                <span className="text-[10px] text-sky-500 font-mono">
+                                                <span className="text-[10px] text-[var(--accent)] font-mono">
                                                     ↵
                                                 </span>
                                             )}
@@ -290,7 +299,7 @@ export default function CommandPalette({
                         </div>
 
                         {/* Footer hint */}
-                        <div className="flex items-center justify-between px-4 py-2 border-t border-zinc-800/50 text-[10px] font-mono text-zinc-500 bg-black/20">
+                        <div className="flex items-center justify-between px-4 py-2 border-t border-[rgba(255,255,255,0.05)] text-[10px] font-mono text-[var(--text-tertiary)] bg-black/20">
                             <span>↑↓ navigate</span>
                             <span>↵ select</span>
                             <span>esc close</span>

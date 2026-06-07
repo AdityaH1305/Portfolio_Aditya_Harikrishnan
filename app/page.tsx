@@ -2,13 +2,14 @@
 
 import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
-import Navbar from "@/components/Navbar";
+import SideNav from "@/components/SideNav";
 import Hero from "@/components/Hero";
-import OrbNavigation from "@/components/OrbNavigation";
-import About from "@/components/About";
-import WhatIBuild from "@/components/WhatIBuild";
-import FeaturedProject from "@/components/FeaturedProject";
+import LudexShowcase from "@/components/LudexShowcase";
+import TransitionScreen from "@/components/TransitionScreen";
 import ProjectsEnhanced from "@/components/ProjectsEnhanced";
+import ResearchMindset from "@/components/ResearchMindset";
+import Skills from "@/components/Skills";
+import Journey from "@/components/Journey";
 import Contact from "@/components/Contact";
 import CursorGlow from "@/components/CursorGlow";
 import ScrollProgress from "@/components/ScrollProgress";
@@ -32,22 +33,40 @@ export default function Home() {
     const closeGame = useCallback(() => setShowGame(false), []);
 
     return (
-        <main className="bg-black text-white min-h-screen animated-bg">
+        <main className="bg-[#050505] text-[var(--foreground)] min-h-screen relative">
+            {/* ── Background Systems ── */}
             <BackgroundAtmosphere />
             <SignalField />
             <ScrollProgress />
             <CursorGlow />
-            <Navbar onOpenGame={openGame} />
+
+            {/* ── Navigation ── */}
+            <SideNav onOpenGame={openGame} />
             <CommandPalette onOpenGame={openGame} />
+
+            {/* ── Content Flow ── */}
             <Hero />
-            <OrbNavigation />
-            <About />
-            <WhatIBuild />
-            <FeaturedProject />
+
+            <TransitionScreen lines={["FROM DATA", "TO DECISIONS"]} />
+
+            <LudexShowcase />
+
+            <TransitionScreen
+                lines={["SYSTEMS ARE BUILT", "ONE ITERATION", "AT A TIME"]}
+            />
+
             <ProjectsEnhanced />
+
+            <TransitionScreen
+                lines={["RESEARCH", "DRIVES", "IMPROVEMENT"]}
+            />
+
+            <ResearchMindset />
+            <Skills />
+            <Journey />
             <Contact />
 
-            {/* Space Invaders — triggered by easter egg or command palette */}
+            {/* ── Space Invaders — triggered by easter egg or command palette ── */}
             {showGame && <SpaceInvadersModal onClose={closeGame} />}
         </main>
     );

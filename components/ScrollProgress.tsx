@@ -8,7 +8,8 @@ export default function ScrollProgress() {
     useEffect(() => {
         const update = () => {
             const scrollTop = window.scrollY;
-            const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+            const docHeight =
+                document.documentElement.scrollHeight - window.innerHeight;
             setProgress(docHeight > 0 ? (scrollTop / docHeight) * 100 : 0);
         };
 
@@ -21,7 +22,7 @@ export default function ScrollProgress() {
             className="fixed top-0 left-0 h-[2px] z-[60] transition-[width] duration-150 ease-out"
             style={{
                 width: `${progress}%`,
-                background: "rgba(56, 189, 248, 0.6)", /* sky-400 with opacity */
+                background: "rgba(212, 175, 55, 0.6)" /* gold with opacity */,
             }}
         />
     );

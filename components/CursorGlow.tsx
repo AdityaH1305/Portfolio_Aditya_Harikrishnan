@@ -23,18 +23,25 @@ export default function CursorGlow() {
         };
 
         const animate = () => {
-            // Smooth lerp for buttery movement
-            current.current.x += (mouse.current.x - current.current.x) * 0.15;
-            current.current.y += (mouse.current.y - current.current.y) * 0.15;
+            current.current.x +=
+                (mouse.current.x - current.current.x) * 0.15;
+            current.current.y +=
+                (mouse.current.y - current.current.y) * 0.15;
 
             if (el) {
                 el.style.transform = `translate(${current.current.x - 200}px, ${current.current.y - 200}px)`;
             }
 
-            // Update global CSS variables for glass-card spotlight effect
+            // Update global CSS variables for interactive effects
             const root = document.documentElement;
-            root.style.setProperty("--mouse-x", `${current.current.x}px`);
-            root.style.setProperty("--mouse-y", `${current.current.y}px`);
+            root.style.setProperty(
+                "--mouse-x",
+                `${current.current.x}px`
+            );
+            root.style.setProperty(
+                "--mouse-y",
+                `${current.current.y}px`
+            );
 
             rafId.current = requestAnimationFrame(animate);
         };
@@ -58,8 +65,8 @@ export default function CursorGlow() {
                 height: 400,
                 borderRadius: "50%",
                 background:
-                    "radial-gradient(circle, rgba(56, 189, 248, 0.1) 0%, rgba(56, 189, 248, 0.02) 40%, transparent 70%)",
-                mixBlendMode: "screen", 
+                    "radial-gradient(circle, rgba(212, 175, 55, 0.06) 0%, rgba(212, 175, 55, 0.015) 40%, transparent 70%)",
+                mixBlendMode: "screen",
                 willChange: "transform",
             }}
         />

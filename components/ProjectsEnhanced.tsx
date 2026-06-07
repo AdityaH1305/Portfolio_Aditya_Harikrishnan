@@ -3,22 +3,15 @@
 import { motion } from "framer-motion";
 import ProjectCard, { type ProjectData } from "./ProjectCard";
 
+/* ══════════════════════════════════════════════════════
+   Projects Section — Immersive Chapter-Style
+   
+   Ludex is excluded here (it has LudexShowcase).
+   Remaining projects displayed as full-width immersive chapters.
+   All project data, links, images preserved exactly.
+   ══════════════════════════════════════════════════════ */
+
 const projects: ProjectData[] = [
-    {
-        title: "Ludex",
-        tag: "Machine Learning / Research",
-        description:
-            "Hybrid recommendation system architected to fuse content-based and collaborative filtering, ranking personalized Steam game suggestions across a 57K-item catalog — validated through a published research paper.",
-        highlights: [
-            "+27% Precision@20 vs pure CBF",
-            "+13% Precision@20 vs pure CF",
-            "57K+ items, 1.2K users dataset",
-            "Published research paper",
-        ],
-        github: "https://github.com/Aditya11835/Ludex",
-        demo: "https://ludexsite.onrender.com/",
-        images: ["/projects/ludex-new.png", "/projects/ludex2.png", "/projects/ludex3.png"],
-    },
     {
         title: "PlayNexus",
         tag: "Full Stack / Data Platform",
@@ -72,69 +65,37 @@ const projects: ProjectData[] = [
     },
 ];
 
-/* ── Stagger animation variants ── */
-const containerVariants = {
-    hidden: {},
-    visible: {
-        transition: {
-            staggerChildren: 0.15,
-            delayChildren: 0.05,
-        },
-    },
-};
-
-const cardWrapperVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-        opacity: 1,
-        y: 0,
-        transition: {
-            duration: 0.6,
-            ease: [0.25, 0.1, 0.25, 1] as [number, number, number, number],
-        },
-    },
-};
+const EASE: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
 
 export default function ProjectsEnhanced() {
     return (
-        <section id="projects" className="py-28 px-6 max-w-5xl mx-auto border-t border-zinc-900">
-            {/* Heading — left-aligned */}
-            <motion.div
-                initial={{ opacity: 0, y: 16 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
-                viewport={{ once: true }}
-            >
-                <h2 className="text-4xl md:text-5xl font-semibold tracking-tight text-zinc-100">
-                    Projects
-                </h2>
-                <p className="text-zinc-500 mt-3">
-                    Selected work showcasing ML research, data platforms, and full-stack engineering.
-                </p>
-            </motion.div>
+        <section id="projects" className="py-20 md:py-28">
+            {/* Section heading */}
+            <div className="section-container">
+                <motion.div
+                    initial={{ opacity: 0, y: 16 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, ease: EASE }}
+                    viewport={{ once: true }}
+                >
+                    <p className="label">Selected Work</p>
+                    <h2 className="heading-lg mt-3">Projects</h2>
+                    <p className="body-sm mt-3 max-w-lg text-[var(--text-tertiary)]">
+                        ML research, data platforms, and full-stack engineering.
+                    </p>
+                </motion.div>
+            </div>
 
-            {/* Projects — staggered cascade scroll-reveal */}
-            <motion.div
-                className="mt-14 space-y-14"
-                variants={containerVariants}
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.05 }}
-            >
+            {/* Project chapters */}
+            <div className="mt-8">
                 {projects.map((project, index) => (
-                    <motion.div
-                        key={index}
-                        className="relative"
-                        variants={cardWrapperVariants}
-                    >
-                        {/* Subtle project index */}
-                        <span className="absolute -left-0 -top-8 text-[11px] font-mono text-zinc-600 tracking-wider">
-                            {String(index + 1).padStart(2, "0")}
-                        </span>
-                        <ProjectCard project={project} />
-                    </motion.div>
+                    <ProjectCard
+                        key={project.title}
+                        project={project}
+                        index={index + 1}
+                    />
                 ))}
-            </motion.div>
+            </div>
         </section>
     );
 }
