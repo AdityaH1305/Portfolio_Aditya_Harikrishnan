@@ -146,7 +146,7 @@ export default function Hero() {
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}
-                        className="flex-shrink-0 w-full lg:w-[45%] h-[350px] md:h-[500px] lg:h-[600px] relative"
+                        className="flex-shrink-0 w-full lg:w-[45%] h-[350px] md:h-[500px] lg:h-[600px] relative mt-12 lg:mt-24"
                     >
                         <Orb className="w-full h-full" />
                     </motion.div>

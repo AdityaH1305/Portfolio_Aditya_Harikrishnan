@@ -46,7 +46,7 @@ const projects: ProjectData[] = [
             "Designed for rapid deployment in disaster response environments",
         ],
         github: "https://github.com/AdityaH1305/SynthRescue",
-        demo: null,
+        demo: "https://synthrescue.vercel.app/",
         images: ["/projects/synth1.png", "/projects/synth2.png"],
     },
     {
