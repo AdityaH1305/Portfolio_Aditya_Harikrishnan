@@ -252,7 +252,7 @@ export default function ProjectCard({
         setLightboxSrc(allImages[idx]);
     };
 
-    const EASE: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
+    const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
     return (
         <div className="project-chapter">
@@ -323,18 +323,21 @@ export default function ProjectCard({
                         <motion.div
                             initial={{ opacity: 0, y: 8 }}
                             whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.4, delay: 0.2, ease: EASE }}
+                            transition={{ duration: 0.8, delay: 0.2, ease: EASE }}
                             viewport={{ once: true }}
-                            className="mt-8 flex gap-4 flex-wrap"
+                            className="mt-8 flex gap-4 flex-wrap items-center group"
                         >
                             {project.github && (
                                 <a
                                     href={project.github}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="btn-secondary"
+                                    className="btn-secondary group/btn flex items-center pr-2"
                                 >
-                                    GitHub
+                                    <span className="pl-2">GitHub</span>
+                                    <div className="ml-3 w-8 h-8 rounded-full bg-black/10 dark:bg-white/10 flex items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/btn:translate-x-1 group-hover/btn:-translate-y-[1px] group-hover/btn:scale-105">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" /></svg>
+                                    </div>
                                 </a>
                             )}
                             {project.demo && (
@@ -342,9 +345,12 @@ export default function ProjectCard({
                                     href={project.demo}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="btn-primary"
+                                    className="btn-primary group/btn flex items-center pr-2"
                                 >
-                                    Live Demo
+                                    <span className="pl-2">Live Demo</span>
+                                    <div className="ml-3 w-8 h-8 rounded-full bg-black/10 dark:bg-white/20 flex items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/btn:translate-x-1 group-hover/btn:-translate-y-[1px] group-hover/btn:scale-105">
+                                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M7 17L17 7M17 7H7M17 7v10" /></svg>
+                                    </div>
                                 </a>
                             )}
                         </motion.div>
@@ -353,32 +359,34 @@ export default function ProjectCard({
                     {/* ── Images ── */}
                     {allImages.length > 0 && (
                         <motion.div
-                            initial={{ opacity: 0, y: 20 }}
-                            whileInView={{ opacity: 1, y: 0 }}
-                            transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
+                            initial={{ opacity: 0, y: 32, filter: "blur(8px)" }}
+                            whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                            transition={{ duration: 1.2, delay: 0.1, ease: EASE }}
                             viewport={{ once: true }}
-                            className="relative w-full aspect-[4/3] border border-[rgba(255,255,255,0.06)] overflow-hidden bg-black/30"
+                            className="relative w-full shell-bezel backdrop-blur-2xl"
                         >
-                            {allImages.length > 1 ? (
-                                <ImageCarousel
-                                    images={allImages}
-                                    alt={project.title}
-                                    onImageClick={openLightbox}
-                                />
-                            ) : (
-                                <div
-                                    className="relative w-full h-full cursor-pointer"
-                                    onClick={() => openLightbox(0)}
-                                >
-                                    <Image
-                                        src={allImages[0]}
-                                        alt={`${project.title} preview`}
-                                        fill
-                                        className="object-cover transition-transform duration-500 ease-out hover:scale-[1.02]"
-                                        sizes="(max-width: 768px) 100vw, 50vw"
+                            <div className="relative w-full aspect-[4/3] core-bezel overflow-hidden">
+                                {allImages.length > 1 ? (
+                                    <ImageCarousel
+                                        images={allImages}
+                                        alt={project.title}
+                                        onImageClick={openLightbox}
                                     />
-                                </div>
-                            )}
+                                ) : (
+                                    <div
+                                        className="relative w-full h-full cursor-pointer"
+                                        onClick={() => openLightbox(0)}
+                                    >
+                                        <Image
+                                            src={allImages[0]}
+                                            alt={`${project.title} preview`}
+                                            fill
+                                            className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] hover:scale-[1.03]"
+                                            sizes="(max-width: 768px) 100vw, 50vw"
+                                        />
+                                    </div>
+                                )}
+                            </div>
                         </motion.div>
                     )}
                 </div>
