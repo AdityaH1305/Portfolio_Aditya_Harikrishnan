@@ -39,3 +39,13 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# AI IDE & Memory Files
+agents.md
+claude.md
+.cursor/
+.cursorrules
+.agents/
+.claude/
+.gemini/
+skills-lock.json
