@@ -301,6 +301,38 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
+   Ludex Case Study — Section Differentiation
+   A subtle gold radial glow at the top of the section
+   signals visual importance without breaking the dark
+   theme (Page Theme Lock compliant).
+   ══════════════════════════════════════════════════════ */
+
+.ludex-glow {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 1200px;
+  height: 60%;
+  background: radial-gradient(
+    ellipse 70% 50% at 50% 0%,
+    rgba(212, 175, 55, 0.035) 0%,
+    transparent 70%
+  );
+  pointer-events: none;
+  z-index: 0;
+}
+
+.ludex-hero-metric {
+  font-size: clamp(3.5rem, 10vw, 7rem);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* ══════════════════════════════════════════════════════
    Background Atmosphere — Gold-tinted
    ══════════════════════════════════════════════════════ */
 
