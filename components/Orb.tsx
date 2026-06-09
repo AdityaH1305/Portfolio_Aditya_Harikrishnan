@@ -21,8 +21,6 @@ const DARK = new THREE.Color("#0a0a0a");
 /* ── Core Sphere — dark metallic with gold inner energy ── */
 function CoreSphere() {
     const meshRef = useRef<THREE.Mesh>(null);
-    const glowRef = useRef<THREE.Mesh>(null);
-
     useFrame(({ clock }) => {
         const t = clock.getElapsedTime();
 
@@ -34,12 +32,6 @@ function CoreSphere() {
             const mat = meshRef.current.material as THREE.MeshStandardMaterial;
             const pulse = Math.sin(t * 1.6) * 0.5 + 0.5; // 0→1 cycle ~4s
             mat.emissiveIntensity = 0.15 + pulse * 0.12;
-        }
-
-        if (glowRef.current) {
-            const mat = glowRef.current.material as THREE.MeshStandardMaterial;
-            const pulse = Math.sin(t * 1.6) * 0.5 + 0.5;
-            mat.opacity = 0.02 + pulse * 0.015;
         }
     });
 
@@ -68,16 +60,6 @@ function CoreSphere() {
                     wireframe
                     transparent
                     opacity={0.12}
-                />
-            </mesh>
-            {/* Inner glow shell */}
-            <mesh ref={glowRef}>
-                <sphereGeometry args={[1.6, 32, 32]} />
-                <meshStandardMaterial
-                    color={GOLD}
-                    transparent
-                    opacity={0.02}
-                    side={THREE.BackSide}
                 />
             </mesh>
             <pointLight color="#D4AF37" intensity={0.3} distance={8} />
