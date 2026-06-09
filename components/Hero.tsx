@@ -125,8 +125,9 @@ export default function Hero() {
                         </motion.div>
                     </motion.div>
 
-                    {/* ── Right: The Orb ── */}
+                    {/* ── Right: The Orb (Signal Core) ── */}
                     <motion.div
+                        id="hero-orb"
                         initial={{ opacity: 0, scale: 0.9 }}
                         animate={{ opacity: 1, scale: 1 }}
                         transition={{ duration: 1.2, delay: 0.4, ease: [0.16, 1, 0.3, 1] }}

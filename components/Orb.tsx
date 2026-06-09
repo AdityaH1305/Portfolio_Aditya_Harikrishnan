@@ -184,7 +184,7 @@ function OrbitalParticles({
     );
 }
 
-/* ── OrbScene — assembled orb with rings and particles ── */
+/* ── OrbScene — core sphere with single orbital ring ── */
 function OrbScene() {
     const groupRef = useRef<THREE.Group>(null);
 
@@ -199,15 +199,11 @@ function OrbScene() {
         <group ref={groupRef}>
             <CoreSphere />
 
-            {/* 3 orbital rings at different tilts */}
-            <OrbitalRing radius={1.9} tiltX={Math.PI * 0.35} tiltZ={0.2} speed={0.5} />
+            {/* Single orbital ring — reads as system trace, not planetary decoration */}
             <OrbitalRing radius={2.2} tiltX={Math.PI * 0.55} tiltZ={-0.4} speed={-0.3} />
-            <OrbitalRing radius={2.5} tiltX={Math.PI * 0.15} tiltZ={0.6} speed={0.4} />
 
-            {/* Particles on orbital paths */}
-            <OrbitalParticles count={24} radius={1.9} tiltX={Math.PI * 0.35} tiltZ={0.2} speed={0.25} />
-            <OrbitalParticles count={18} radius={2.2} tiltX={Math.PI * 0.55} tiltZ={-0.4} speed={-0.18} />
-            <OrbitalParticles count={20} radius={2.5} tiltX={Math.PI * 0.15} tiltZ={0.6} speed={0.2} />
+            {/* Sparse particles on the single ring — suggests data flow, not spectacle */}
+            <OrbitalParticles count={12} radius={2.2} tiltX={Math.PI * 0.55} tiltZ={-0.4} speed={-0.18} />
         </group>
     );
 }

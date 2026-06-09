@@ -1,17 +1,10 @@
 "use client";
 
 import { motion } from "framer-motion";
-import dynamic from "next/dynamic";
-
-const Orb = dynamic(() => import("@/components/Orb"), {
-    ssr: false,
-    loading: () => null,
-});
 
 /* ══════════════════════════════════════════════════════
-   Contact Section — Convergence
+   Contact Section
    
-   The orb returns as the final visual centerpiece.
    Personal language replaces generic portfolio phrases.
    All links preserved: Email, GitHub, LinkedIn.
    Footer metadata preserved.
@@ -27,20 +20,6 @@ export default function Contact() {
         >
             <div className="section-container">
                 <div className="flex flex-col items-center text-center">
-                    {/* ── Orb returns — final visual centerpiece ── */}
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.85 }}
-                        whileInView={{ opacity: 1, scale: 1 }}
-                        transition={{
-                            duration: 1.2,
-                            ease: [0.16, 1, 0.3, 1],
-                        }}
-                        viewport={{ once: true }}
-                        className="w-48 h-48 md:w-64 md:h-64 mb-12 hidden md:block"
-                    >
-                        <Orb className="w-full h-full" />
-                    </motion.div>
-
                     {/* ── Heading — personal, distinctive ── */}
                     <motion.div
                         initial={{ opacity: 0, y: 20 }}

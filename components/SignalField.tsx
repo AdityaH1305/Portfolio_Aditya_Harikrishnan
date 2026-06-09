@@ -11,14 +11,17 @@ import { useEffect, useRef, useCallback } from "react";
    
    Layers:
    1. Signal Traces — faint bezier paths traversing the viewport
-   2. Node Pulses — sparse cyan heartbeats at trace endpoints
+   2. Node Pulses — sparse gold heartbeats at trace endpoints
    3. Scroll-Responsive Density — activity shifts per section
-   4. Orb Proximity — organic local density increase
+   4. Signal Core Origin — when the Hero Orb is visible,
+      traces originate from its screen position, making the
+      orb the visible source of the signal infrastructure.
    
-   Performance::
+   Performance:
    - Half-resolution canvas (dpr capped at 1.0)
    - ≤15 drawable elements per frame
    - Pre-allocated arrays, zero GC in render loop
+   - Orb position cached on scroll/resize (not per frame)
    - Disabled on touch/mobile devices
    ══════════════════════════════════════════════════════ */
 
@@ -54,6 +57,10 @@ const DENSITY_MAP: [number, number][] = [
     [0.80, 0.65],  // Projects
     [1.0, 0.5],    // Contact — calm exit
 ];
+
+// Signal Core — hero orb origin biasing
+const HERO_VISIBLE_THRESHOLD = 0.12; // scrollNorm below this = hero in view
+const ORB_ORIGIN_BIAS = 0.6; // 60% of traces originate from orb when hero visible
 
 // Orb section approximate scroll range (normalized 0–1)
 const ORB_SCROLL_START = 0.38;
@@ -123,26 +130,41 @@ function isNearOrb(scrollNorm: number): boolean {
 
 // ── Trace Factory ──────────────────────────────────────
 
-function spawnTrace(trace: Trace): void {
-    // Start from a random edge
-    const edge = Math.floor(Math.random() * 4);
-    switch (edge) {
-        case 0: // top
-            trace.x0 = rand(0.1, 0.9);
-            trace.y0 = -0.02;
-            break;
-        case 1: // right
-            trace.x0 = 1.02;
-            trace.y0 = rand(0.1, 0.9);
-            break;
-        case 2: // bottom
-            trace.x0 = rand(0.1, 0.9);
-            trace.y0 = 1.02;
-            break;
-        default: // left
-            trace.x0 = -0.02;
-            trace.y0 = rand(0.1, 0.9);
-            break;
+/**
+ * Spawn a trace. When originBias is provided (normalized 0–1 coords),
+ * the trace starts from that point with slight jitter instead of a
+ * random viewport edge. This makes the Hero Orb the visible origin
+ * of signal infrastructure.
+ */
+function spawnTrace(
+    trace: Trace,
+    originBias?: { x: number; y: number } | null,
+): void {
+    if (originBias && Math.random() < ORB_ORIGIN_BIAS) {
+        // Start from the orb center with slight positional jitter
+        trace.x0 = originBias.x + rand(-0.04, 0.04);
+        trace.y0 = originBias.y + rand(-0.04, 0.04);
+    } else {
+        // Default: start from a random viewport edge
+        const edge = Math.floor(Math.random() * 4);
+        switch (edge) {
+            case 0: // top
+                trace.x0 = rand(0.1, 0.9);
+                trace.y0 = -0.02;
+                break;
+            case 1: // right
+                trace.x0 = 1.02;
+                trace.y0 = rand(0.1, 0.9);
+                break;
+            case 2: // bottom
+                trace.x0 = rand(0.1, 0.9);
+                trace.y0 = 1.02;
+                break;
+            default: // left
+                trace.x0 = -0.02;
+                trace.y0 = rand(0.1, 0.9);
+                break;
+        }
     }
 
     // End on opposite-ish area with some randomness
@@ -202,6 +224,9 @@ export default function SignalField() {
     const scrollCurrentRef = useRef<number>(0);
     const densityRef = useRef<number>(0.55);
 
+    // Signal Core — cached orb center in normalized viewport coords
+    const orbCenterRef = useRef<{ x: number; y: number } | null>(null);
+
     const initPools = useCallback(() => {
         // Pre-allocate trace pool
         const traces: Trace[] = [];
@@ -224,9 +249,9 @@ export default function SignalField() {
         }
         pulsesRef.current = pulses;
 
-        // Stagger initial trace spawns
+        // Stagger initial trace spawns — bias toward orb if visible (page load = hero)
         for (let i = 0; i < Math.min(4, MAX_TRACES); i++) {
-            spawnTrace(traces[i]);
+            spawnTrace(traces[i], orbCenterRef.current);
             traces[i].progress = rand(0.1, 0.6); // start mid-journey
         }
 
@@ -264,10 +289,27 @@ export default function SignalField() {
         resize();
         window.addEventListener("resize", resize, { passive: true });
 
+        // ── Signal Core: cache orb position ──
+        const updateOrbCenter = () => {
+            const orbEl = document.getElementById("hero-orb");
+            if (orbEl && w > 0 && h > 0) {
+                const rect = orbEl.getBoundingClientRect();
+                orbCenterRef.current = {
+                    x: (rect.left + rect.width / 2) / w,
+                    y: (rect.top + rect.height / 2) / h,
+                };
+            } else {
+                orbCenterRef.current = null;
+            }
+        };
+        updateOrbCenter();
+
         // ── Scroll Tracking ──
         const onScroll = () => {
             const docHeight = document.documentElement.scrollHeight - window.innerHeight;
             scrollTargetRef.current = docHeight > 0 ? window.scrollY / docHeight : 0;
+            // Re-cache orb position on scroll (getBoundingClientRect is cheap on static elements)
+            updateOrbCenter();
         };
         window.addEventListener("scroll", onScroll, { passive: true });
         onScroll();
@@ -353,11 +395,15 @@ export default function SignalField() {
             }
 
             // Spawn new traces based on density
+            // When hero is visible, bias origins toward the orb (Signal Core)
+            const heroVisible = scrollNorm < HERO_VISIBLE_THRESHOLD;
+            const originBias = heroVisible ? orbCenterRef.current : null;
+
             const targetAlive = Math.round(lerp(3, MAX_TRACES, density));
             if (aliveCount < targetAlive) {
                 for (let i = 0; i < traces.length && aliveCount < targetAlive; i++) {
                     if (!traces[i].alive) {
-                        spawnTrace(traces[i]);
+                        spawnTrace(traces[i], originBias);
                         aliveCount++;
                         break; // one per frame to avoid clumping
                     }
