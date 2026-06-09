@@ -12,7 +12,7 @@ const projects = [
             "+27% Precision@20 vs pure CBF",
             "+13% Precision@20 vs pure CF",
             "57K+ items, 1.2K users dataset",
-            "Published research paper",
+            "Comprehensive technical report",
         ],
         github: "https://github.com/Aditya11835/Ludex",
         demo: null,

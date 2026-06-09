@@ -39,9 +39,9 @@ const timelineEntries = [
     },
     {
         year: "2025",
-        title: "Published Research",
+        title: "Completed Technical Report",
         description:
-            "Published research on hybrid recommendation systems. The work validated that thoughtful fusion of complementary ML signals yields measurably better personalization.",
+            "Completed a comprehensive technical report on hybrid recommendation systems. The work validated that thoughtful fusion of complementary ML signals yields measurably better personalization.",
     },
     {
         year: "2025",

@@ -200,7 +200,7 @@ export default function LudexShowcase() {
                 >
                     A hybrid recommendation engine that fuses content-based and
                     collaborative filtering to deliver measurably better game
-                    discovery. Validated through published research.
+                    discovery. Validated through a comprehensive technical report.
                 </motion.p>
 
                 {/* ═══════════ HERO METRIC ═══════════ */}
@@ -292,7 +292,7 @@ export default function LudexShowcase() {
                         <p className="body-sm mt-3">
                             The hybrid system significantly outperformed both
                             standalone baselines across all evaluation metrics.
-                            Findings validated and published as a research paper
+                            Findings validated and documented as a technical report
                             on hybrid recommendation systems.
                         </p>
                     </motion.div>
