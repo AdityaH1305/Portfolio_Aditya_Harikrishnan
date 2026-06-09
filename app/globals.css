@@ -390,6 +390,23 @@ body {
   cursor: grabbing;
 }
 
+/* Atmospheric field — extends the orb's visual influence
+   far beyond the container so the transition into the
+   page background is gradual and imperceptible. */
+#hero-orb::before {
+  content: "";
+  position: absolute;
+  inset: -300px;
+  background: radial-gradient(
+    ellipse closest-side at center,
+    rgba(212, 175, 55, 0.025) 0%,
+    rgba(212, 175, 55, 0.008) 50%,
+    rgba(212, 175, 55, 0) 100%
+  );
+  pointer-events: none;
+  z-index: -1;
+}
+
 /* ══════════════════════════════════════════════════════
    Ludex Case Study — Section Differentiation
    A subtle gold radial glow at the top of the section
