@@ -141,9 +141,11 @@ function spawnTrace(
     originBias?: { x: number; y: number } | null,
 ): void {
     if (originBias && Math.random() < ORB_ORIGIN_BIAS) {
-        // Start from the orb center with slight positional jitter
-        trace.x0 = originBias.x + rand(-0.04, 0.04);
-        trace.y0 = originBias.y + rand(-0.04, 0.04);
+        // Start from the orb center with a smooth circular area-correct distribution
+        const angle = Math.random() * Math.PI * 2;
+        const radius = Math.sqrt(Math.random()) * 0.05;
+        trace.x0 = originBias.x + Math.cos(angle) * radius;
+        trace.y0 = originBias.y + Math.sin(angle) * radius;
     } else {
         // Default: start from a random viewport edge
         const edge = Math.floor(Math.random() * 4);

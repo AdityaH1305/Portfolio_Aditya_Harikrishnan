@@ -120,11 +120,9 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
 
       {/* Subtle ambient cyan glow behind modal */}
       <div
-        className={`absolute inset-0 pointer-events-none transition-opacity duration-700 ${
-          mounted ? "opacity-100" : "opacity-0"
-        }`}
+        className="absolute inset-0 z-0 pointer-events-none"
         style={{
-          background: "radial-gradient(ellipse at 50% 50%, rgba(56, 189, 248, 0.08) 0%, transparent 60%)",
+          background: "radial-gradient(ellipse at 50% 50%, rgba(56, 189, 248, 0.08) 0%, rgba(56, 189, 248, 0) 100%)",
         }}
       />
 
