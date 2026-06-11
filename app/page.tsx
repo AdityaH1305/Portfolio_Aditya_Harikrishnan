@@ -47,18 +47,29 @@ export default function Home() {
             {/* ── Content Flow ── */}
             <Hero />
 
-            <TransitionScreen lines={["FROM DATA", "TO DECISIONS"]} />
+            <TransitionScreen
+                index="01"
+                heading="The proof is in the system"
+                body="A recommendation engine designed to combine the strengths of collaborative and content-based filtering."
+                variant="rule"
+            />
 
             <LudexShowcase />
 
             <TransitionScreen
-                lines={["SYSTEMS ARE BUILT", "ONE ITERATION", "AT A TIME"]}
+                index="02"
+                heading="Systems at every scale"
+                body="From recommendation engines and discovery platforms to multiplayer experiences and real-world response systems."
+                variant="border"
             />
 
             <ProjectsEnhanced />
 
             <TransitionScreen
-                lines={["RESEARCH", "DRIVES", "IMPROVEMENT"]}
+                index="03"
+                heading="Behind every system"
+                body="Research, experimentation, measurement, and iteration shape every engineering decision."
+                variant="inline"
             />
 
             <ResearchMindset />

@@ -130,26 +130,18 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
-   Transition Screen — Full-viewport editorial typography
+   Narrative Connectors — Chapter transitions
+   Compact editorial bridges between major sections.
    ══════════════════════════════════════════════════════ */
 
-.transition-screen {
-  min-height: 50vh;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  position: relative;
-  overflow: hidden;
-}
-
-.transition-text {
-  font-size: clamp(2rem, 6vw, 5rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
-  line-height: 1.1;
-  color: var(--foreground);
-  opacity: 0.08;
+.narrative-rule {
+  width: min(200px, 40%);
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    var(--accent) 0%,
+    rgba(212, 175, 55, 0) 100%
+  );
 }
 
 /* ══════════════════════════════════════════════════════
