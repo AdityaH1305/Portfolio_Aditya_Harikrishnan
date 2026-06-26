@@ -31,19 +31,6 @@ const projects = [
         github: "https://github.com/AdityaH1305/steam_db-clone",
         demo: null,
     },
-    {
-        title: "Sheriff of Nottingham App",
-        tag: "Backend / Multiplayer",
-        description:
-            "Local multiplayer lobby-based implementation of the Sheriff of Nottingham board game.",
-        highlights: [
-            "Flask backend",
-            "Lobby system for multiplayer",
-            "Game state handling",
-        ],
-        github: "https://github.com/AdityaH1305/Sheriff-of-nottingham-app",
-        demo: null,
-    },
 ];
 
 export default function Projects() {

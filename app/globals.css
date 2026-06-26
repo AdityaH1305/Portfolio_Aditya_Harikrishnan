@@ -233,24 +233,7 @@ body {
   position: relative;
 }
 
-/* ── Tier 3: Compact Evidence Strip ── */
-
-.compact-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 2rem;
-}
-
-@media (min-width: 768px) {
-  .compact-grid {
-    grid-template-columns: 1fr 1fr;
-    gap: 2.5rem;
-  }
-}
-
-.compact-project-card {
-  position: relative;
-}
+/* ── Tier 3: Compact Cards ── */
 
 .compact-bezel {
   /* Slightly smaller bezel radius for compact cards */
@@ -298,19 +281,6 @@ body {
 
 .compact-link--accent:hover {
   color: #e6c445;
-}
-
-.compact-section-divider {
-  width: 100%;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--border) 20%,
-    rgba(212, 175, 55, 0.08) 50%,
-    var(--border) 80%,
-    transparent 100%
-  );
 }
 
 /* ── Legacy (preserved for any external references) ── */
