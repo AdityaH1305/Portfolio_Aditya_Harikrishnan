@@ -1,43 +1,100 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
 /* ══════════════════════════════════════════════════════
-   Projects Section — Curated Asymmetric Composition
+   Projects Section — Balanced Two-Column Composition
 
    Visual hierarchy (non-negotiable):
    Tier 1: Ludex — full immersive case study (LudexShowcase)
-   Tier 2: PlayNexus — large editorial card, hero image,
-           full highlights + CTAs. ~7/12 width on desktop.
-   Tier 3: SynthRescue — polished compact card. ~5/12 width.
-           Intentional, not an afterthought.
+   Tier 2: PlayNexus + SynthRescue — balanced companion
+           projects in a matched 2-column grid
 
    Design rationale:
-   - Asymmetric 2-column layout (7:5 ratio) creates visual
-     tension and clear internal hierarchy
-   - Both projects occupy one unified section, no dividers
-   - PlayNexus gets hero image + editorial treatment but
-     is contained — does not replicate Ludex's weight
-   - SynthRescue has its own double-bezel image + content,
-     polished enough to feel curated, compact enough to
-     read as tertiary
-   - No eyebrow label (Ludex already uses the budget)
-   - Section heading kept minimal to avoid competing
-     with Ludex's heading-xl
+   - Equal-width columns (6:6) give both projects the
+     same visual importance — they are companions, not
+     a primary and its subordinate
+   - Both cards share identical architecture: same bezel
+     scale, heading size (heading-sm), tag style, image
+     aspect ratio, highlight format, and CTA format
+   - Natural variation comes from content (different
+     images, descriptions, tags), not structural inequality
+   - Both use compact-link CTAs (not pill buttons),
+     creating a clear collective step-down from Ludex's
+     btn-primary/btn-secondary treatment
+   - No eyebrow label (Ludex uses the budget)
+   - Section heading uses heading-lg (vs Ludex heading-xl)
 
    Skills applied:
-   - design-taste-frontend: asymmetric layout, no
-     repetitive card grid, editorial composition
+   - design-taste-frontend: editorial magazine layout,
+     identical containers with different stories, no
+     repetitive chapter pattern, no dashboard grid
    - high-end-visual-design: double-bezel containers,
-     custom cubic-bezier motion, macro whitespace
-   - full-output-enforcement: complete implementation
+     custom cubic-bezier [0.32, 0.72, 0, 1], macro
+     whitespace, button-in-button not needed (compact
+     links are the right weight here)
+   - full-output-enforcement: complete implementation,
+     no placeholders, no truncation
    ══════════════════════════════════════════════════════ */
+
+interface ProjectData {
+    title: string;
+    tag: string;
+    description: string;
+    highlights: string[];
+    github: string;
+    demo: string | null;
+    images: string[];
+}
 
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
-/* ── Lightbox Modal ── */
+const projects: ProjectData[] = [
+    {
+        title: "PlayNexus",
+        tag: "Full Stack / Data Platform",
+        description:
+            "Full-stack data platform with a multi-region price aggregation pipeline, custom value-scoring algorithm, and vibe-based discovery. Engineered for data-driven decision making at scale.",
+        highlights: [
+            "Real-time Steam API integration",
+            "Multi-region price comparison",
+            "Custom value score algorithm",
+            "Vibe-based game discovery system",
+        ],
+        github: "https://github.com/AdityaH1305/PlayNexus",
+        demo: "https://playnexus-io.vercel.app",
+        images: [
+            "/projects/playnexus2.png",
+            "/projects/playnexus-new.png",
+            "/projects/playnexus3.png",
+            "/projects/playnexus4.png",
+            "/projects/playnexus5.png",
+        ],
+    },
+    {
+        title: "SynthRescue",
+        tag: "AI / Computer Vision",
+        description:
+            "Real-time structural damage assessment pipeline combining YOLO-based detection with AI-assisted triage for rapid deployment in disaster response.",
+        highlights: [
+            "Real-time image upload and analysis pipeline",
+            "YOLO-based structural damage detection",
+            "AI-generated emergency response reports using Gemini",
+        ],
+        github: "https://github.com/AdityaH1305/SynthRescue",
+        demo: "https://synthrescue.vercel.app/",
+        images: ["/projects/synth1.png", "/projects/synth2.png"],
+    },
+];
+
+/* ═══════════════════════════════════════════════════════
+   Lightbox Modal — shared gallery viewer
+
+   Supports keyboard navigation (Esc, ←, →) and
+   multi-image galleries with prev/next arrows.
+   ═══════════════════════════════════════════════════════ */
 function LightboxModal({
     src,
     alt,
@@ -54,6 +111,33 @@ function LightboxModal({
     onNavigate?: (idx: number) => void;
 }) {
     const canNavigate = images && images.length > 1 && onNavigate;
+
+    const goPrev = useCallback(() => {
+        if (!canNavigate) return;
+        const prevIdx =
+            (currentIndex! - 1 + images!.length) % images!.length;
+        onNavigate!(prevIdx);
+    }, [canNavigate, currentIndex, images, onNavigate]);
+
+    const goNext = useCallback(() => {
+        if (!canNavigate) return;
+        const nextIdx = (currentIndex! + 1) % images!.length;
+        onNavigate!(nextIdx);
+    }, [canNavigate, currentIndex, images, onNavigate]);
+
+    const handleKey = useCallback(
+        (e: KeyboardEvent) => {
+            if (e.key === "Escape") onClose();
+            if (e.key === "ArrowLeft") goPrev();
+            if (e.key === "ArrowRight") goNext();
+        },
+        [onClose, goPrev, goNext]
+    );
+
+    useEffect(() => {
+        window.addEventListener("keydown", handleKey);
+        return () => window.removeEventListener("keydown", handleKey);
+    }, [handleKey]);
 
     return (
         <motion.div
@@ -84,10 +168,7 @@ function LightboxModal({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const prevIdx =
-                                    (currentIndex! - 1 + images!.length) %
-                                    images!.length;
-                                onNavigate!(prevIdx);
+                                goPrev();
                             }}
                             className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10
                                        flex items-center justify-center
@@ -101,9 +182,7 @@ function LightboxModal({
                         <button
                             onClick={(e) => {
                                 e.stopPropagation();
-                                const nextIdx =
-                                    (currentIndex! + 1) % images!.length;
-                                onNavigate!(nextIdx);
+                                goNext();
                             }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10
                                        flex items-center justify-center
@@ -122,263 +201,72 @@ function LightboxModal({
 }
 
 /* ═══════════════════════════════════════════════════════
-   PlayNexus — Tier 2 Editorial Card
+   ProjectCard — Shared card architecture
 
-   Large hero image in double-bezel, editorial content
-   below. Substantial but contained. No thumbnail strip
-   or carousel arrows — the single hero image reads
-   cleaner and avoids competing with Ludex's video tabs.
+   Both PlayNexus and SynthRescue use this component.
+   Identical structure ensures visual parity:
+   - Double-bezel hero image (16:10 aspect)
+   - Click-to-lightbox with gallery navigation
+   - Compact tag + heading-sm title
+   - Body description (unclamped — let content breathe)
+   - Highlight list with gold dash markers
+   - Compact-link CTAs (GitHub + optional Live Demo)
+
+   The stagger index controls entrance animation delay
+   so the two cards reveal in sequence left-to-right.
    ═══════════════════════════════════════════════════════ */
-function PlayNexusCard() {
+function ProjectCard({
+    project,
+    staggerIndex,
+}: {
+    project: ProjectData;
+    staggerIndex: number;
+}) {
     const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
     const [lightboxIndex, setLightboxIndex] = useState(0);
-    const [activeImage, setActiveImage] = useState(0);
-
-    const images = [
-        "/projects/playnexus2.png",
-        "/projects/playnexus-new.png",
-        "/projects/playnexus3.png",
-        "/projects/playnexus4.png",
-        "/projects/playnexus5.png",
-    ];
-
-    const highlights = [
-        "Real-time Steam API integration",
-        "Multi-region price comparison",
-        "Custom value score algorithm",
-        "Vibe-based game discovery system",
-    ];
 
     const openLightbox = (idx: number) => {
         setLightboxIndex(idx);
-        setLightboxSrc(images[idx]);
+        setLightboxSrc(project.images[idx]);
     };
 
     const navigateLightbox = (idx: number) => {
         setLightboxIndex(idx);
-        setLightboxSrc(images[idx]);
+        setLightboxSrc(project.images[idx]);
     };
+
+    const baseDelay = staggerIndex * 0.1;
 
     return (
         <div>
-            {/* Hero image — double-bezel, click-to-lightbox */}
+            {/* Hero image in double-bezel */}
             <motion.div
-                initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
+                initial={{ opacity: 0, y: 28, filter: "blur(6px)" }}
                 whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ duration: 0.8, delay: 0.08, ease: EASE }}
-                viewport={{ once: true }}
-            >
-                <div className="shell-bezel">
-                    <div className="core-bezel overflow-hidden">
-                        <div className="relative w-full aspect-[16/10] group/pn-img">
-                            <AnimatePresence mode="wait">
-                                <motion.div
-                                    key={activeImage}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    exit={{ opacity: 0 }}
-                                    transition={{
-                                        duration: 0.35,
-                                        ease: EASE,
-                                    }}
-                                    className="relative w-full h-full cursor-pointer"
-                                    onClick={() => openLightbox(activeImage)}
-                                >
-                                    <Image
-                                        src={images[activeImage]}
-                                        alt={`PlayNexus screenshot ${activeImage + 1}`}
-                                        fill
-                                        className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/pn-img:scale-[1.015]"
-                                        sizes="(max-width: 768px) 100vw, 60vw"
-                                        priority
-                                    />
-                                </motion.div>
-                            </AnimatePresence>
-
-                            {/* Image count indicator */}
-                            {images.length > 1 && (
-                                <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-[#050505]/80 border border-white/10 text-[10px] mono text-white/60">
-                                    +{images.length - 1} more
-                                </div>
-                            )}
-                        </div>
-                    </div>
-                </div>
-
-                {/* Thumbnail strip */}
-                {images.length > 1 && (
-                    <div className="mt-2.5 flex gap-1.5">
-                        {images.map((img, i) => (
-                            <button
-                                key={i}
-                                onClick={() => setActiveImage(i)}
-                                className={`relative flex-1 h-9 md:h-11 overflow-hidden transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                                    i === activeImage
-                                        ? "ring-1 ring-[var(--accent)] opacity-100"
-                                        : "opacity-35 hover:opacity-60 ring-1 ring-transparent"
-                                }`}
-                                style={{ borderRadius: "4px" }}
-                                aria-label={`View screenshot ${i + 1}`}
-                            >
-                                <Image
-                                    src={img}
-                                    alt={`PlayNexus thumbnail ${i + 1}`}
-                                    fill
-                                    className="object-cover"
-                                    sizes="120px"
-                                />
-                            </button>
-                        ))}
-                    </div>
-                )}
-            </motion.div>
-
-            {/* Content */}
-            <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.14, ease: EASE }}
-                viewport={{ once: true }}
-                className="mt-8"
-            >
-                <span className="label">Full Stack / Data Platform</span>
-                <h3 className="heading-md mt-2.5">PlayNexus</h3>
-                <p className="body-sm mt-4 max-w-lg">
-                    Full-stack data platform with a multi-region price
-                    aggregation pipeline, custom value-scoring algorithm, and
-                    vibe-based discovery. Engineered for data-driven decision
-                    making at scale.
-                </p>
-
-                {/* Highlights */}
-                <ul className="mt-6 space-y-2.5">
-                    {highlights.map((item, i) => (
-                        <li
-                            key={i}
-                            className="flex items-start gap-2.5 text-[13px] text-[var(--text-secondary)] leading-snug"
-                        >
-                            <span className="text-[var(--accent)] mt-0.5 text-[10px] shrink-0">
-                                ─
-                            </span>
-                            {item}
-                        </li>
-                    ))}
-                </ul>
-
-                {/* CTAs */}
-                <div className="mt-8 flex gap-3 flex-wrap">
-                    <a
-                        href="https://github.com/AdityaH1305/PlayNexus"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-secondary group/btn flex items-center pr-2"
-                    >
-                        <span className="pl-2">GitHub</span>
-                        <div className="ml-3 w-7 h-7 rounded-full bg-white/10 flex items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/btn:translate-x-1 group-hover/btn:-translate-y-[1px] group-hover/btn:scale-105">
-                            <svg
-                                className="w-3 h-3"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
-                            >
-                                <path d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                            </svg>
-                        </div>
-                    </a>
-                    <a
-                        href="https://playnexus-io.vercel.app"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="btn-primary group/btn flex items-center pr-2"
-                    >
-                        <span className="pl-2">Live Demo</span>
-                        <div className="ml-3 w-7 h-7 rounded-full bg-black/10 flex items-center justify-center transition-transform duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/btn:translate-x-1 group-hover/btn:-translate-y-[1px] group-hover/btn:scale-105">
-                            <svg
-                                className="w-3 h-3"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
-                            >
-                                <path d="M7 17L17 7M17 7H7M17 7v10" />
-                            </svg>
-                        </div>
-                    </a>
-                </div>
-            </motion.div>
-
-            {/* Lightbox */}
-            <AnimatePresence>
-                {lightboxSrc && (
-                    <LightboxModal
-                        src={lightboxSrc}
-                        alt="PlayNexus"
-                        onClose={() => setLightboxSrc(null)}
-                        images={images}
-                        currentIndex={lightboxIndex}
-                        onNavigate={navigateLightbox}
-                    />
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-/* ═══════════════════════════════════════════════════════
-   SynthRescue — Tier 3 Polished Compact Card
-
-   Double-bezel image + tight editorial content.
-   Intentional and polished, not an afterthought.
-   Occupies the narrower column on desktop.
-   ═══════════════════════════════════════════════════════ */
-function SynthRescueCard() {
-    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-    const [lightboxIndex, setLightboxIndex] = useState(0);
-
-    const images = ["/projects/synth1.png", "/projects/synth2.png"];
-
-    const highlights = [
-        "Real-time image upload and analysis pipeline",
-        "YOLO-based structural damage detection",
-        "AI-generated emergency response reports using Gemini",
-    ];
-
-    const openLightbox = (idx: number) => {
-        setLightboxIndex(idx);
-        setLightboxSrc(images[idx]);
-    };
-
-    const navigateLightbox = (idx: number) => {
-        setLightboxIndex(idx);
-        setLightboxSrc(images[idx]);
-    };
-
-    return (
-        <div>
-            {/* Image — double-bezel, click-to-lightbox */}
-            <motion.div
-                initial={{ opacity: 0, y: 24, filter: "blur(6px)" }}
-                whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                transition={{ duration: 0.8, delay: 0.16, ease: EASE }}
+                transition={{
+                    duration: 0.8,
+                    delay: 0.06 + baseDelay,
+                    ease: EASE,
+                }}
                 viewport={{ once: true }}
             >
                 <div className="shell-bezel compact-bezel">
                     <div className="core-bezel overflow-hidden">
                         <div
-                            className="relative w-full aspect-[16/10] cursor-pointer group/sr-img"
+                            className="relative w-full aspect-[16/10] cursor-pointer group/card-img"
                             onClick={() => openLightbox(0)}
                         >
                             <Image
-                                src={images[0]}
-                                alt="SynthRescue preview"
+                                src={project.images[0]}
+                                alt={`${project.title} preview`}
                                 fill
-                                className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/sr-img:scale-[1.03]"
-                                sizes="(max-width: 768px) 100vw, 40vw"
+                                className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/card-img:scale-[1.02]"
+                                sizes="(max-width: 768px) 100vw, 50vw"
+                                priority={staggerIndex === 0}
                             />
-                            {images.length > 1 && (
+                            {project.images.length > 1 && (
                                 <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-[#050505]/80 border border-white/10 text-[10px] mono text-white/60">
-                                    +{images.length - 1} more
+                                    +{project.images.length - 1} more
                                 </div>
                             )}
                         </div>
@@ -390,21 +278,21 @@ function SynthRescueCard() {
             <motion.div
                 initial={{ opacity: 0, y: 14 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.22, ease: EASE }}
+                transition={{
+                    duration: 0.5,
+                    delay: 0.16 + baseDelay,
+                    ease: EASE,
+                }}
                 viewport={{ once: true }}
-                className="mt-6"
+                className="mt-7"
             >
-                <span className="compact-tag">AI / Computer Vision</span>
-                <h4 className="heading-sm mt-2">SynthRescue</h4>
-                <p className="body-sm mt-3 compact-description">
-                    Real-time structural damage assessment pipeline combining
-                    YOLO-based detection with AI-assisted triage for rapid
-                    deployment in disaster response.
-                </p>
+                <span className="compact-tag">{project.tag}</span>
+                <h3 className="heading-sm mt-2.5">{project.title}</h3>
+                <p className="body-sm mt-3">{project.description}</p>
 
                 {/* Highlights */}
                 <ul className="mt-5 space-y-2">
-                    {highlights.map((item, i) => (
+                    {project.highlights.map((item, i) => (
                         <li
                             key={i}
                             className="flex items-start gap-2.5 text-[13px] text-[var(--text-secondary)] leading-snug"
@@ -417,10 +305,10 @@ function SynthRescueCard() {
                     ))}
                 </ul>
 
-                {/* Link row */}
-                <div className="mt-6 flex gap-3 items-center">
+                {/* CTA links */}
+                <div className="mt-6 flex gap-4 items-center">
                     <a
-                        href="https://github.com/AdityaH1305/SynthRescue"
+                        href={project.github}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="compact-link"
@@ -436,23 +324,25 @@ function SynthRescueCard() {
                         </svg>
                         GitHub
                     </a>
-                    <a
-                        href="https://synthrescue.vercel.app/"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="compact-link compact-link--accent"
-                    >
-                        <svg
-                            className="w-3.5 h-3.5"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="1.5"
-                            viewBox="0 0 24 24"
+                    {project.demo && (
+                        <a
+                            href={project.demo}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="compact-link compact-link--accent"
                         >
-                            <path d="M7 17L17 7M17 7H7M17 7v10" />
-                        </svg>
-                        Live Demo
-                    </a>
+                            <svg
+                                className="w-3.5 h-3.5"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="1.5"
+                                viewBox="0 0 24 24"
+                            >
+                                <path d="M7 17L17 7M17 7H7M17 7v10" />
+                            </svg>
+                            Live Demo
+                        </a>
+                    )}
                 </div>
             </motion.div>
 
@@ -461,9 +351,9 @@ function SynthRescueCard() {
                 {lightboxSrc && (
                     <LightboxModal
                         src={lightboxSrc}
-                        alt="SynthRescue"
+                        alt={project.title}
                         onClose={() => setLightboxSrc(null)}
-                        images={images}
+                        images={project.images}
                         currentIndex={lightboxIndex}
                         onNavigate={navigateLightbox}
                     />
@@ -474,12 +364,12 @@ function SynthRescueCard() {
 }
 
 /* ══════════════════════════════════════════════════════
-   Main Section — Asymmetric 2-Column Composition
+   Main Section — Balanced Two-Column Composition
    ══════════════════════════════════════════════════════ */
 export default function ProjectsEnhanced() {
     return (
         <section id="projects" className="py-24 md:py-32">
-            {/* Section heading — minimal, editorial */}
+            {/* Section heading */}
             <div className="section-container">
                 <motion.div
                     initial={{ opacity: 0, y: 16 }}
@@ -494,18 +384,16 @@ export default function ProjectsEnhanced() {
                 </motion.div>
             </div>
 
-            {/* Asymmetric grid: PlayNexus (7/12) | SynthRescue (5/12) */}
+            {/* Balanced 2-column grid */}
             <div className="section-container">
-                <div className="mt-16 md:mt-20 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 xl:gap-10 items-start">
-                    {/* PlayNexus — dominant column */}
-                    <div className="lg:col-span-7">
-                        <PlayNexusCard />
-                    </div>
-
-                    {/* SynthRescue — supporting column */}
-                    <div className="lg:col-span-5">
-                        <SynthRescueCard />
-                    </div>
+                <div className="mt-16 md:mt-20 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 lg:gap-10 items-start">
+                    {projects.map((project, i) => (
+                        <ProjectCard
+                            key={project.title}
+                            project={project}
+                            staggerIndex={i}
+                        />
+                    ))}
                 </div>
             </div>
         </section>
