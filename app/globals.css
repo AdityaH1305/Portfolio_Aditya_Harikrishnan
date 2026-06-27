@@ -337,36 +337,29 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
-   Orb Canvas Wrapper
+   Living Architecture — Canvas Panel
+   Desktop: persistent fixed panel on the right
+   Mobile:  compact breathing core in the top‑right
    ══════════════════════════════════════════════════════ */
 
-.orb-wrapper {
-  width: 100%;
-  height: 100%;
-  cursor: grab;
-  touch-action: none;
-  user-select: none;
-}
-
-.orb-wrapper:active {
-  cursor: grabbing;
-}
-
-/* Atmospheric field — extends the orb's visual influence
-   far beyond the container so the transition into the
-   page background is gradual and imperceptible. */
-#hero-orb::before {
-  content: "";
-  position: absolute;
-  inset: -300px;
-  background: radial-gradient(
-    ellipse closest-side at center,
-    rgba(212, 175, 55, 0.025) 0%,
-    rgba(212, 175, 55, 0.008) 50%,
-    rgba(212, 175, 55, 0) 100%
-  );
+.living-architecture-canvas {
+  position: fixed;
+  top: 0;
+  right: 0;
+  z-index: 1;
   pointer-events: none;
-  z-index: -1;
+  width: min(27vw, 400px);
+  height: 100vh;
+  height: 100dvh;
+}
+
+@media (max-width: 767px) {
+  .living-architecture-canvas {
+    width: 100px;
+    height: 100px;
+    top: 12px;
+    right: 12px;
+  }
 }
 
 /* ══════════════════════════════════════════════════════

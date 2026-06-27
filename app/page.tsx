@@ -25,6 +25,10 @@ const SignalField = dynamic(
     () => import("@/components/SignalField"),
     { ssr: false },
 );
+const LivingArchitecture = dynamic(
+    () => import("@/components/LivingArchitecture/LivingArchitecture"),
+    { ssr: false },
+);
 
 export default function Home() {
     const [showGame, setShowGame] = useState(false);
@@ -37,6 +41,7 @@ export default function Home() {
             {/* ── Background Systems ── */}
             <BackgroundAtmosphere />
             <SignalField />
+            <LivingArchitecture />
             <ScrollProgress />
             <CursorGlow />
 
