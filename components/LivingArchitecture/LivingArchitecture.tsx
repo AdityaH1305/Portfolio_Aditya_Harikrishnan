@@ -1,19 +1,24 @@
 /* ══════════════════════════════════════════════════════
    Living Architecture — React Component
-   Phase 1
+   Phase 2: Section-aware evolution
 
    Mounts a single <canvas>, creates the engine,
    handles resize via ResizeObserver, and respects
-   prefers‑reduced‑motion.
+   prefers-reduced-motion.
+
+   Phase 2 addition: IntersectionObserver watches each
+   named section in the portfolio and calls
+   engine.setStage() to drive smooth visual evolution.
 
    Desktop: fixed right panel (~27 vw, max 400 px)
-   Mobile:  compact 100 × 100 core in the top‑right
+   Mobile:  compact 100 × 100 core in the top-right
    ══════════════════════════════════════════════════════ */
 
 "use client";
 
 import { useRef, useEffect } from "react";
 import { LivingArchitectureEngine } from "./engine";
+import { SECTION_IDS } from "./stages";
 
 export default function LivingArchitecture() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -45,7 +50,7 @@ export default function LivingArchitecture() {
     }
 
     /* ── Observe CSS size changes (resize / orientation) ── */
-    const observer = new ResizeObserver((entries) => {
+    const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
       const { width, height } = entry.contentRect;
@@ -56,12 +61,40 @@ export default function LivingArchitecture() {
         }
       }
     });
-    observer.observe(canvas);
+    resizeObserver.observe(canvas);
+
+    /* ── Section observers for stage transitions ── */
+    const sectionObservers: IntersectionObserver[] = [];
+
+    SECTION_IDS.forEach((sectionId, stageIndex) => {
+      const element = document.getElementById(sectionId);
+      if (!element) return;
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+              engine.setStage(stageIndex);
+            }
+          });
+        },
+        {
+          // Trigger when the section crosses the top 40% of the viewport.
+          // Same margins as SideNav for consistency.
+          rootMargin: "-40% 0px -55% 0px",
+          threshold: 0,
+        },
+      );
+
+      observer.observe(element);
+      sectionObservers.push(observer);
+    });
 
     /* ── Cleanup ── */
     return () => {
       engine.stop();
-      observer.disconnect();
+      resizeObserver.disconnect();
+      sectionObservers.forEach((o) => o.disconnect());
       engineRef.current = null;
     };
   }, []);
