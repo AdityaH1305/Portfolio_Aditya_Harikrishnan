@@ -345,21 +345,13 @@ body {
 .living-architecture-canvas {
   position: fixed;
   top: 0;
-  right: 0;
-  z-index: 1;
-  pointer-events: none;
-  width: min(27vw, 400px);
+  left: 0;
+  width: 100vw;
   height: 100vh;
   height: 100dvh;
-}
-
-@media (max-width: 767px) {
-  .living-architecture-canvas {
-    width: 100px;
-    height: 100px;
-    top: 12px;
-    right: 12px;
-  }
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
 }
 
 /* ══════════════════════════════════════════════════════

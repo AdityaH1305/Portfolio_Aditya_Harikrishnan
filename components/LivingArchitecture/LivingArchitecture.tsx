@@ -1,17 +1,15 @@
 /* ══════════════════════════════════════════════════════
    Living Architecture — React Component
-   Phase 2: Section-aware evolution
+   Phase 3: Full-viewport right-weighted system atlas
 
-   Mounts a single <canvas>, creates the engine,
-   handles resize via ResizeObserver, and respects
-   prefers-reduced-motion.
-
-   Phase 2 addition: IntersectionObserver watches each
-   named section in the portfolio and calls
-   engine.setStage() to drive smooth visual evolution.
-
-   Desktop: fixed right panel (~27 vw, max 400 px)
-   Mobile:  compact 100 × 100 core in the top-right
+   Mounts a single <canvas> covering the viewport,
+   creates the engine, handles:
+   - Breakpoint detection via viewport width
+   - Resize via ResizeObserver
+   - Section activation via IntersectionObserver
+   - Pause when document is hidden
+   - Dynamic prefers-reduced-motion changes
+   - Full cleanup on unmount
    ══════════════════════════════════════════════════════ */
 
 "use client";
@@ -19,6 +17,7 @@
 import { useRef, useEffect } from "react";
 import { LivingArchitectureEngine } from "./engine";
 import { SECTION_IDS } from "./stages";
+import { getBreakpointMode } from "./config";
 
 export default function LivingArchitecture() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -31,31 +30,35 @@ export default function LivingArchitecture() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const reducedMotion = window.matchMedia(
+    // ── Initial state ──────────────────────────────────
+    const motionQuery = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
-    ).matches;
+    );
+    let reducedMotion = motionQuery.matches;
 
     const engine = new LivingArchitectureEngine(canvas, ctx, reducedMotion);
     engineRef.current = engine;
 
-    /* ── Initial sizing from CSS layout ── */
+    // ── Initial sizing from CSS layout ─────────────────
     const rect = canvas.getBoundingClientRect();
-    engine.resize(rect.width, rect.height);
+    const mode = getBreakpointMode(window.innerWidth);
+    engine.resize(rect.width, rect.height, mode);
 
-    /* ── Start (or render static for reduced motion) ── */
+    // ── Start (or render static for reduced motion) ────
     if (reducedMotion) {
       engine.drawStatic();
     } else {
       engine.start();
     }
 
-    /* ── Observe CSS size changes (resize / orientation) ── */
+    // ── Observe CSS size changes (resize / orientation) ─
     const resizeObserver = new ResizeObserver((entries) => {
       const entry = entries[0];
       if (!entry) return;
       const { width, height } = entry.contentRect;
       if (width > 0 && height > 0) {
-        engine.resize(width, height);
+        const newMode = getBreakpointMode(window.innerWidth);
+        engine.resize(width, height, newMode);
         if (reducedMotion) {
           engine.drawStatic();
         }
@@ -63,7 +66,30 @@ export default function LivingArchitecture() {
     });
     resizeObserver.observe(canvas);
 
-    /* ── Section observers for stage transitions ── */
+    // ── Document visibility (pause when tab hidden) ────
+    const handleVisibility = () => {
+      if (document.hidden) {
+        engine.pause();
+      } else if (!reducedMotion) {
+        engine.resume();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    // ── Dynamic reduced-motion preference ──────────────
+    const handleMotionChange = (e: MediaQueryListEvent) => {
+      reducedMotion = e.matches;
+      engine.setReducedMotion(reducedMotion);
+      if (reducedMotion) {
+        engine.stop();
+        engine.drawStatic();
+      } else {
+        engine.start();
+      }
+    };
+    motionQuery.addEventListener("change", handleMotionChange);
+
+    // ── Section observers for stage transitions ────────
     const sectionObservers: IntersectionObserver[] = [];
 
     SECTION_IDS.forEach((sectionId, stageIndex) => {
@@ -75,6 +101,9 @@ export default function LivingArchitecture() {
           entries.forEach((entry) => {
             if (entry.isIntersecting) {
               engine.setStage(stageIndex);
+              if (reducedMotion) {
+                engine.drawStatic();
+              }
             }
           });
         },
@@ -90,11 +119,13 @@ export default function LivingArchitecture() {
       sectionObservers.push(observer);
     });
 
-    /* ── Cleanup ── */
+    // ── Cleanup ────────────────────────────────────────
     return () => {
       engine.stop();
       resizeObserver.disconnect();
       sectionObservers.forEach((o) => o.disconnect());
+      document.removeEventListener("visibilitychange", handleVisibility);
+      motionQuery.removeEventListener("change", handleMotionChange);
       engineRef.current = null;
     };
   }, []);
