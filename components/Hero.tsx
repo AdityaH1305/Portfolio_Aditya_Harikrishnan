@@ -20,8 +20,8 @@ export default function Hero() {
                 >
                     {/* Name — very large editorial */}
                     <motion.div
-                        initial={{ opacity: 0, y: 32, filter: "blur(8px)" }}
-                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                        initial={{ opacity: 0, y: 32 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1.2, delay: 0.2, ease: EASE }}
                     >
                         <h1 className="heading-xl">
@@ -32,8 +32,8 @@ export default function Hero() {
 
                     {/* Tagline */}
                     <motion.div
-                        initial={{ opacity: 0, y: 24, filter: "blur(4px)" }}
-                        animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+                        initial={{ opacity: 0, y: 24 }}
+                        animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1.0, delay: 0.5, ease: EASE }}
                         className="mt-8 lg:mt-10"
                     >

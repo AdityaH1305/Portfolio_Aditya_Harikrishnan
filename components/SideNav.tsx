@@ -131,8 +131,8 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
 
             {/* Mobile: Fluid Island Nav */}
             <nav
-                className={`md:hidden fixed top-4 left-1/2 -translate-x-[50%] w-[calc(100%-2rem)] z-50 
-                           bg-[#050505]/60 backdrop-blur-2xl
+                className={`md:hidden fixed top-4 left-1/2 -translate-x-[50%] max-w-[calc(100%-2rem)] w-auto z-50 
+                           bg-[#050505]/60 backdrop-blur-xl
                            border border-[rgba(255,255,255,0.08)] rounded-full shadow-2xl
                            transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]
                            ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}

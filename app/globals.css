@@ -330,7 +330,7 @@ body {
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 12px rgba(212, 175, 55, 0.3);
+  box-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
   position: absolute;
   left: -3px;
   top: 0.5rem;
@@ -407,7 +407,7 @@ body {
 .atmosphere-noise {
   position: absolute;
   inset: 0;
-  opacity: 0.025;
+  opacity: 0.018;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
@@ -418,8 +418,8 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.015) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.015) 1px, transparent 1px);
+    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
   background-size: 80px 80px;
 }
 
@@ -433,15 +433,12 @@ body {
   );
 }
 
-@keyframes breatheGlow {
-  0% { transform: scale(1); }
-  100% { transform: scale(1.15); }
-}
-
 .atmosphere-glow {
   position: absolute;
   pointer-events: none;
-  animation: breatheGlow 8s ease-in-out infinite alternate;
+  /* Luminosity drift is now JS-driven in BackgroundAtmosphere.tsx
+     using three sine waves with irrational frequency ratios
+     for organic, non-repeating motion. */
 }
 
 .atmosphere-glow--hero {
@@ -624,5 +621,84 @@ body {
 
   .project-number {
     font-size: 3rem;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   Focus States — Keyboard Accessibility
+   ══════════════════════════════════════════════════════ */
+
+.side-nav-item:focus-visible {
+  outline: none;
+}
+
+.side-nav-item:focus-visible .side-nav-dot {
+  background: var(--accent);
+  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+}
+
+.side-nav-item:focus-visible .side-nav-number {
+  color: var(--accent);
+}
+
+.side-nav-item:focus-visible .side-nav-label {
+  opacity: 1;
+  transform: translateX(0);
+  color: var(--accent);
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.compact-link:focus-visible {
+  outline: none;
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.link-gold:focus-visible {
+  outline: none;
+  color: var(--accent);
+}
+
+.link-gold:focus-visible::after {
+  width: 100%;
+}
+
+/* ══════════════════════════════════════════════════════
+   Reduced Motion — Accessibility
+   ══════════════════════════════════════════════════════ */
+
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 50ms !important;
+  }
+
+  .atmosphere-noise {
+    animation: none;
+  }
+
+  .atmosphere-parallax {
+    will-change: auto;
+  }
+
+  .signal-divider::after {
+    animation: none;
   }
 }

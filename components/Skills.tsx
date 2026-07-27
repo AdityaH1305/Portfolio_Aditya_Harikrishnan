@@ -45,7 +45,7 @@ const skillGroups = [
     },
 ];
 
-const EASE: [number, number, number, number] = [0.25, 0.1, 0.25, 1];
+const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
 export default function Skills() {
     return (
