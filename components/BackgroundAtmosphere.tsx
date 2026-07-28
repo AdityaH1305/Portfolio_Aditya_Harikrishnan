@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback } from "react";
+import { EtherField } from "./etherField";
 
 /**
  * BackgroundAtmosphere — Gold-tinted ambient layers
@@ -26,6 +27,7 @@ export default function BackgroundAtmosphere() {
     const heroGlowRef = useRef<HTMLDivElement>(null);
     const midGlowRef = useRef<HTMLDivElement>(null);
     const lowerGlowRef = useRef<HTMLDivElement>(null);
+    const etherCanvasRef = useRef<HTMLCanvasElement>(null);
 
     const scrollCurrent = useRef(0);
     const scrollTarget = useRef(0);
@@ -33,6 +35,8 @@ export default function BackgroundAtmosphere() {
     const timeRef = useRef(0);
     const pausedRef = useRef(false);
     const lastTimestampRef = useRef(0);
+    const etherRef = useRef<EtherField | null>(null);
+    const etherCtxRef = useRef<CanvasRenderingContext2D | null>(null);
 
     const animate = useCallback((timestamp: number) => {
         if (pausedRef.current) return;
@@ -65,6 +69,19 @@ export default function BackgroundAtmosphere() {
         }
         if (lowerGlowRef.current) {
             lowerGlowRef.current.style.transform = `translateY(${s * -30}px)`;
+        }
+
+        // ── Ether depth field — driven by this same RAF loop ──
+        const ether = etherRef.current;
+        const ectx = etherCtxRef.current;
+        if (ether && ectx) {
+            // Read pointer position from CursorGlow's CSS variables (no new listener)
+            const root = document.documentElement;
+            const mx = parseFloat(root.style.getPropertyValue("--mouse-x")) || window.innerWidth / 2;
+            const my = parseFloat(root.style.getPropertyValue("--mouse-y")) || window.innerHeight / 2;
+            ether.update(dt, mx, my);
+            ectx.clearRect(0, 0, ectx.canvas.width, ectx.canvas.height);
+            ether.draw(ectx, ectx.canvas.width / (window.devicePixelRatio || 1), ectx.canvas.height / (window.devicePixelRatio || 1));
         }
 
         // Scroll-normalized position for section-aware glow
@@ -121,6 +138,51 @@ export default function BackgroundAtmosphere() {
         );
         const reducedMotion = motionQuery.matches;
 
+        // ── Ether field initialization ──
+        // Disable on touch/coarse-pointer devices (same gate as CursorGlow)
+        const isCoarse = window.matchMedia("(pointer: coarse)").matches;
+        const canvas = etherCanvasRef.current;
+
+        if (canvas && !isCoarse) {
+            const ctx = canvas.getContext("2d", { alpha: true });
+            if (ctx) {
+                etherCtxRef.current = ctx;
+                const ether = new EtherField();
+                etherRef.current = ether;
+
+                // Size the canvas to the viewport
+                const dpr = Math.min(window.devicePixelRatio || 1, 2);
+                const sizeCanvas = () => {
+                    const w = window.innerWidth;
+                    const h = window.innerHeight;
+                    canvas.width = w * dpr;
+                    canvas.height = h * dpr;
+                    canvas.style.width = `${w}px`;
+                    canvas.style.height = `${h}px`;
+                    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                    ether.resize(w, h);
+                };
+                sizeCanvas();
+
+                // Reuse ResizeObserver would require a container ref;
+                // simpler: listen for resize on the same passive scroll handler.
+                // Actually, piggyback on the window resize event (already used
+                // implicitly by the viewport). This is a single passive listener.
+                const onResize = () => sizeCanvas();
+                window.addEventListener("resize", onResize, { passive: true });
+
+                // For reduced-motion: render one static frame, no animation
+                if (reducedMotion) {
+                    ether.drawStatic(ctx, window.innerWidth, window.innerHeight);
+                }
+
+                // Store cleanup ref
+                (canvas as unknown as Record<string, () => void>).__etherCleanup = () => {
+                    window.removeEventListener("resize", onResize);
+                };
+            }
+        }
+
         const onScroll = () => {
             scrollTarget.current = window.scrollY;
         };
@@ -163,11 +225,21 @@ export default function BackgroundAtmosphere() {
             cancelAnimationFrame(rafId.current);
             document.removeEventListener("visibilitychange", handleVisibility);
             motionQuery.removeEventListener("change", handleMotionChange);
+            // Clean up ether resize listener
+            if (canvas) {
+                const cleanup = (canvas as unknown as Record<string, () => void>).__etherCleanup;
+                if (cleanup) cleanup();
+            }
         };
     }, [animate]);
 
     return (
         <div className="atmosphere-root" aria-hidden="true">
+            {/* Ether depth field — monochrome noise, behind all other atmosphere layers */}
+            <canvas
+                ref={etherCanvasRef}
+                className="atmosphere-ether"
+            />
             <div
                 ref={noiseRef}
                 className="atmosphere-noise atmosphere-parallax"
