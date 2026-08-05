@@ -1,6 +1,12 @@
 "use client";
 
 import { motion } from "framer-motion";
+import dynamic from "next/dynamic";
+
+const LiquidEther = dynamic(() => import("@/components/LiquidEther"), {
+    ssr: false,
+    loading: () => null,
+});
 
 const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
@@ -10,7 +16,22 @@ export default function Hero() {
             id="intro"
             className="relative min-h-[100dvh] flex items-center overflow-hidden pt-16 md:pt-0"
         >
-            <div className="section-container w-full">
+            {/* ── Liquid Ether Background — WebGL fluid behind Hero ── */}
+            <div className="liquid-ether-hero">
+                <LiquidEther
+                    colors={["#222222", "#444444", "#666666", "#888888", "#555555"]}
+                    mouseForce={25}
+                    cursorSize={160}
+                    resolution={0.5}
+                    autoDemo={true}
+                    autoSpeed={0.5}
+                    autoIntensity={3.0}
+                    dt={0.015}
+                    BFECC={true}
+                    iterationsPoisson={32}
+                />
+            </div>
+            <div className="section-container w-full" style={{ position: 'relative', zIndex: 1 }}>
                 {/* ── Typography ── */}
                 <motion.div
                     initial={{ opacity: 0 }}
