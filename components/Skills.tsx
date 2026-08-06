@@ -72,10 +72,10 @@ export default function Skills() {
                 >
                     {skillGroups.map((group) => (
                         <div key={group.category}>
-                            <h3 className="text-xs mono uppercase tracking-[0.15em] text-[var(--accent)] mb-4">
+                            <h3 className="text-xs mono uppercase tracking-[0.12em] text-[var(--accent)] mb-3.5">
                                 {group.category}
                             </h3>
-                            <ul className="space-y-2">
+                            <ul className="space-y-2.5">
                                 {group.skills.map((skill) => (
                                     <li
                                         key={skill}

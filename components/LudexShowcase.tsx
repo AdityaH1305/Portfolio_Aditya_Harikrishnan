@@ -186,7 +186,7 @@ export default function LudexShowcase() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.7, delay: 0.06, ease: EASE }}
                     viewport={{ once: true }}
-                    className="heading-xl mt-4"
+                    className="heading-xl mt-5"
                 >
                     Ludex
                 </motion.h2>
@@ -196,7 +196,7 @@ export default function LudexShowcase() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.12, ease: EASE }}
                     viewport={{ once: true }}
-                    className="body-lg mt-5 max-w-2xl"
+                    className="body-lg mt-6 max-w-2xl"
                 >
                     A hybrid recommendation engine that fuses content-based and
                     collaborative filtering to deliver measurably better game
@@ -220,7 +220,7 @@ export default function LudexShowcase() {
                     </div>
 
                     {/* Supporting metrics — inline, not a dashboard grid */}
-                    <div className="mt-8 flex flex-wrap gap-x-10 gap-y-4 items-baseline">
+                    <div className="mt-8 flex flex-wrap gap-x-12 gap-y-4 items-baseline">
                         <div className="flex items-baseline gap-2.5">
                             <span className="text-2xl md:text-3xl font-semibold text-[var(--foreground)] tracking-tight">
                                 +13%
@@ -446,7 +446,7 @@ export default function LudexShowcase() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.06, ease: EASE }}
                     viewport={{ once: true }}
-                    className="mt-8 flex flex-wrap gap-4"
+                    className="mt-10 flex flex-wrap gap-4"
                 >
                     <a
                         href="https://ludexsite.onrender.com/"

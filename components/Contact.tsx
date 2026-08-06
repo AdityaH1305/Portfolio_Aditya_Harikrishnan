@@ -34,7 +34,7 @@ export default function Contact() {
                                 something meaningful?
                             </span>
                         </h2>
-                        <p className="body-lg mt-6 max-w-md mx-auto">
+                        <p className="body-lg mt-7 max-w-md mx-auto">
                             Open to internships, research collaborations,
                             <br />
                             and ambitious projects.
@@ -47,7 +47,7 @@ export default function Contact() {
                         whileInView={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.45, delay: 0.1, ease: EASE }}
                         viewport={{ once: true }}
-                        className="mt-12 flex flex-col sm:flex-row gap-4"
+                        className="mt-14 flex flex-col sm:flex-row gap-4"
                     >
                         {/* Email */}
                         <a
@@ -101,7 +101,7 @@ export default function Contact() {
                             </span>
                         </div>
                     </div>
-                    <p className="text-xs text-[var(--text-tertiary)] text-center mt-4 pb-4">
+                    <p className="text-xs text-[var(--text-tertiary)] text-center mt-5 pb-6">
                         © {new Date().getFullYear()} Aditya Harikrishnan
                     </p>
                 </div>

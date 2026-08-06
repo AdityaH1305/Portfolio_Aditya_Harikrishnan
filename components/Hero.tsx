@@ -56,7 +56,7 @@ export default function Hero() {
                         initial={{ opacity: 0, y: 24 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1.0, delay: 0.5, ease: EASE }}
-                        className="mt-8 lg:mt-10"
+                        className="mt-10 lg:mt-12"
                     >
                         <p className="text-xl md:text-2xl lg:text-3xl font-light leading-snug text-[var(--text-secondary)] tracking-tight">
                             Building systems,
@@ -72,7 +72,7 @@ export default function Hero() {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1.0, delay: 0.7, ease: EASE }}
-                        className="mt-5 body-lg max-w-md"
+                        className="mt-6 body-lg max-w-md"
                     >
                         From recommendation engines
                         <br />
@@ -87,7 +87,7 @@ export default function Hero() {
                         className="mt-10 flex flex-wrap gap-x-10 gap-y-4"
                     >
                         <div>
-                            <p className="label mb-1">Education</p>
+                            <p className="label mb-1.5">Education</p>
                             <p className="text-sm text-[var(--text-secondary)]">
                                 B.Tech Computer Science
                                 <br />
@@ -95,7 +95,7 @@ export default function Hero() {
                             </p>
                         </div>
                         <div>
-                            <p className="label mb-1">Focus</p>
+                            <p className="label mb-1.5">Focus</p>
                             <p className="text-sm text-[var(--text-secondary)]">
                                 Full-Stack Development
                                 <br />
@@ -111,7 +111,7 @@ export default function Hero() {
                         initial={{ opacity: 0, y: 16 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 1.0, delay: 1.1, ease: EASE }}
-                        className="mt-12 flex flex-wrap items-center gap-4 group"
+                        className="mt-14 flex flex-wrap items-center gap-4 group"
                     >
                         <a href="#work" className="btn-primary group/btn flex items-center pr-2">
                             <span className="pl-2">View My Work</span>

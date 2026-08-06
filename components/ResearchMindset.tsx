@@ -54,7 +54,7 @@ export default function ResearchMindset() {
                     viewport={{ once: true }}
                 >
                     <p className="label">How I Think</p>
-                    <h2 className="heading-lg mt-3">Research Mindset</h2>
+                    <h2 className="heading-lg mt-4">Research Mindset</h2>
                     <p className="body-sm mt-3 max-w-lg text-[var(--text-tertiary)]">
                         Engineering is a process, not just a product.
                     </p>
@@ -78,10 +78,10 @@ export default function ResearchMindset() {
                             <span className="mono text-xs text-[var(--text-tertiary)] group-hover:text-[var(--accent)] transition-colors duration-300">
                                 {pillar.number}
                             </span>
-                            <h3 className="heading-sm mt-4 group-hover:text-[var(--accent)] transition-colors duration-300">
+                            <h3 className="heading-sm mt-3 group-hover:text-[var(--accent)] transition-colors duration-300">
                                 {pillar.title}
                             </h3>
-                            <p className="body-sm mt-4">{pillar.description}</p>
+                            <p className="body-sm mt-3.5">{pillar.description}</p>
                         </motion.div>
                     ))}
                 </div>

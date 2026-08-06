@@ -68,7 +68,7 @@ export default function Journey() {
                     viewport={{ once: true }}
                 >
                     <p className="label">The Path</p>
-                    <h2 className="heading-lg mt-3">Journey</h2>
+                    <h2 className="heading-lg mt-4">Journey</h2>
                 </motion.div>
 
                 {/* ── About text (preserved from original About component) ── */}
@@ -77,7 +77,7 @@ export default function Journey() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: 0.08, ease: EASE }}
                     viewport={{ once: true }}
-                    className="mt-10 max-w-2xl"
+                    className="mt-12 max-w-2xl"
                 >
                     <p className="body-lg">
                         I&apos;m a Computer Science undergrad at IIIT Pune who builds at
@@ -85,20 +85,20 @@ export default function Journey() {
                         recommendation systems that outperform baselines to full-stack data
                         platforms serving real-time analytics.
                     </p>
-                    <p className="body-lg mt-4">
+                    <p className="body-lg mt-5">
                         My approach: take a complex, messy problem, architect a clean
                         solution, then ship it. I care about scalable backends,
                         well-designed APIs, and ML systems that actually work in production
                         — not just in a notebook.
                     </p>
-                    <p className="mt-4 text-[var(--foreground)] font-semibold text-lg">
+                    <p className="mt-6 text-[var(--foreground)] font-semibold text-lg">
                         I&apos;m drawn to tools that decode complexity — making large
                         systems legible, navigable, and interactive.
                     </p>
                 </motion.div>
 
                 {/* ── Timeline ── */}
-                <div className="mt-20 relative pl-8 md:pl-12">
+                <div className="mt-24 relative pl-8 md:pl-12">
                     {/* Vertical line */}
                     <div className="timeline-line" />
 
@@ -142,7 +142,7 @@ export default function Journey() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: EASE }}
                     viewport={{ once: true }}
-                    className="mt-20 grid sm:grid-cols-3 gap-8 pt-10 border-t border-[rgba(255,255,255,0.04)]"
+                    className="mt-20 grid sm:grid-cols-3 gap-10 pt-10 border-t border-[rgba(255,255,255,0.04)]"
                 >
                     <div>
                         <p className="label mb-2">Education</p>

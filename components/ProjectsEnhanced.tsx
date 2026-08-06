@@ -291,7 +291,7 @@ function ProjectCard({
                 <p className="body-sm mt-3">{project.description}</p>
 
                 {/* Highlights */}
-                <ul className="mt-5 space-y-2">
+                <ul className="mt-5 space-y-2.5">
                     {project.highlights.map((item, i) => (
                         <li
                             key={i}
@@ -306,7 +306,7 @@ function ProjectCard({
                 </ul>
 
                 {/* CTA links */}
-                <div className="mt-6 flex gap-4 items-center">
+                <div className="mt-7 flex gap-4 items-center">
                     <a
                         href={project.github}
                         target="_blank"
@@ -378,7 +378,7 @@ export default function ProjectsEnhanced() {
                     viewport={{ once: true }}
                 >
                     <h2 className="heading-lg">Projects</h2>
-                    <p className="body-sm mt-3 max-w-lg text-[var(--text-tertiary)]">
+                    <p className="body-sm mt-4 max-w-lg text-[var(--text-tertiary)]">
                         Data platforms, AI systems, and full-stack engineering.
                     </p>
                 </motion.div>

@@ -64,7 +64,7 @@ export default function TransitionScreen({
                             {index}
                         </span>
                         <h3 className="heading-sm mt-3">{heading}</h3>
-                        <p className="body-sm mt-2.5 max-w-md">{body}</p>
+                        <p className="body-sm mt-3 max-w-md">{body}</p>
                     </motion.div>
                 </div>
             </div>
@@ -108,7 +108,7 @@ export default function TransitionScreen({
                             {index}
                         </span>
                         <h3 className="heading-sm mt-3">{heading}</h3>
-                        <p className="body-sm mt-2.5 max-w-md">{body}</p>
+                        <p className="body-sm mt-3 max-w-md">{body}</p>
                     </motion.div>
                 </div>
             </div>
