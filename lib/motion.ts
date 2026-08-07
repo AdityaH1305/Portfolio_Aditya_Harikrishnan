@@ -38,7 +38,11 @@ export function registerGsap(): void {
     if (registered || typeof window === "undefined") return;
     registered = true;
 
-    gsap.registerPlugin(ScrollTrigger);
+    // CustomEase must be registered too, not just imported — GSAP otherwise
+    // warns "Please gsap.registerPlugin(CustomEase)" and discards the ease,
+    // so every `ease: EASE` silently falls back to GSAP's default and the
+    // site stops matching its own CSS --ease curve.
+    gsap.registerPlugin(ScrollTrigger, CustomEase);
     CustomEase.create(EASE, "0.32,0.72,0,1");
 }
 
