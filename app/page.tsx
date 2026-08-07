@@ -14,6 +14,7 @@ import CursorGlow from "@/components/CursorGlow";
 import ScrollProgress from "@/components/ScrollProgress";
 import CommandPalette from "@/components/CommandPalette";
 import BackgroundAtmosphere from "@/components/BackgroundAtmosphere";
+import AtmosphereParallax from "@/components/AtmosphereParallax";
 
 /* ── Lazy-load heavy client-only modules — zero cost until needed ── */
 const SpaceInvadersModal = dynamic(
@@ -35,6 +36,7 @@ export default function Home() {
         <main className="bg-surface-0 text-primary min-h-screen relative">
             {/* ── Background Systems ── */}
             <BackgroundAtmosphere />
+            <AtmosphereParallax />
             <LivingArchitecture />
             <ScrollProgress />
             <CursorGlow />

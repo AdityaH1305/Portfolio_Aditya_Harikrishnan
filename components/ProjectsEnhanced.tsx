@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
+import Reveal from "@/components/Reveal";
+import { lockScroll, unlockScroll } from "@/lib/lenis";
 
 /* ══════════════════════════════════════════════════════
    Projects Section — Balanced Two-Column Composition
@@ -49,7 +50,6 @@ interface ProjectData {
     images: string[];
 }
 
-const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
 
 const projects: ProjectData[] = [
     {
@@ -134,26 +134,40 @@ function LightboxModal({
         [onClose, goPrev, goNext]
     );
 
+    /* This overlay never locked scroll — the page scrolled behind it. Under
+       Lenis that becomes a smooth glide behind a fullscreen modal, so the
+       lock is added here rather than left as a pre-existing bug. */
     useEffect(() => {
+        lockScroll();
         window.addEventListener("keydown", handleKey);
-        return () => window.removeEventListener("keydown", handleKey);
+        return () => {
+            unlockScroll();
+            window.removeEventListener("keydown", handleKey);
+        };
     }, [handleKey]);
 
+    /* Enter transition only. The lightbox unmounts immediately on close,
+       matching the previous exit duration closely enough that adding a
+       mount/visibility split here would be ceremony for 0.25s. */
+    const [shown, setShown] = useState(false);
+    useEffect(() => {
+        const id = requestAnimationFrame(() =>
+            requestAnimationFrame(() => setShown(true)),
+        );
+        return () => cancelAnimationFrame(id);
+    }, []);
+
     return (
-        <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.25 }}
-            className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md cursor-pointer"
+        <div
+            className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md cursor-pointer transition-opacity duration-[250ms] ${
+                shown ? "opacity-100" : "opacity-0"
+            }`}
             onClick={onClose}
         >
-            <motion.div
-                initial={{ scale: 0.9, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.9, opacity: 0 }}
-                transition={{ duration: 0.25 }}
-                className="relative max-w-[90vw] max-h-[85vh] w-auto h-auto shadow-2xl"
+            <div
+                className={`relative max-w-[90vw] max-h-[85vh] w-auto h-auto shadow-2xl transition-all duration-[250ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                    shown ? "opacity-100 scale-100" : "opacity-0 scale-90"
+                }`}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -195,8 +209,8 @@ function LightboxModal({
                         </button>
                     </>
                 )}
-            </motion.div>
-        </motion.div>
+            </div>
+        </div>
     );
 }
 
@@ -240,16 +254,7 @@ function ProjectCard({
     return (
         <div>
             {/* Hero image in double-bezel */}
-            <motion.div
-                initial={{ opacity: 0, y: 28 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{
-                    duration: 0.8,
-                    delay: 0.06 + baseDelay,
-                    ease: EASE,
-                }}
-                viewport={{ once: true }}
-            >
+            <Reveal y={28} duration={0.8} delay={0.06 + baseDelay}>
                 <div className="shell-bezel compact-bezel">
                     <div className="core-bezel overflow-hidden">
                         <div
@@ -272,20 +277,10 @@ function ProjectCard({
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </Reveal>
 
             {/* Content */}
-            <motion.div
-                initial={{ opacity: 0, y: 14 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{
-                    duration: 0.5,
-                    delay: 0.16 + baseDelay,
-                    ease: EASE,
-                }}
-                viewport={{ once: true }}
-                className="mt-7"
-            >
+            <Reveal y={14} delay={0.16 + baseDelay} className="mt-7">
                 <span className="compact-tag">{project.tag}</span>
                 <h3 className="heading-sm mt-2.5">{project.title}</h3>
                 <p className="body-sm mt-3">{project.description}</p>
@@ -344,10 +339,10 @@ function ProjectCard({
                         </a>
                     )}
                 </div>
-            </motion.div>
+            </Reveal>
 
             {/* Lightbox */}
-            <AnimatePresence>
+            <>
                 {lightboxSrc && (
                     <LightboxModal
                         src={lightboxSrc}
@@ -358,7 +353,7 @@ function ProjectCard({
                         onNavigate={navigateLightbox}
                     />
                 )}
-            </AnimatePresence>
+            </>
         </div>
     );
 }
@@ -371,18 +366,13 @@ export default function ProjectsEnhanced() {
         <section id="projects" className="section-y section-divide">
             {/* Section heading */}
             <div className="section-container">
-                <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: EASE }}
-                    viewport={{ once: true }}
-                >
+                <Reveal y={16}>
                     <p className="label">03 / Projects</p>
                     <h2 className="heading-lg mt-3">More Work</h2>
                     <p className="body-lg mt-4 max-w-lg">
                         Data platforms, applied AI, and full-stack engineering.
                     </p>
-                </motion.div>
+                </Reveal>
             </div>
 
             {/* Balanced 2-column grid */}

@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { EASE } from "@/lib/motion";
+import Reveal from "@/components/Reveal";
 
 /* ══════════════════════════════════════════════════════
    Stack — Editorial Layout
@@ -54,22 +53,15 @@ export default function Skills() {
         <section id="stack" className="section-y section-divide">
             <div className="section-container">
                 {/* ── Header ── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: EASE }}
-                    viewport={{ once: true }}
-                >
+                <Reveal y={12}>
                     <p className="label">05 / Stack</p>
                     <h2 className="heading-lg mt-3">Skills &amp; Tools</h2>
-                </motion.div>
+                </Reveal>
 
                 {/* ── Skill Groups — editorial columns ── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.1, ease: EASE }}
-                    viewport={{ once: true }}
+                <Reveal
+                    y={16}
+                    delay={0.1}
                     className="mt-12 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-16 gap-y-10"
                 >
                     {skillGroups.map((group) => (
@@ -87,7 +79,7 @@ export default function Skills() {
                             </ul>
                         </div>
                     ))}
-                </motion.div>
+                </Reveal>
             </div>
         </section>
     );

@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { EASE } from "@/lib/motion";
+import Reveal from "@/components/Reveal";
 
 /* ══════════════════════════════════════════════════════
    Contact Section
@@ -19,12 +18,7 @@ export default function Contact() {
             <div className="section-container">
                 <div className="flex flex-col items-center text-center">
                     {/* ── Heading — personal, distinctive ── */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.6, ease: EASE }}
-                        viewport={{ once: true }}
-                    >
+                    <Reveal y={20} duration={0.6}>
                         <p className="label">07 / Contact</p>
                         <h2 className="heading-lg mt-3">
                             Interested in building
@@ -38,14 +32,13 @@ export default function Contact() {
                             <br />
                             and ambitious projects.
                         </p>
-                    </motion.div>
+                    </Reveal>
 
                     {/* ── Contact Links ── */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 12 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.45, delay: 0.1, ease: EASE }}
-                        viewport={{ once: true }}
+                    <Reveal
+                        y={12}
+                        duration={0.45}
+                        delay={0.1}
                         className="mt-14 flex flex-col sm:flex-row gap-4"
                     >
                         {/* Email */}
@@ -75,7 +68,7 @@ export default function Contact() {
                         >
                             LinkedIn
                         </a>
-                    </motion.div>
+                    </Reveal>
                 </div>
             </div>
 

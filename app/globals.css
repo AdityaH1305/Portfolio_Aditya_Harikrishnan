@@ -83,8 +83,29 @@
 
 /* ── Base ── */
 
-html {
-  scroll-behavior: smooth;
+/* ── Lenis ──
+   `scroll-behavior: smooth` is deliberately absent: it double-animates
+   against every lenis.scrollTo. Lenis owns smoothing now.
+
+   `.lenis-stopped { overflow: hidden }` is what gives lockScroll() its
+   CSS overflow lock, which is why the modals no longer touch
+   document.body.style.overflow themselves. */
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+.lenis.lenis-smooth [data-lenis-prevent] {
+  overscroll-behavior: contain;
 }
 
 body {
@@ -487,7 +508,9 @@ body {
   height: 400px;
   top: 5%;
   left: 50%;
-  transform: translateX(-50%);
+  /* margin-left rather than translateX(-50%): the parallax tween owns the
+     transform channel, and a CSS transform here would be overwritten. */
+  margin-left: -300px;
   background: radial-gradient(
     circle closest-side,
     rgba(34, 211, 238, 0.05) 0%,
@@ -678,9 +701,32 @@ body {
    Reduced Motion — Accessibility
    ══════════════════════════════════════════════════════ */
 
+/* Staggered reveals animate their children, so the children carry the
+   start state. Single-element reveals inline it instead, server-rendered,
+   so there is never a frame where content is visible before GSAP hides it. */
+[data-reveal-child] {
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+/* If JS never runs, nothing may stay invisible. */
+@media (scripting: none) {
+  [data-reveal],
+  [data-reveal-child] {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
+  }
+
+  [data-reveal],
+  [data-reveal-child] {
+    opacity: 1 !important;
+    transform: none !important;
   }
 
   *,

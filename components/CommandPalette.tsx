@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { motion, AnimatePresence } from "framer-motion";
+import { lockScroll, unlockScroll, scrollToSection } from "@/lib/lenis";
 
 const RESUME_URL =
     "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
@@ -37,11 +37,7 @@ function getCommands(onOpenGame: () => void): Command[] {
             label,
             icon,
             section: "Navigate",
-            action: () => {
-                document
-                    .getElementById(id)
-                    ?.scrollIntoView({ behavior: "smooth" });
-            },
+            action: () => scrollToSection(id),
         })),
         {
             id: "resume",
@@ -82,6 +78,8 @@ export default function CommandPalette({
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
     const [selectedIndex, setSelectedIndex] = useState(0);
+    const [render, setRender] = useState(false);
+    const [shown, setShown] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
 
     const commands = getCommands(onOpenGame);
@@ -113,35 +111,63 @@ export default function CommandPalette({
         return () => window.removeEventListener("keydown", handleKeyDown);
     }, [togglePalette]);
 
-    // Focus input when opened — one frame later so the entry animation starts first
+    /* Mount/visibility split.
+
+       GSAP has no equivalent of AnimatePresence's unmount deferral, so the
+       exit transition needs the element to stay mounted while it plays.
+       `render` controls presence in the DOM, `shown` controls the visual
+       state, and onTransitionEnd unmounts once the fade finishes. This is
+       the same pattern SpaceInvadersModal already uses. */
+    // Mount as soon as `open` flips true. A render-phase update rather than
+    // an effect, so the element is in the DOM before the browser paints.
+    if (open && !render) setRender(true);
+
     useEffect(() => {
-        if (!open) return;
-        const id = requestAnimationFrame(() => inputRef.current?.focus());
+        // Both branches schedule inside rAF: a synchronous setState in an
+        // effect body causes a cascading render, and the entry transition
+        // needs a painted "from" state to animate away from anyway.
+        if (open) {
+            const id = requestAnimationFrame(() =>
+                requestAnimationFrame(() => {
+                    setShown(true);
+                    inputRef.current?.focus();
+                }),
+            );
+            return () => cancelAnimationFrame(id);
+        }
+        const id = requestAnimationFrame(() => setShown(false));
         return () => cancelAnimationFrame(id);
     }, [open]);
 
-    // Lock scroll when open
+    const handleTransitionEnd = useCallback(() => {
+        if (!shown) setRender(false);
+    }, [shown]);
+
+    /* Lock scroll when open.
+       body{overflow:hidden} does not stop Lenis — it binds wheel/touchmove
+       on window and drives scroll itself. The lock is reference-counted
+       because choosing the game command unlocks here while the game modal
+       locks in an overlapping effect. */
     useEffect(() => {
-        if (open) {
-            document.body.style.overflow = "hidden";
-        } else {
-            document.body.style.overflow = "";
-        }
-        return () => {
-            document.body.style.overflow = "";
-        };
+        if (!open) return;
+        lockScroll();
+        return unlockScroll;
     }, [open]);
 
-    const runCommand = useCallback(
-        (cmd: Command) => {
-            setOpen(false);
-            // Small delay so the close animation plays before action
-            requestAnimationFrame(() => {
-                cmd.action();
-            });
-        },
-        []
-    );
+    const runCommand = useCallback((cmd: Command) => {
+        setOpen(false);
+
+        /* Release the lock HERE rather than leaving it to the effect cleanup.
+           React has not committed the close yet when this runs, so the
+           cleanup — and therefore lenis.start() — has not happened; a scroll
+           issued now would be against a stopped instance and go nowhere.
+           The cleanup unlocking again is harmless: the count clamps at 0.
+
+           The rAF then lets the close commit before the scroll begins, so
+           the palette fades as the page starts moving. */
+        unlockScroll();
+        requestAnimationFrame(() => cmd.action());
+    }, []);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -177,29 +203,28 @@ export default function CommandPalette({
         globalIdx++;
     }
 
+    if (!render) return null;
+
     return (
-        <AnimatePresence>
-            {open && (
-                <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.15 }}
-                    className="fixed inset-0 z-[9998] flex items-start justify-center pt-[20vh] bg-black/60 backdrop-blur-sm"
-                    onClick={() => setOpen(false)}
-                    role="dialog"
-                    aria-modal="true"
-                    aria-label="Command Palette"
-                >
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.96, y: -8 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.96, y: -8 }}
-                        transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="w-full max-w-[520px] mx-4 rounded-xl border border-edge-strong bg-surface-2/95 shadow-2xl overflow-hidden backdrop-blur-xl"
-                        onClick={(e) => e.stopPropagation()}
-                        onKeyDown={handleKeyDown}
-                    >
+        <div
+            onTransitionEnd={handleTransitionEnd}
+            className={`fixed inset-0 z-[9998] flex items-start justify-center pt-[20vh] bg-black/60 backdrop-blur-sm transition-opacity duration-150 ${
+                shown ? "opacity-100" : "opacity-0"
+            }`}
+            onClick={() => setOpen(false)}
+            role="dialog"
+            aria-modal="true"
+            aria-label="Command Palette"
+        >
+            <div
+                className={`w-full max-w-[520px] mx-4 rounded-xl border border-edge-strong bg-surface-2/95 shadow-2xl overflow-hidden backdrop-blur-xl transition-all duration-150 ease-out ${
+                    shown
+                        ? "opacity-100 scale-100 translate-y-0"
+                        : "opacity-0 scale-[0.96] -translate-y-2"
+                }`}
+                onClick={(e) => e.stopPropagation()}
+                onKeyDown={handleKeyDown}
+            >
                         {/* Search input */}
                         <div className="flex items-center gap-3 px-4 py-3 border-b border-edge-default">
                             <svg
@@ -231,7 +256,12 @@ export default function CommandPalette({
                         </div>
 
                         {/* Results */}
-                        <div className="max-h-[320px] overflow-y-auto py-2">
+                        {/* data-lenis-prevent: without it Lenis swallows wheel
+                            events here and the results list can't scroll. */}
+                        <div
+                            className="max-h-[320px] overflow-y-auto py-2"
+                            data-lenis-prevent
+                        >
                             {filtered.length === 0 && (
                                 <p className="px-4 py-6 text-sm text-tertiary text-center">
                                     No results found.
@@ -275,9 +305,7 @@ export default function CommandPalette({
                             <span>↵ select</span>
                             <span>esc close</span>
                         </div>
-                    </motion.div>
-                </motion.div>
-            )}
-        </AnimatePresence>
+            </div>
+        </div>
     );
 }

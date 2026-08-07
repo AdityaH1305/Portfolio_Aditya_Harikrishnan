@@ -1,54 +1,50 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
+import { gsap, ScrollTrigger } from "@/lib/motion";
 
 /**
- * ScrollProgress — Gold progress bar at the top of the viewport.
+ * ScrollProgress — accent progress bar at the top of the viewport.
  *
- * Performance:
- * - Zero React re-renders during scroll (direct ref.style mutation)
- * - Passive scroll listener — no jank
- * - Pauses when document is hidden
- * - Respects prefers-reduced-motion (hidden)
+ * Driven by ScrollTrigger rather than a native scroll listener. Under
+ * Lenis the page moves on an eased clock, so a native `scroll` listener
+ * and the rendered position visibly desynchronise during a long glide.
+ *
+ * gsap.matchMedia also fixes a bug in the previous version: it returned
+ * early when reduced motion was set, *before* installing the change
+ * listener, so turning the preference back off never restored the bar.
  */
 export default function ScrollProgress() {
     const barRef = useRef<HTMLDivElement>(null);
 
-    useEffect(() => {
+    useGSAP(() => {
         const bar = barRef.current;
         if (!bar) return;
 
-        // Respect reduced motion — hide the bar entirely
-        const motionQuery = window.matchMedia(
-            "(prefers-reduced-motion: reduce)",
-        );
-        if (motionQuery.matches) {
+        const mm = gsap.matchMedia();
+
+        mm.add("(prefers-reduced-motion: no-preference)", () => {
+            bar.style.display = "";
+            const st = ScrollTrigger.create({
+                start: 0,
+                end: "max",
+                onUpdate: (self) => {
+                    bar.style.width = `${self.progress * 100}%`;
+                },
+            });
+            return () => st.kill();
+        });
+
+        mm.add("(prefers-reduced-motion: reduce)", () => {
             bar.style.display = "none";
-            return;
-        }
+            return () => {
+                bar.style.display = "";
+            };
+        });
 
-        const update = () => {
-            const scrollTop = window.scrollY;
-            const docHeight =
-                document.documentElement.scrollHeight - window.innerHeight;
-            const pct = docHeight > 0 ? (scrollTop / docHeight) * 100 : 0;
-            bar.style.width = `${pct}%`;
-        };
-
-        window.addEventListener("scroll", update, { passive: true });
-        update();
-
-        // Respond to dynamic reduced-motion changes
-        const handleMotionChange = (e: MediaQueryListEvent) => {
-            bar.style.display = e.matches ? "none" : "";
-        };
-        motionQuery.addEventListener("change", handleMotionChange);
-
-        return () => {
-            window.removeEventListener("scroll", update);
-            motionQuery.removeEventListener("change", handleMotionChange);
-        };
-    }, []);
+        return () => mm.revert();
+    });
 
     return (
         <div

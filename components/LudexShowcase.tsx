@@ -1,8 +1,9 @@
 "use client";
 
 import { Fragment, useEffect, useRef, useState } from "react";
-import { motion } from "framer-motion";
-import { EASE } from "@/lib/motion";
+import { useGSAP } from "@gsap/react";
+import Reveal from "@/components/Reveal";
+import { gsap, EASE } from "@/lib/motion";
 
 /* ══════════════════════════════════════════════════════
    LudexShowcase — Immersive Case Study
@@ -91,11 +92,9 @@ function StageNode({
     delay: number;
 }) {
     return (
-        <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay, ease: EASE }}
-            viewport={{ once: true }}
+        <Reveal
+            y={12}
+            delay={delay}
             className={`px-4 lg:px-5 py-5 border text-center ${
                 stage.accent
                     ? "border-accent bg-accent/5"
@@ -123,7 +122,7 @@ function StageNode({
             <p className="text-[11px] text-tertiary mt-1.5 leading-snug">
                 {stage.detail}
             </p>
-        </motion.div>
+        </Reveal>
     );
 }
 
@@ -176,6 +175,42 @@ export default function LudexShowcase() {
     const [inView, setInView] = useState(false);
     const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
     const mediaRef = useRef<HTMLDivElement>(null);
+    const tabRowRef = useRef<HTMLDivElement>(null);
+    const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
+    const underlineRef = useRef<HTMLSpanElement>(null);
+
+    /* Slide the tab underline. Replaces Framer's layoutId projection with a
+       direct measurement — the two tabs are siblings in a flex row, so this
+       is simpler than a FLIP and keeps the underline a single element. */
+    useGSAP(
+        () => {
+            const move = (animate: boolean) => {
+                const btn = tabRefs.current[activeVideo];
+                const bar = underlineRef.current;
+                if (!btn || !bar) return;
+                gsap.to(bar, {
+                    x: btn.offsetLeft,
+                    width: btn.offsetWidth,
+                    duration: animate ? 0.3 : 0,
+                    ease: EASE,
+                    overwrite: "auto",
+                });
+            };
+
+            move(false);
+
+            /* Re-measure after the webfont swaps in: next/font uses
+               display:swap, so button widths change once Space Grotesk
+               replaces the fallback and the underline would be stale. */
+            const row = tabRowRef.current;
+            const ro = new ResizeObserver(() => move(false));
+            if (row) ro.observe(row);
+            document.fonts?.ready.then(() => move(false));
+
+            return () => ro.disconnect();
+        },
+        { dependencies: [activeVideo] },
+    );
 
     /* Both videos used to mount with autoPlay and merely crossfade, so
        both downloaded (6.4 MB) and both decoded forever — including the
@@ -216,45 +251,41 @@ export default function LudexShowcase() {
 
             {/* ═══════════ HEADER ═══════════ */}
             <div className="section-container">
-                <motion.p
-                    initial={{ opacity: 0, y: 10 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: EASE }}
-                    viewport={{ once: true }}
+                <Reveal
+                    as="p"
+                    y={10}
                     className="label"
                 >
                     02 / Featured Work
-                </motion.p>
+                </Reveal>
 
-                <motion.h2
-                    initial={{ opacity: 0, y: 24 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.7, delay: 0.06, ease: EASE }}
-                    viewport={{ once: true }}
+                <Reveal
+                    as="h2"
+                    y={24}
+                    duration={0.7}
+                    delay={0.06}
                     className="heading-xl mt-5"
                 >
                     Ludex
-                </motion.h2>
+                </Reveal>
 
-                <motion.p
-                    initial={{ opacity: 0, y: 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.12, ease: EASE }}
-                    viewport={{ once: true }}
+                <Reveal
+                    as="p"
+                    y={14}
+                    delay={0.12}
                     className="body-lg mt-6 max-w-2xl"
                 >
                     A hybrid recommendation engine that fuses content-based
                     filtering with implicit ALS (Alternating Least Squares) to
                     deliver measurably better Steam game discovery — evaluated
                     against both standalone baselines and documented in full.
-                </motion.p>
+                </Reveal>
 
                 {/* ═══════════ HERO METRIC ═══════════ */}
-                <motion.div
-                    initial={{ opacity: 0, y: 28 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.8, delay: 0.18, ease: EASE }}
-                    viewport={{ once: true }}
+                <Reveal
+                    y={28}
+                    duration={0.8}
+                    delay={0.18}
                     className="mt-14 md:mt-20"
                 >
                     {/* Primary metric — the anchor of recruiter memory */}
@@ -292,15 +323,12 @@ export default function LudexShowcase() {
                             </span>
                         </div>
                     </div>
-                </motion.div>
+                </Reveal>
 
                 {/* ═══════════ NARRATIVE — 3-column editorial ═══════════ */}
                 <div className="mt-20 md:mt-24 grid lg:grid-cols-3 gap-10 lg:gap-14">
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, ease: EASE }}
-                        viewport={{ once: true }}
+                    <Reveal
+                        y={16}
                     >
                         <h3 className="heading-sm">The Problem</h3>
                         <p className="body-sm mt-3">
@@ -310,13 +338,11 @@ export default function LudexShowcase() {
                             Neither alone delivers reliable personalization at
                             scale.
                         </p>
-                    </motion.div>
+                    </Reveal>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.08, ease: EASE }}
-                        viewport={{ once: true }}
+                    <Reveal
+                        y={16}
+                        delay={0.08}
                     >
                         <h3 className="heading-sm">The Approach</h3>
                         <p className="body-sm mt-3">
@@ -326,13 +352,11 @@ export default function LudexShowcase() {
                             system that compensates for each method&apos;s blind
                             spots.
                         </p>
-                    </motion.div>
+                    </Reveal>
 
-                    <motion.div
-                        initial={{ opacity: 0, y: 16 }}
-                        whileInView={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.5, delay: 0.16, ease: EASE }}
-                        viewport={{ once: true }}
+                    <Reveal
+                        y={16}
+                        delay={0.16}
                     >
                         <h3 className="heading-sm">The Result</h3>
                         <p className="body-sm mt-3">
@@ -341,7 +365,7 @@ export default function LudexShowcase() {
                             Findings validated and documented as a technical report
                             on hybrid recommendation systems.
                         </p>
-                    </motion.div>
+                    </Reveal>
                 </div>
             </div>
 
@@ -351,11 +375,10 @@ export default function LudexShowcase() {
                 double-bezel (shell-bezel + core-bezel) for
                 premium materiality.
                 ═══════════════════════════════════════════════ */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
-                viewport={{ once: true }}
+            <Reveal
+                y={20}
+                duration={0.6}
+                delay={0.1}
                 className="mt-20 md:mt-24 px-5 md:px-10 max-w-5xl mx-auto"
             >
                 <div className="shell-bezel">
@@ -389,7 +412,7 @@ export default function LudexShowcase() {
                         </div>
                     </div>
                 </div>
-            </motion.div>
+            </Reveal>
 
             {/* ═══════════ VIDEO SHOWCASE ═══════════
                 Tab selectors sit outside the bezel for an
@@ -397,40 +420,40 @@ export default function LudexShowcase() {
                 Both videos are mounted; opacity crossfade avoids
                 reload delay on switch.
                 ═══════════════════════════════════════ */}
-            <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.1, ease: EASE }}
-                viewport={{ once: true }}
-                ref={mediaRef}
+            <Reveal
+                y={20}
+                duration={0.6}
+                delay={0.1}
                 className="mt-14 md:mt-16 px-5 md:px-10 max-w-5xl mx-auto"
             >
+                {/* mediaRef sits inside the Reveal: it gates video download on
+                    visibility, which is independent of the reveal animation. */}
+                <div ref={mediaRef}>
                 {/* Tab selectors */}
-                <div className="flex gap-6 mb-4">
+                <div ref={tabRowRef} className="flex gap-6 mb-4 relative">
                     {videos.map((v, i) => (
                         <button
                             key={v.id}
+                            ref={(el) => {
+                                tabRefs.current[i] = el;
+                            }}
                             onClick={() => setActiveVideo(i)}
-                            className={`text-sm font-medium pb-1.5 relative transition-colors duration-300 ${
+                            className={`text-sm font-medium pb-1.5 transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
                                 activeVideo === i
                                     ? "text-primary"
                                     : "text-tertiary hover:text-secondary"
                             }`}
-                            style={{
-                                transitionTimingFunction:
-                                    "cubic-bezier(0.32, 0.72, 0, 1)",
-                            }}
                         >
                             {v.label}
-                            {activeVideo === i && (
-                                <motion.div
-                                    layoutId="ludex-video-tab"
-                                    className="absolute bottom-0 left-0 right-0 h-px bg-accent"
-                                    transition={{ duration: 0.3, ease: EASE }}
-                                />
-                            )}
                         </button>
                     ))}
+                    {/* One persistent underline slid by GSAP, rather than a
+                        per-tab element cross-faded by layout projection. */}
+                    <span
+                        ref={underlineRef}
+                        aria-hidden="true"
+                        className="absolute bottom-0 left-0 h-px w-0 bg-accent pointer-events-none"
+                    />
                 </div>
 
                 {/* Video in double-bezel */}
@@ -470,15 +493,13 @@ export default function LudexShowcase() {
                         </div>
                     </div>
                 </div>
-            </motion.div>
+                </div>
+            </Reveal>
 
             {/* ═══════════ TECH STACK + CTAs ═══════════ */}
             <div className="section-container">
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: EASE }}
-                    viewport={{ once: true }}
+                <Reveal
+                    y={12}
                     className="mt-14 flex flex-wrap gap-2.5"
                 >
                     {techStack.map((tech) => (
@@ -490,13 +511,11 @@ export default function LudexShowcase() {
                             {tech}
                         </span>
                     ))}
-                </motion.div>
+                </Reveal>
 
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.06, ease: EASE }}
-                    viewport={{ once: true }}
+                <Reveal
+                    y={12}
+                    delay={0.06}
                     className="mt-10 flex flex-wrap gap-4"
                 >
                     {/* The report is the strongest artifact on the site for a
@@ -536,7 +555,7 @@ export default function LudexShowcase() {
                     >
                         View on GitHub
                     </a>
-                </motion.div>
+                </Reveal>
 
                 <p className="label-muted mt-4 normal-case tracking-normal">
                     PDF · 2.1 MB

@@ -1,7 +1,6 @@
 "use client";
 
-import { motion } from "framer-motion";
-import { EASE } from "@/lib/motion";
+import Reveal from "@/components/Reveal";
 
 /* ══════════════════════════════════════════════════════
    Journey Section — Vertical Animated Timeline
@@ -54,24 +53,13 @@ export default function Journey() {
         <section id="journey" className="section-y section-divide">
             <div className="section-container">
                 {/* ── Header ── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 16 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: EASE }}
-                    viewport={{ once: true }}
-                >
+                <Reveal y={16}>
                     <p className="label">06 / The Path</p>
                     <h2 className="heading-lg mt-3">Journey</h2>
-                </motion.div>
+                </Reveal>
 
                 {/* ── About text (preserved from original About component) ── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 14 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.08, ease: EASE }}
-                    viewport={{ once: true }}
-                    className="mt-12 max-w-2xl"
-                >
+                <Reveal y={14} delay={0.08} className="mt-12 max-w-2xl">
                     <p className="body-lg">
                         I&apos;m a Computer Science undergrad at IIIT Pune who builds at
                         the intersection of software engineering and machine learning — from
@@ -88,7 +76,7 @@ export default function Journey() {
                         I&apos;m drawn to tools that decode complexity — making large
                         systems legible, navigable, and interactive.
                     </p>
-                </motion.div>
+                </Reveal>
 
                 {/* ── Timeline ── */}
                 <div className="mt-24 relative pl-8 md:pl-12">
@@ -96,17 +84,11 @@ export default function Journey() {
                     <div className="timeline-line" />
 
                     <div className="space-y-16">
-                        {timelineEntries.map((entry, i) => (
-                            <motion.div
+                        {timelineEntries.map((entry) => (
+                            <Reveal
                                 key={`${entry.year}-${entry.title}`}
-                                initial={{ opacity: 0, x: -16 }}
-                                whileInView={{ opacity: 1, x: 0 }}
-                                transition={{
-                                    duration: 0.5,
-                                    delay: i * 0.05,
-                                    ease: EASE,
-                                }}
-                                viewport={{ once: true }}
+                                x={-16}
+                                y={0}
                                 className="relative"
                             >
                                 {/* Timeline dot */}
@@ -124,17 +106,14 @@ export default function Journey() {
                                 <p className="body-sm mt-3 max-w-lg">
                                     {entry.description}
                                 </p>
-                            </motion.div>
+                            </Reveal>
                         ))}
                     </div>
                 </div>
 
                 {/* ── Current Status (preserved from About) ── */}
-                <motion.div
-                    initial={{ opacity: 0, y: 12 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, ease: EASE }}
-                    viewport={{ once: true }}
+                <Reveal
+                    y={12}
                     className="mt-20 grid sm:grid-cols-3 gap-10 pt-10 border-t border-edge"
                 >
                     <div>
@@ -155,7 +134,7 @@ export default function Journey() {
                             Available for Opportunities
                         </p>
                     </div>
-                </motion.div>
+                </Reveal>
             </div>
         </section>
     );

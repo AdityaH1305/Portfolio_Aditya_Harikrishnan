@@ -139,7 +139,10 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                            transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]
                            ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
             >
-                <div className="flex justify-between items-center px-5 py-3">
+                {/* gap-6, not just justify-between: the pill is w-auto, so it
+                    shrinks to content and justify-between has nothing to
+                    distribute — the logo and links end up touching. */}
+                <div className="flex justify-between items-center gap-6 px-5 py-3">
                     <a
                         href="#intro"
                         onClick={handleEasterEgg}

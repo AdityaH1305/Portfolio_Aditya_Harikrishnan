@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useCallback, useState } from "react";
 import SpaceInvadersGame from "./SpaceInvadersGame";
+import { lockScroll, unlockScroll } from "@/lib/lenis";
 
 interface SpaceInvadersModalProps {
   onClose: () => void;
@@ -84,12 +85,14 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
     [onClose],
   );
 
-  /* ── Lock scroll + bind ESC ── */
+  /* ── Lock scroll + bind ESC ──
+     lockScroll() rather than body.style.overflow: Lenis drives scroll from
+     its own wheel/touch handlers and ignores body overflow entirely. */
   useEffect(() => {
-    document.body.style.overflow = "hidden";
+    lockScroll();
     window.addEventListener("keydown", handleKey);
     return () => {
-      document.body.style.overflow = "";
+      unlockScroll();
       window.removeEventListener("keydown", handleKey);
     };
   }, [handleKey]);
@@ -128,6 +131,7 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
 
       {/* modal card */}
       <div
+        data-lenis-prevent
         className={`
           relative z-10
           w-full max-w-[680px]

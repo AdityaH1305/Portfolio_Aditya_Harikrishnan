@@ -54,7 +54,8 @@ import {
   type BranchRole,
 } from "./config";
 
-import { STAGES, STAGE_TRANSITION_DURATION, type StageConfig } from "./stages";
+import { STAGES, STAGE_TRANSITION_DURATION, type StageConfig } from "./stages.ts";
+import { blendStages, bracket } from "./blend.ts";
 
 // ── Types ──────────────────────────────────────────────
 
@@ -133,6 +134,13 @@ interface ConduitState {
 }
 
 // ── Animated scalar ────────────────────────────────────
+
+interface ApplyStageOpts {
+  /** Apply per-role transition delays. False for scrub — see setProgress. */
+  stagger?: boolean;
+  /** Re-derive conduit endpoints. False mid-blend to stop them flickering. */
+  reconcileTopology?: boolean;
+}
 
 interface AnimatedValue {
   current: number;
@@ -257,6 +265,11 @@ export class LivingArchitectureEngine {
 
   // Stage
   private currentStage = 0;
+  /** Continuous scrub position across stages; only meaningful in scrubMode. */
+  private scrubProgress = 0;
+  private scrubMode = false;
+  /** Nearest stage the conduit topology was last built for. */
+  private lastTopoKey = -1;
 
   // Timing
   private time = 0;
@@ -318,12 +331,18 @@ export class LivingArchitectureEngine {
 
     this.currentStage = savedStage;
 
+    /* currentStageConfig(), not STAGES[savedStage]: mid-scrub the atlas is
+       between stages, and re-applying a discrete stage here would snap it on
+       any resize or orientation change. */
+    const cfg = this.currentStageConfig();
+    this.lastTopoKey = -1;
+
     if (isFirstInit) {
       // First mount — set targets and let growth animation run
-      this.applyStageTargets(STAGES[savedStage]);
+      this.applyStageTargets(cfg, { stagger: !this.scrubMode });
     } else {
-      // Subsequent resize — snap to current stage immediately
-      this.applyStageImmediate(STAGES[savedStage]);
+      // Subsequent resize — snap immediately
+      this.applyStageImmediate(cfg);
       this.fadeInProgress = 1;
     }
   }
@@ -398,15 +417,48 @@ export class LivingArchitectureEngine {
   }
 
   /** Transition to a new stage.
-   *  Called by the React component when IntersectionObserver
-   *  detects a section change. Works for all breakpoint modes. */
+   *  The discrete driver, used by the IntersectionObserver path under
+   *  reduced motion. Keeps role stagger. */
   setStage(stageIndex: number): void {
     if (stageIndex < 0 || stageIndex >= STAGES.length) return;
+    this.scrubMode = false;
     if (stageIndex === this.currentStage) return;
     this.currentStage = stageIndex;
     if (this.branchDrawOrder.length > 0) {
       this.applyStageTargets(STAGES[stageIndex]);
     }
+  }
+
+  /**
+   * Continuous driver: `p` runs 0…STAGES.length-1 across the page.
+   *
+   * Sets *targets* rather than current values, so the engine's own
+   * per-frame lerp still supplies inertia — the atlas trails the scroll
+   * slightly instead of being rigidly pinned to it.
+   */
+  setProgress(p: number): void {
+    const { from, to, t } = bracket(p, STAGES.length);
+    this.scrubMode = true;
+    this.scrubProgress = p < 0 ? 0 : p > STAGES.length - 1 ? STAGES.length - 1 : p;
+    this.currentStage = Math.round(this.scrubProgress);
+
+    if (this.branchDrawOrder.length === 0) return;
+
+    const topoKey = Math.round(this.scrubProgress);
+    const retopo = topoKey !== this.lastTopoKey;
+    this.lastTopoKey = topoKey;
+
+    this.applyStageTargets(blendStages(STAGES[from], STAGES[to], t), {
+      stagger: false,
+      reconcileTopology: retopo,
+    });
+  }
+
+  /** The stage config the engine should currently be showing. */
+  private currentStageConfig(): StageConfig {
+    if (!this.scrubMode) return STAGES[this.currentStage];
+    const { from, to, t } = bracket(this.scrubProgress, STAGES.length);
+    return blendStages(STAGES[from], STAGES[to], t);
   }
 
   setReducedMotion(reduced: boolean): void {
@@ -565,7 +617,10 @@ export class LivingArchitectureEngine {
   // ── Stage management ───────────────────────────────
 
   /** Set target values for a smooth animated transition. */
-  private applyStageTargets(stage: StageConfig): void {
+  private applyStageTargets(
+    stage: StageConfig,
+    { stagger = true, reconcileTopology = true }: ApplyStageOpts = {},
+  ): void {
     // Reset all branches to "not in this stage"
     for (const branch of this.branchDrawOrder) {
       branch.targetOpacity = 0;
@@ -586,9 +641,16 @@ export class LivingArchitectureEngine {
       branch.targetOpacity = opacity;
       branch.targetLength = length;
       branch.targetWidth = width;
-      branch.transitionStartTime =
-        this.time +
-        ROLE_TRANSITION_DELAY[def.role] * STAGE_TRANSITION_DURATION;
+      /* Role stagger is choreography for DISCRETE stage changes. Under a
+         scrub the target moves every frame, so re-arming this deadline each
+         time would push it permanently ahead of this.time and updateBranches
+         would skip the branch forever — every non-trunk branch freezes.
+         0 rather than this.time: the clock resets in drawStatic and
+         rebuildGeometry, and a stale positive deadline would re-gate. */
+      branch.transitionStartTime = stagger
+        ? this.time +
+          ROLE_TRANSITION_DELAY[def.role] * STAGE_TRANSITION_DURATION
+        : 0;
     }
 
     // Breakpoint-based branch limiting
@@ -618,12 +680,18 @@ export class LivingArchitectureEngine {
       });
     }
 
-    // Conduits
-    const targetConduits = Math.min(
-      stage.conduitCount,
-      branchCfg.maxConduits,
-    );
-    this.reconcileConduits(targetConduits);
+    /* Conduits pick their endpoints by ranking branches on targetOpacity.
+       During a blend those rankings cross over continuously, so rebuilding
+       every frame makes conduits snap between different branch pairs and
+       flicker. Topology is therefore re-derived only when the nearest stage
+       changes; opacities still blend continuously. */
+    if (reconcileTopology) {
+      const targetConduits = Math.min(
+        stage.conduitCount,
+        branchCfg.maxConduits,
+      );
+      this.reconcileConduits(targetConduits);
+    }
 
     // Cluster density targets
     const [minD, maxD] = stage.clusterSegRange;

@@ -19,7 +19,7 @@
      6  contact   Full canopy / equilibrium — spacious and complete
    ══════════════════════════════════════════════════════ */
 
-import { type BranchDef } from "./config";
+import { type BranchDef } from "./config.ts";
 
 // ── Section → stage mapping ────────────────────────────
 
