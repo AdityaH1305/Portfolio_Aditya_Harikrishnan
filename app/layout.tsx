@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Aditya Harikrishnan — Portfolio",
+  title: "Aditya Harikrishnan",
   description:
     "Full Stack Developer focused on Machine Learning, recommendation systems, and scalable backend architectures.",
 };
