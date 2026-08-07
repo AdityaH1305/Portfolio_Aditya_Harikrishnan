@@ -14,92 +14,61 @@ interface Command {
     action: () => void;
 }
 
+const REPORT_URL = "/ludex-technical-report.pdf";
+
+/** Navigate entries mirror SideNav's `sections` array. */
+const NAV: { id: string; label: string; icon: string }[] = [
+    { id: "intro", label: "Intro", icon: "↑" },
+    { id: "work", label: "Ludex Case Study", icon: "★" },
+    { id: "projects", label: "Projects", icon: "◆" },
+    { id: "research", label: "Approach", icon: "→" },
+    { id: "stack", label: "Stack", icon: "→" },
+    { id: "journey", label: "Journey", icon: "→" },
+    { id: "contact", label: "Contact", icon: "✉" },
+];
+
+const openExternal = (url: string) =>
+    window.open(url, "_blank", "noopener,noreferrer");
+
 function getCommands(onOpenGame: () => void): Command[] {
     return [
-        {
-            id: "intro",
-            label: "Intro",
+        ...NAV.map(({ id, label, icon }) => ({
+            id,
+            label,
+            icon,
             section: "Navigate",
-            icon: "↑",
             action: () => {
-                document.getElementById("intro")?.scrollIntoView({ behavior: "smooth" });
+                document
+                    .getElementById(id)
+                    ?.scrollIntoView({ behavior: "smooth" });
             },
-        },
-        {
-            id: "work",
-            label: "Ludex Showcase",
-            section: "Navigate",
-            icon: "★",
-            action: () => {
-                document.getElementById("work")?.scrollIntoView({ behavior: "smooth" });
-            },
-        },
-        {
-            id: "projects",
-            label: "Projects",
-            section: "Navigate",
-            icon: "◆",
-            action: () => {
-                document.getElementById("projects")?.scrollIntoView({ behavior: "smooth" });
-            },
-        },
-        {
-            id: "research",
-            label: "Research Mindset",
-            section: "Navigate",
-            icon: "→",
-            action: () => {
-                document.getElementById("research")?.scrollIntoView({ behavior: "smooth" });
-            },
-        },
-        {
-            id: "journey",
-            label: "Journey",
-            section: "Navigate",
-            icon: "→",
-            action: () => {
-                document.getElementById("journey")?.scrollIntoView({ behavior: "smooth" });
-            },
-        },
-        {
-            id: "contact",
-            label: "Contact",
-            section: "Navigate",
-            icon: "✉",
-            action: () => {
-                document.getElementById("contact")?.scrollIntoView({ behavior: "smooth" });
-            },
-        },
+        })),
         {
             id: "resume",
             label: "Resume",
             section: "Links",
             icon: "↗",
-            action: () => {
-                window.open(RESUME_URL, "_blank", "noopener,noreferrer");
-            },
+            action: () => openExternal(RESUME_URL),
+        },
+        {
+            id: "report",
+            label: "Ludex Technical Report (PDF)",
+            section: "Links",
+            icon: "↗",
+            action: () => openExternal(REPORT_URL),
         },
         {
             id: "github",
             label: "GitHub",
             section: "Links",
             icon: "↗",
-            action: () => {
-                window.open("https://github.com/AdityaH1305", "_blank", "noopener,noreferrer");
-            },
+            action: () => openExternal("https://github.com/AdityaH1305"),
         },
         {
             id: "stress-test",
-            label: "Initialize System Stress Test (Game)",
+            label: "Initialize System Stress Test",
             section: "System",
             icon: "▶",
-            action: onOpenGame,
-        },
-        {
-            id: "space-invaders",
-            label: "Space Invaders",
-            section: "Easter Egg",
-            icon: "🚀",
             action: onOpenGame,
         },
     ];
@@ -123,33 +92,32 @@ export default function CommandPalette({
           )
         : commands;
 
-    // Reset selection when filter changes
-    useEffect(() => {
+    /* Reset query and selection on every toggle rather than in an
+       effect — setState inside an effect triggers a cascading render
+       on each keystroke. */
+    const togglePalette = useCallback(() => {
+        setOpen((prev) => !prev);
+        setQuery("");
         setSelectedIndex(0);
-    }, [query]);
+    }, []);
 
     // Global shortcut: Ctrl+K / Cmd+K
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
             if ((e.metaKey || e.ctrlKey) && e.key === "k") {
                 e.preventDefault();
-                setOpen((prev) => !prev);
+                togglePalette();
             }
         };
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, []);
+    }, [togglePalette]);
 
-    // Focus input when opened
+    // Focus input when opened — one frame later so the entry animation starts first
     useEffect(() => {
-        if (open) {
-            setQuery("");
-            setSelectedIndex(0);
-            // Small delay to let animation start
-            requestAnimationFrame(() => {
-                inputRef.current?.focus();
-            });
-        }
+        if (!open) return;
+        const id = requestAnimationFrame(() => inputRef.current?.focus());
+        return () => cancelAnimationFrame(id);
     }, [open]);
 
     // Lock scroll when open
@@ -228,14 +196,14 @@ export default function CommandPalette({
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.96, y: -8 }}
                         transition={{ duration: 0.15, ease: "easeOut" }}
-                        className="w-full max-w-[520px] mx-4 rounded-xl border border-[rgba(255,255,255,0.08)] bg-[#09090b]/95 shadow-2xl shadow-[rgba(212,175,55,0.05)] overflow-hidden backdrop-blur-xl"
+                        className="w-full max-w-[520px] mx-4 rounded-xl border border-edge-strong bg-surface-2/95 shadow-2xl overflow-hidden backdrop-blur-xl"
                         onClick={(e) => e.stopPropagation()}
                         onKeyDown={handleKeyDown}
                     >
                         {/* Search input */}
-                        <div className="flex items-center gap-3 px-4 py-3 border-b border-zinc-800/50">
+                        <div className="flex items-center gap-3 px-4 py-3 border-b border-edge-default">
                             <svg
-                                className="w-4 h-4 text-[var(--accent)] shrink-0"
+                                className="w-4 h-4 text-accent shrink-0"
                                 fill="none"
                                 stroke="currentColor"
                                 strokeWidth="2"
@@ -248,13 +216,16 @@ export default function CommandPalette({
                                 ref={inputRef}
                                 type="text"
                                 value={query}
-                                onChange={(e) => setQuery(e.target.value)}
+                                onChange={(e) => {
+                                    setQuery(e.target.value);
+                                    setSelectedIndex(0);
+                                }}
                                 placeholder="Type a command…"
-                                className="flex-1 bg-transparent text-sm text-zinc-100 placeholder:text-zinc-500 outline-none"
+                                className="flex-1 bg-transparent text-sm text-primary placeholder:text-tertiary outline-none"
                                 autoComplete="off"
                                 spellCheck={false}
                             />
-                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-zinc-500 border border-zinc-800 rounded bg-zinc-900">
+                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-tertiary border border-edge-default rounded bg-surface-3">
                                 ESC
                             </kbd>
                         </div>
@@ -262,14 +233,14 @@ export default function CommandPalette({
                         {/* Results */}
                         <div className="max-h-[320px] overflow-y-auto py-2">
                             {filtered.length === 0 && (
-                                <p className="px-4 py-6 text-sm text-zinc-500 text-center">
+                                <p className="px-4 py-6 text-sm text-tertiary text-center">
                                     No results found.
                                 </p>
                             )}
 
                             {grouped.map((group) => (
                                 <div key={group.section}>
-                                    <p className="px-4 pt-2 pb-1 text-[10px] font-mono uppercase tracking-widest text-[rgba(212,175,55,0.5)]">
+                                    <p className="px-4 pt-2 pb-1 text-[10px] font-mono uppercase tracking-widest text-accent/60">
                                         {group.section}
                                     </p>
                                     {group.items.map((cmd) => (
@@ -279,16 +250,16 @@ export default function CommandPalette({
                                             onMouseEnter={() => setSelectedIndex(cmd.globalIndex)}
                                             className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-100 ${
                                                 cmd.globalIndex === selectedIndex
-                                                    ? "bg-[rgba(212,175,55,0.08)] text-[var(--accent)] font-medium border-l-2 border-[var(--accent)]"
-                                                    : "text-[var(--text-secondary)] hover:bg-[rgba(255,255,255,0.03)] border-l-2 border-transparent"
+                                                    ? "bg-accent/10 text-accent font-medium border-l-2 border-accent"
+                                                    : "text-secondary hover:bg-surface-3 border-l-2 border-transparent"
                                             }`}
                                         >
-                                            <span className="w-5 text-center text-xs text-zinc-500">
+                                            <span className="w-5 text-center text-xs text-tertiary">
                                                 {cmd.icon}
                                             </span>
                                             <span className="flex-1">{cmd.label}</span>
                                             {cmd.globalIndex === selectedIndex && (
-                                                <span className="text-[10px] text-[var(--accent)] font-mono">
+                                                <span className="text-[10px] text-accent font-mono">
                                                     ↵
                                                 </span>
                                             )}
@@ -299,7 +270,7 @@ export default function CommandPalette({
                         </div>
 
                         {/* Footer hint */}
-                        <div className="flex items-center justify-between px-4 py-2 border-t border-[rgba(255,255,255,0.05)] text-[10px] font-mono text-[var(--text-tertiary)] bg-black/20">
+                        <div className="flex items-center justify-between px-4 py-2 border-t border-edge text-[10px] font-mono text-tertiary bg-surface-1/60">
                             <span>↑↓ navigate</span>
                             <span>↵ select</span>
                             <span>esc close</span>

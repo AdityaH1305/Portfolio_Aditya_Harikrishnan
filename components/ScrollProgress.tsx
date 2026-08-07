@@ -57,7 +57,7 @@ export default function ScrollProgress() {
             style={{
                 width: "0%",
                 background:
-                    "linear-gradient(90deg, rgba(212, 175, 55, 0.4), rgba(212, 175, 55, 0.7))",
+                    "linear-gradient(90deg, rgb(var(--accent-rgb) / 0.4), rgb(var(--accent-rgb) / 0.7))",
                 willChange: "width",
             }}
         />

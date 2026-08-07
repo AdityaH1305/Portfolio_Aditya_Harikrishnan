@@ -1,28 +1,84 @@
 @import "tailwindcss";
 
 /* ══════════════════════════════════════════════════════
-   Design System — Premium Engineering Portfolio
-   Background: #050505  |  Text: #FAFAFA  |  Accent: #D4AF37
+   Design System — Technical / Systems
+   Canvas: #0B0F14  |  Text: #E8EDF2  |  Accent: #22D3EE
+
+   Every color, size and rhythm value in the site resolves
+   to a token declared here. Components should never write
+   a raw hex, rgba, or one-off font-size.
    ══════════════════════════════════════════════════════ */
 
 :root {
-  --background: #050505;
-  --foreground: #FAFAFA;
-  --accent: #D4AF37;
-  --accent-dim: rgba(212, 175, 55, 0.15);
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #52525b;
-  --border: rgba(255, 255, 255, 0.06);
-  --mouse-x: 50%;
-  --mouse-y: 50%;
+  /* ── Surfaces — one ramp, replacing five ad-hoc near-blacks ── */
+  --surface-0: #0B0F14; /* canvas */
+  --surface-1: #10151C; /* raised — cards, bezel cores */
+  --surface-2: #161D26; /* overlay — modals, command palette */
+  --surface-3: #1D2630; /* hover / active */
+
+  /* ── Text ramp — cool, contrast-checked against --surface-0 ── */
+  --text-primary: #E8EDF2; /* ~15:1 — headings, primary copy */
+  --text-secondary: #9BA9B8; /* ~8:1  — body copy */
+  --text-tertiary: #78889B; /* ~5.3:1 — metadata, captions; still AA
+                               because components use this for real
+                               body copy, not just decoration */
+  --text-quaternary: #475569; /* ~2.4:1 — DECORATIVE ONLY, never text */
+
+  /* ── Accent ──
+     Declared once as channels. Everything else — CSS alphas and
+     the LivingArchitecture canvas, which reads this at runtime —
+     derives from it, so changing the accent is a one-line edit. */
+  --accent-rgb: 34 211 238;
+
+  --accent: rgb(var(--accent-rgb));
+  --accent-hover: #67E8F9;
+  --accent-pressed: #0891B2;
+  --accent-subtle: rgba(34, 211, 238, 0.06);
+  --accent-muted: rgba(34, 211, 238, 0.14);
+  --accent-border: rgba(34, 211, 238, 0.3);
+
+  /* ── Borders — slate-tinted so they stay cool, not grey ── */
+  --border-subtle: rgba(148, 163, 184, 0.08); /* section dividers */
+  --border-default: rgba(148, 163, 184, 0.14); /* cards */
+  --border-strong: rgba(148, 163, 184, 0.22); /* nav, overlays, hover */
+
+  /* ── Rhythm ── */
+  --space-section: clamp(5rem, 10vw, 9rem);
+
+  /* ── Motion — the signature curve, used everywhere ── */
+  --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* Compatibility aliases — keep existing component markup
+     resolving while sections are migrated one at a time.
+     Removed once the last usage is gone. */
+  --background: var(--surface-0);
+  --foreground: var(--text-primary);
+  --border: var(--border-default);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-primary: var(--text-primary);
+  --color-secondary: var(--text-secondary);
+  --color-tertiary: var(--text-tertiary);
+  --color-quaternary: var(--text-quaternary);
+
   --color-accent: var(--accent);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-accent-hover: var(--accent-hover);
+
+  --color-edge: var(--border-subtle);
+  --color-edge-default: var(--border-default);
+  --color-edge-strong: var(--border-strong);
+
+  --color-background: var(--surface-0);
+  --color-foreground: var(--text-primary);
+
+  --font-sans: var(--font-space-grotesk);
+  --font-mono: var(--font-jetbrains-mono);
 }
 
 /* ── Base ── */
@@ -32,60 +88,63 @@ html {
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, -apple-system, sans-serif;
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-space-grotesk), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 ::selection {
-  background: rgba(212, 175, 55, 0.25);
-  color: #FAFAFA;
+  background: rgba(34, 211, 238, 0.25);
+  color: var(--text-primary);
 }
 
 /* ══════════════════════════════════════════════════════
-   Typography System — Editorial Scale
+   Typography — √2-derived modular scale
+
+   Minimums stay proportional to maximums so the hierarchy
+   survives at 375px instead of collapsing to a 20% gap.
    ══════════════════════════════════════════════════════ */
 
+.display {
+  font-size: clamp(3rem, 8vw, 6rem);
+  font-weight: 700;
+  letter-spacing: -0.035em;
+  line-height: 0.92;
+  color: var(--text-primary);
+}
+
 .heading-xl {
-  font-size: clamp(3rem, 8vw, 7.5rem);
+  font-size: clamp(2.5rem, 6vw, 4.25rem);
   font-weight: 700;
   letter-spacing: -0.03em;
-  line-height: 0.9;
-  color: var(--foreground);
+  line-height: 1;
+  color: var(--text-primary);
 }
 
 .heading-lg {
-  font-size: clamp(2.5rem, 5vw, 4.5rem);
-  font-weight: 700;
+  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-weight: 600;
   letter-spacing: -0.025em;
-  line-height: 1.05;
-  color: var(--foreground);
+  line-height: 1.1;
+  color: var(--text-primary);
 }
 
 .heading-md {
-  font-size: clamp(1.5rem, 3vw, 2.5rem);
+  font-size: clamp(1.5rem, 3vw, 2.125rem);
   font-weight: 600;
   letter-spacing: -0.015em;
-  line-height: 1.15;
-  color: var(--foreground);
+  line-height: 1.2;
+  color: var(--text-primary);
 }
 
 .heading-sm {
-  font-size: clamp(1rem, 1.5vw, 1.25rem);
+  font-size: clamp(1.125rem, 2vw, 1.5rem);
   font-weight: 600;
   letter-spacing: -0.01em;
-  line-height: 1.3;
-  color: var(--foreground);
-}
-
-.label {
-  font-size: 0.6875rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--accent);
+  line-height: 1.35;
+  color: var(--text-primary);
 }
 
 .body-lg {
@@ -100,12 +159,37 @@ body {
   color: var(--text-secondary);
 }
 
+/* ── Micro-labels — exactly two, both mono ──
+   Replaces four competing sizes (9/10/11/13px) and
+   three trackings (0.12/0.15/0.2em). */
+
+.label {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
+.label-muted {
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--text-tertiary);
+}
+
 .mono {
-  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
 /* ══════════════════════════════════════════════════════
-   Section Layout — Generous Whitespace
+   Section Layout
+
+   Asymmetric padding is deliberate — content is pushed
+   right to clear the fixed .side-nav at left: 1.5rem.
    ══════════════════════════════════════════════════════ */
 
 .section-container {
@@ -129,19 +213,15 @@ body {
   }
 }
 
-/* ══════════════════════════════════════════════════════
-   Narrative Connectors — Chapter transitions
-   Compact editorial bridges between major sections.
-   ══════════════════════════════════════════════════════ */
+/* One rhythm for every section, replacing six different
+   py- pairs scattered across components. */
+.section-y {
+  padding-top: var(--space-section);
+  padding-bottom: var(--space-section);
+}
 
-.narrative-rule {
-  width: min(200px, 40%);
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    var(--accent) 0%,
-    rgba(212, 175, 55, 0) 100%
-  );
+.section-divide {
+  border-top: 1px solid var(--border-subtle);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -172,7 +252,7 @@ body {
   font-size: 0.625rem;
   font-weight: 500;
   letter-spacing: 0.1em;
-  font-family: var(--font-geist-mono), monospace;
+  font-family: var(--font-jetbrains-mono), monospace;
   color: var(--text-tertiary);
   min-width: 1rem;
   transition: color 0.3s ease;
@@ -218,38 +298,19 @@ body {
 
 .side-nav-item.active .side-nav-dot {
   background: var(--accent);
-  box-shadow: 0 0 8px rgba(212, 175, 55, 0.4);
+  box-shadow: 0 0 8px var(--accent-border);
 }
 
 /* ══════════════════════════════════════════════════════
-   Project Hierarchy — Tiered Presentation System
+   Compact Cards
    ══════════════════════════════════════════════════════ */
 
-/* ── Tier 2: PlayNexus Showcase ── */
-
-.playnexus-showcase {
-  padding-top: 1rem;
-  padding-bottom: 2rem;
-  position: relative;
-}
-
-/* ── Tier 3: Compact Cards ── */
-
 .compact-bezel {
-  /* Slightly smaller bezel radius for compact cards */
   border-radius: 1.25rem;
 }
 
 .compact-bezel .core-bezel {
   border-radius: calc(1.25rem - 0.375rem);
-}
-
-.compact-tag {
-  font-size: 0.625rem;
-  font-weight: 500;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-tertiary);
 }
 
 .compact-description {
@@ -268,11 +329,11 @@ body {
   color: var(--text-secondary);
   text-decoration: none;
   padding: 0.375rem 0;
-  transition: color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: color 0.3s var(--ease);
 }
 
 .compact-link:hover {
-  color: var(--foreground);
+  color: var(--text-primary);
 }
 
 .compact-link--accent {
@@ -280,29 +341,7 @@ body {
 }
 
 .compact-link--accent:hover {
-  color: #e6c445;
-}
-
-/* ── Legacy (preserved for any external references) ── */
-
-.project-chapter {
-  min-height: 70vh;
-  padding-top: 6rem;
-  padding-bottom: 6rem;
-  border-top: 1px solid var(--border);
-  position: relative;
-}
-
-.project-number {
-  font-size: clamp(4rem, 8vw, 8rem);
-  font-weight: 800;
-  color: rgba(255, 255, 255, 0.03);
-  line-height: 1;
-  position: absolute;
-  top: 3rem;
-  left: -0.5rem;
-  pointer-events: none;
-  user-select: none;
+  color: var(--accent-hover);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -318,9 +357,9 @@ body {
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    var(--border) 10%,
-    rgba(212, 175, 55, 0.15) 50%,
-    var(--border) 90%,
+    var(--border-subtle) 10%,
+    var(--accent-muted) 50%,
+    var(--border-subtle) 90%,
     transparent 100%
   );
 }
@@ -330,16 +369,14 @@ body {
   height: 7px;
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 8px rgba(212, 175, 55, 0.2);
+  box-shadow: 0 0 8px var(--accent-muted);
   position: absolute;
   left: -3px;
   top: 0.5rem;
 }
 
 /* ══════════════════════════════════════════════════════
-   Living Architecture — Canvas Panel
-   Desktop: persistent fixed panel on the right
-   Mobile:  compact breathing core in the top‑right
+   Living Architecture — the one signature effect
    ══════════════════════════════════════════════════════ */
 
 .living-architecture-canvas {
@@ -355,10 +392,7 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
-   Ludex Case Study — Section Differentiation
-   A subtle gold radial glow at the top of the section
-   signals visual importance without breaking the dark
-   theme (Page Theme Lock compliant).
+   Ludex Case Study — section differentiation
    ══════════════════════════════════════════════════════ */
 
 .ludex-glow {
@@ -371,8 +405,8 @@ body {
   height: 60%;
   background: radial-gradient(
     ellipse 70% 50% at 50% 0%,
-    rgba(212, 175, 55, 0.035) 0%,
-    rgba(212, 175, 55, 0) 70%
+    rgba(34, 211, 238, 0.05) 0%,
+    rgba(34, 211, 238, 0) 70%
   );
   pointer-events: none;
   z-index: 0;
@@ -387,7 +421,11 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
-   Background Atmosphere — Gold-tinted
+   Background Atmosphere
+
+   The technical grid is the primary motif here — it reads
+   as instrumentation rather than decoration, so it sits a
+   little above the old near-invisible 0.012.
    ══════════════════════════════════════════════════════ */
 
 .atmosphere-root {
@@ -398,48 +436,22 @@ body {
   overflow: hidden;
 }
 
-/* ══════════════════════════════════════════════════════
-   Liquid Ether — WebGL fluid background (Hero only)
-   ══════════════════════════════════════════════════════ */
-
-.liquid-ether-hero {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  overflow: hidden;
-  opacity: 0.7;
-  /* Radial mask to feather edges into the dark background */
-  -webkit-mask-image: radial-gradient(
-    ellipse 85% 80% at 50% 45%,
-    black 30%,
-    transparent 100%
-  );
-  mask-image: radial-gradient(
-    ellipse 85% 80% at 50% 45%,
-    black 30%,
-    transparent 100%
-  );
-}
-
-.liquid-ether-container {
-  position: relative;
-  overflow: hidden;
-  width: 100%;
-  height: 100%;
-  touch-action: none;
-}
-
 @keyframes driftNoise {
-  0% { background-position: 0 0; }
-  50% { background-position: 256px 128px; }
-  100% { background-position: 0 0; }
+  0% {
+    background-position: 0 0;
+  }
+  50% {
+    background-position: 256px 128px;
+  }
+  100% {
+    background-position: 0 0;
+  }
 }
 
 .atmosphere-noise {
   position: absolute;
   inset: 0;
-  opacity: 0.018;
+  opacity: 0.02;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
@@ -450,9 +462,9 @@ body {
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(255, 255, 255, 0.012) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(255, 255, 255, 0.012) 1px, transparent 1px);
-  background-size: 80px 80px;
+    linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+  background-size: 64px 64px;
 }
 
 .atmosphere-vignette {
@@ -461,16 +473,13 @@ body {
   background: radial-gradient(
     ellipse 70% 60% at 50% 50%,
     transparent 40%,
-    rgba(5, 5, 5, 0.95) 100%
+    rgba(11, 15, 20, 0.95) 100%
   );
 }
 
 .atmosphere-glow {
   position: absolute;
   pointer-events: none;
-  /* Luminosity drift is now JS-driven in BackgroundAtmosphere.tsx
-     using three sine waves with irrational frequency ratios
-     for organic, non-repeating motion. */
 }
 
 .atmosphere-glow--hero {
@@ -479,7 +488,11 @@ body {
   top: 5%;
   left: 50%;
   transform: translateX(-50%);
-  background: radial-gradient(circle closest-side, rgba(212, 175, 55, 0.06) 0%, rgba(212, 175, 55, 0) 100%);
+  background: radial-gradient(
+    circle closest-side,
+    rgba(34, 211, 238, 0.05) 0%,
+    rgba(34, 211, 238, 0) 100%
+  );
 }
 
 .atmosphere-glow--mid {
@@ -487,7 +500,11 @@ body {
   height: 500px;
   top: 35%;
   left: 10%;
-  background: radial-gradient(circle closest-side, rgba(212, 175, 55, 0.04) 0%, rgba(212, 175, 55, 0) 100%);
+  background: radial-gradient(
+    circle closest-side,
+    rgba(34, 211, 238, 0.035) 0%,
+    rgba(34, 211, 238, 0) 100%
+  );
 }
 
 .atmosphere-glow--lower {
@@ -495,68 +512,29 @@ body {
   height: 400px;
   top: 60%;
   right: 5%;
-  background: radial-gradient(circle closest-side, rgba(212, 175, 55, 0.04) 0%, rgba(212, 175, 55, 0) 100%);
-}
-
-.atmosphere-parallax {
-  will-change: transform;
-}
-
-/* ══════════════════════════════════════════════════════
-   Signal Field Canvas
-   ══════════════════════════════════════════════════════ */
-
-.signal-field-canvas {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  will-change: transform;
-}
-
-/* ══════════════════════════════════════════════════════
-   Scroll Progress — Gold
-   ══════════════════════════════════════════════════════ */
-
-@keyframes signalScan {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-.signal-divider {
-  position: relative;
-}
-
-.signal-divider::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(212, 175, 55, 0.08) 50%,
-    transparent 100%
+  background: radial-gradient(
+    circle closest-side,
+    rgba(34, 211, 238, 0.035) 0%,
+    rgba(34, 211, 238, 0) 100%
   );
-  background-size: 200% 100%;
-  animation: signalScan 16s ease-in-out infinite;
 }
 
 /* ══════════════════════════════════════════════════════
-   Link & Interactive Styles
+   Links & Buttons
    ══════════════════════════════════════════════════════ */
 
-.link-gold {
+.link-accent {
   color: var(--text-secondary);
   text-decoration: none;
   position: relative;
-  transition: color 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: color 0.3s var(--ease);
 }
 
-.link-gold:hover {
+.link-accent:hover {
   color: var(--accent);
 }
 
-.link-gold::after {
+.link-accent::after {
   content: "";
   position: absolute;
   bottom: -2px;
@@ -564,37 +542,37 @@ body {
   width: 0%;
   height: 1px;
   background: var(--accent);
-  transition: width 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: width 0.3s var(--ease);
 }
 
-.link-gold:hover::after {
+.link-accent:hover::after {
   width: 100%;
 }
 
-/* Button variants - Double Bezel Premium style */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.75rem;
   background: var(--accent);
-  color: #050505;
+  color: var(--surface-0);
   font-size: 0.8125rem;
   font-weight: 600;
   letter-spacing: 0.02em;
   border: none;
-  border-radius: 9999px; /* Pill */
+  border-radius: 9999px;
   cursor: pointer;
-  transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
-}
-
-.btn-primary:active {
-  transform: scale(0.98);
+  transition: all 0.35s var(--ease);
 }
 
 .btn-primary:hover {
-  background: #e6c445;
+  background: var(--accent-hover);
   transform: translateY(-1px);
+}
+
+.btn-primary:active {
+  background: var(--accent-pressed);
+  transform: scale(0.98);
 }
 
 .btn-secondary {
@@ -603,38 +581,37 @@ body {
   gap: 0.5rem;
   padding: 0.75rem 1.75rem;
   background: transparent;
-  color: var(--foreground);
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 500;
   letter-spacing: 0.02em;
-  border: 1px solid var(--border);
-  border-radius: 9999px; /* Pill */
+  border: 1px solid var(--border-default);
+  border-radius: 9999px;
   cursor: pointer;
-  transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
+  transition: all 0.35s var(--ease);
+}
+
+.btn-secondary:hover {
+  border-color: var(--border-strong);
+  background: var(--surface-1);
 }
 
 .btn-secondary:active {
   transform: scale(0.98);
 }
 
-.btn-secondary:hover {
-  border-color: rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.03);
-}
-
-/* Double Bezel Outer Shell */
+/* Nested-radius bezel: inner radius = outer − padding */
 .shell-bezel {
-  background: rgba(255, 255, 255, 0.03);
+  background: rgba(148, 163, 184, 0.04);
   padding: 0.375rem;
   border-radius: 2rem;
-  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.05);
+  box-shadow: 0 0 0 1px var(--border-subtle);
 }
 
-/* Double Bezel Inner Core */
 .core-bezel {
-  background: #080808;
+  background: var(--surface-1);
   border-radius: calc(2rem - 0.375rem);
-  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 1px 1px rgba(148, 163, 184, 0.08);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -650,10 +627,6 @@ body {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
   }
-
-  .project-number {
-    font-size: 3rem;
-  }
 }
 
 /* ══════════════════════════════════════════════════════
@@ -666,24 +639,20 @@ body {
 
 .side-nav-item:focus-visible .side-nav-dot {
   background: var(--accent);
-  box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.25);
+  box-shadow: 0 0 0 3px var(--accent-muted);
 }
 
-.side-nav-item:focus-visible .side-nav-number {
+.side-nav-item:focus-visible .side-nav-number,
+.side-nav-item:focus-visible .side-nav-label {
   color: var(--accent);
 }
 
 .side-nav-item:focus-visible .side-nav-label {
   opacity: 1;
   transform: translateX(0);
-  color: var(--accent);
 }
 
-.btn-primary:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-}
-
+.btn-primary:focus-visible,
 .btn-secondary:focus-visible {
   outline: 2px solid var(--accent);
   outline-offset: 3px;
@@ -696,12 +665,12 @@ body {
   text-underline-offset: 3px;
 }
 
-.link-gold:focus-visible {
+.link-accent:focus-visible {
   outline: none;
   color: var(--accent);
 }
 
-.link-gold:focus-visible::after {
+.link-accent:focus-visible::after {
   width: 100%;
 }
 
@@ -723,14 +692,6 @@ body {
   }
 
   .atmosphere-noise {
-    animation: none;
-  }
-
-  .atmosphere-parallax {
-    will-change: auto;
-  }
-
-  .signal-divider::after {
     animation: none;
   }
 }

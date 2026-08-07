@@ -17,7 +17,7 @@
 import { useRef, useEffect } from "react";
 import { LivingArchitectureEngine } from "./engine";
 import { SECTION_IDS } from "./stages";
-import { getBreakpointMode } from "./config";
+import { getBreakpointMode, syncAccentFromCSS } from "./config";
 
 export default function LivingArchitecture() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -35,6 +35,11 @@ export default function LivingArchitecture() {
       "(prefers-reduced-motion: reduce)",
     );
     let reducedMotion = motionQuery.matches;
+
+    // Pull the accent from CSS so canvas and DOM can't drift apart.
+    // Safe here: the component is dynamic({ ssr: false }), so styles
+    // have applied by the time this effect runs.
+    syncAccentFromCSS();
 
     const engine = new LivingArchitectureEngine(canvas, ctx, reducedMotion);
     engineRef.current = engine;

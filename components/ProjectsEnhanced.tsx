@@ -66,11 +66,11 @@ const projects: ProjectData[] = [
         github: "https://github.com/AdityaH1305/PlayNexus",
         demo: "https://playnexus-io.vercel.app",
         images: [
-            "/projects/playnexus2.png",
-            "/projects/playnexus-new.png",
-            "/projects/playnexus3.png",
-            "/projects/playnexus4.png",
-            "/projects/playnexus5.png",
+            "/projects/playnexus2.webp",
+            "/projects/playnexus-new.webp",
+            "/projects/playnexus3.webp",
+            "/projects/playnexus4.webp",
+            "/projects/playnexus5.webp",
         ],
     },
     {
@@ -85,7 +85,7 @@ const projects: ProjectData[] = [
         ],
         github: "https://github.com/AdityaH1305/SynthRescue",
         demo: "https://synthrescue.vercel.app/",
-        images: ["/projects/synth1.png", "/projects/synth2.png"],
+        images: ["/projects/synth1.webp", "/projects/synth2.webp"],
     },
 ];
 
@@ -172,7 +172,7 @@ function LightboxModal({
                             }}
                             className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10
                                        flex items-center justify-center
-                                       bg-black/80 border border-white/10
+                                       bg-black/80 border border-edge-default
                                        text-white/70 hover:text-white hover:bg-black
                                        transition-all duration-200 text-xl shadow-md"
                             aria-label="Previous image"
@@ -186,7 +186,7 @@ function LightboxModal({
                             }}
                             className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10
                                        flex items-center justify-center
-                                       bg-black/80 border border-white/10
+                                       bg-black/80 border border-edge-default
                                        text-white/70 hover:text-white hover:bg-black
                                        transition-all duration-200 text-xl shadow-md"
                             aria-label="Next image"
@@ -265,7 +265,7 @@ function ProjectCard({
                                 priority={staggerIndex === 0}
                             />
                             {project.images.length > 1 && (
-                                <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-[#050505]/80 border border-white/10 text-[10px] mono text-white/60">
+                                <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-surface-0/85 border border-edge-default text-[10px] mono text-tertiary">
                                     +{project.images.length - 1} more
                                 </div>
                             )}
@@ -295,9 +295,9 @@ function ProjectCard({
                     {project.highlights.map((item, i) => (
                         <li
                             key={i}
-                            className="flex items-start gap-2.5 text-[13px] text-[var(--text-secondary)] leading-snug"
+                            className="flex items-start gap-2.5 text-[13px] text-secondary leading-snug"
                         >
-                            <span className="text-[var(--accent)] mt-0.5 text-[10px] shrink-0">
+                            <span className="text-accent mt-0.5 text-[10px] shrink-0">
                                 ─
                             </span>
                             {item}
@@ -368,7 +368,7 @@ function ProjectCard({
    ══════════════════════════════════════════════════════ */
 export default function ProjectsEnhanced() {
     return (
-        <section id="projects" className="py-24 md:py-32">
+        <section id="projects" className="section-y section-divide">
             {/* Section heading */}
             <div className="section-container">
                 <motion.div
@@ -377,9 +377,10 @@ export default function ProjectsEnhanced() {
                     transition={{ duration: 0.5, ease: EASE }}
                     viewport={{ once: true }}
                 >
-                    <h2 className="heading-lg">Projects</h2>
-                    <p className="body-sm mt-4 max-w-lg text-[var(--text-tertiary)]">
-                        Data platforms, AI systems, and full-stack engineering.
+                    <p className="label">03 / Projects</p>
+                    <h2 className="heading-lg mt-3">More Work</h2>
+                    <p className="body-lg mt-4 max-w-lg">
+                        Data platforms, applied AI, and full-stack engineering.
                     </p>
                 </motion.div>
             </div>

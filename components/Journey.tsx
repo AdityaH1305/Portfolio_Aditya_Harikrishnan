@@ -1,6 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { EASE } from "@/lib/motion";
 
 /* ══════════════════════════════════════════════════════
    Journey Section — Vertical Animated Timeline
@@ -12,53 +13,45 @@ import { motion } from "framer-motion";
    Backends, Dev Tools) is also absorbed into timeline context.
    ══════════════════════════════════════════════════════ */
 
+/* Career beats only. The project descriptions and their metrics live
+   in #work and #projects — repeating them here was the third telling
+   of the same three projects. */
 const timelineEntries = [
     {
         year: "2023",
         title: "Joined IIIT Pune",
         description:
-            "Started B.Tech Computer Science. Built the foundation — data structures, algorithms, systems thinking. Focused on understanding how large systems are designed and maintained.",
+            "Started B.Tech Computer Science. Built the foundation — data structures, algorithms, and how large systems are designed and maintained.",
     },
     {
         year: "2024",
-        title: "Built PlayNexus",
+        title: "First platform shipped",
         description:
-            "Engineered a full-stack data platform with real-time APIs, multi-region price aggregation, and a custom value-scoring algorithm. First serious project combining software engineering with data-driven decision making at scale.",
-    },
-    {
-        year: "2024",
-        title: "Sheriff of Nottingham App",
-        description:
-            "Built a multiplayer game engine with lobby management, WebSocket-based real-time state synchronization, and turn-based game logic. Deepened understanding of backend architectures and concurrent systems.",
+            "PlayNexus took me from coursework to production concerns: real-time APIs, data pipelines, and decisions that had to survive contact with real usage.",
     },
     {
         year: "2025",
-        title: "Built Ludex",
+        title: "Moved into ML systems",
         description:
-            "Architected a hybrid recommendation system fusing content-based and collaborative filtering. Evaluated on 57K+ items and 1,200 users — outperforming standalone baselines by significant margins.",
+            "Ludex was the turn toward research — building a recommender, then evaluating it honestly against baselines and writing up the result.",
     },
     {
         year: "2025",
-        title: "Completed Technical Report",
+        title: "Applied AI, end to end",
         description:
-            "Completed a comprehensive technical report on hybrid recommendation systems. The work validated that thoughtful fusion of complementary ML signals yields measurably better personalization.",
+            "SynthRescue put computer vision into a full response pipeline, from upload to generated report.",
     },
     {
-        year: "2025",
-        title: "SynthRescue & Beyond",
+        year: "2026",
+        title: "What's next",
         description:
-            "Built a real-time structural damage assessment pipeline combining YOLO detection with AI triage. Currently exploring RAG, embedding-based search, and graph-powered code intelligence systems.",
+            "Exploring RAG, embedding-based search, and graph-powered code intelligence — tools that make large systems legible.",
     },
 ];
 
-const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
-
 export default function Journey() {
     return (
-        <section
-            id="journey"
-            className="py-28 md:py-36 border-t border-[rgba(255,255,255,0.04)]"
-        >
+        <section id="journey" className="section-y section-divide">
             <div className="section-container">
                 {/* ── Header ── */}
                 <motion.div
@@ -67,8 +60,8 @@ export default function Journey() {
                     transition={{ duration: 0.5, ease: EASE }}
                     viewport={{ once: true }}
                 >
-                    <p className="label">The Path</p>
-                    <h2 className="heading-lg mt-4">Journey</h2>
+                    <p className="label">06 / The Path</p>
+                    <h2 className="heading-lg mt-3">Journey</h2>
                 </motion.div>
 
                 {/* ── About text (preserved from original About component) ── */}
@@ -91,7 +84,7 @@ export default function Journey() {
                         well-designed APIs, and ML systems that actually work in production
                         — not just in a notebook.
                     </p>
-                    <p className="mt-6 text-[var(--foreground)] font-semibold text-lg">
+                    <p className="mt-6 text-primary font-semibold text-lg">
                         I&apos;m drawn to tools that decode complexity — making large
                         systems legible, navigable, and interactive.
                     </p>
@@ -120,7 +113,7 @@ export default function Journey() {
                                 <div className="timeline-dot" />
 
                                 {/* Year */}
-                                <span className="mono text-xs text-[var(--accent)] tracking-wider">
+                                <span className="mono text-xs text-accent tracking-wider">
                                     {entry.year}
                                 </span>
 
@@ -142,23 +135,23 @@ export default function Journey() {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, ease: EASE }}
                     viewport={{ once: true }}
-                    className="mt-20 grid sm:grid-cols-3 gap-10 pt-10 border-t border-[rgba(255,255,255,0.04)]"
+                    className="mt-20 grid sm:grid-cols-3 gap-10 pt-10 border-t border-edge"
                 >
                     <div>
                         <p className="label mb-2">Education</p>
-                        <p className="text-sm text-[var(--text-secondary)]">
+                        <p className="text-sm text-secondary">
                             B.Tech CSE — IIIT Pune
                         </p>
                     </div>
                     <div>
                         <p className="label mb-2">Currently Exploring</p>
-                        <p className="text-sm text-[var(--text-secondary)]">
+                        <p className="text-sm text-secondary">
                             RAG · Embeddings · Code Intelligence
                         </p>
                     </div>
                     <div>
                         <p className="label mb-2">Status</p>
-                        <p className="text-sm text-[var(--text-secondary)]">
+                        <p className="text-sm text-secondary">
                             Available for Opportunities
                         </p>
                     </div>

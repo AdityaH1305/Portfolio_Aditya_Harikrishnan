@@ -11,22 +11,22 @@ A modern, interactive developer portfolio built with Next.js, showcasing project
 
 ## ✨ Features
 
-- Clean, minimal UI with smooth animations  
-- Interactive project showcase  
-- Image previews with click-to-enlarge functionality  
-- Embedded demos and project walkthrough videos  
-- Hidden easter egg (👀)  
-- Fully responsive design  
+- Generative canvas "system atlas" that grows a new stage per section as you scroll
+- Command palette (`Ctrl`/`Cmd` + `K`)
+- Interactive project showcase with click-to-enlarge previews
+- Walkthrough videos that load only when scrolled into view
+- Hidden easter egg (👀)
+- Fully responsive, `prefers-reduced-motion` aware throughout
 
 ---
 
 ## 🛠️ Tech Stack
 
-- **Frontend:** Next.js, React, TypeScript  
-- **Styling:** Tailwind CSS  
-- **Animations:** Framer Motion  
-- **3D/Interactive UI:** Three.js / React Three Fiber  
-- **Deployment:** Vercel  
+- **Frontend:** Next.js 16, React 19, TypeScript
+- **Styling:** Tailwind CSS v4 (tokens in `app/globals.css`, no config file)
+- **Type:** Space Grotesk + JetBrains Mono
+- **Animations:** Framer Motion + a hand-rolled canvas engine
+- **Deployment:** Vercel
 
 ---
 
@@ -37,7 +37,7 @@ Hybrid recommendation system combining Content-Based Filtering and Collaborative
 - +27% Precision@20 vs CBF  
 - +13% vs CF  
 - 57K+ items, 1.2K+ users  
-- Research-backed implementation  
+- Full technical report published on the site
 
 ---
 
@@ -45,7 +45,7 @@ Hybrid recommendation system combining Content-Based Filtering and Collaborative
 Full-stack platform for exploring Steam games with:
 - Price comparison across regions  
 - Value scoring system  
-- Mood-based discovery  
+- Vibe-based discovery
 - Real-time API integration  
 
 ---
@@ -58,12 +58,6 @@ AI-powered disaster analysis system using computer vision:
 - Fault-tolerant system design  
 
 ---
-
-### 🃏 Sheriff of Nottingham App
-Multiplayer lobby-based game system with:
-- Real-time session handling  
-- Turn-based game logic  
-- Flask backend with WebSocket support  
 
 ---
 

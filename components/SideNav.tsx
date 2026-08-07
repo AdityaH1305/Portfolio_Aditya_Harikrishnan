@@ -6,13 +6,17 @@ import useMagnetic from "@/hooks/useMagnetic";
 const RESUME_URL =
     "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
 
+/* Must stay index-aligned with SECTION_IDS in
+   components/LivingArchitecture/stages.ts — the atlas draws one
+   growth stage per entry, in this order. */
 const sections = [
     { id: "intro", label: "Intro", number: "01" },
     { id: "work", label: "Work", number: "02" },
     { id: "projects", label: "Projects", number: "03" },
-    { id: "research", label: "Research", number: "04" },
-    { id: "journey", label: "Journey", number: "05" },
-    { id: "contact", label: "Contact", number: "06" },
+    { id: "research", label: "Approach", number: "04" },
+    { id: "stack", label: "Stack", number: "05" },
+    { id: "journey", label: "Journey", number: "06" },
+    { id: "contact", label: "Contact", number: "07" },
 ];
 
 /* ── Easter-egg config ── */
@@ -25,22 +29,20 @@ interface SideNavProps {
 
 /* ── Magnetic wrapper for resume link ── */
 function MagneticResumeLink() {
-    const magnetic = useMagnetic(40, 10);
+    const ref = useMagnetic<HTMLAnchorElement>(40, 10);
 
     return (
         <a
-            ref={magnetic.ref as React.RefObject<HTMLAnchorElement>}
+            ref={ref}
             href={RESUME_URL}
             target="_blank"
             rel="noopener noreferrer"
-            onMouseMove={magnetic.onMouseMove}
-            onMouseLeave={magnetic.onMouseLeave}
-            className="fixed top-6 right-6 z-50 px-5 py-2 text-xs font-medium tracking-wider uppercase
-                       border border-[rgba(255,255,255,0.08)] text-[var(--text-tertiary)]
-                       hover:border-[var(--accent)] hover:text-[var(--accent)]
-                       bg-black/20 backdrop-blur-xl rounded-full shadow-[0_4px_30px_rgba(0,0,0,0.1)]
-                       transition-all duration-500 ease-[cubic-bezier(0.32,0.72,0,1)] hidden md:inline-block"
-            style={{ display: "inline-block" }}
+            className="fixed top-6 right-6 z-50 hidden md:inline-block
+                       px-5 py-2 label-muted
+                       border border-edge-default rounded-full
+                       bg-surface-1/60 backdrop-blur-xl
+                       hover:border-accent hover:text-accent
+                       transition-colors duration-300"
         >
             Resume
         </a>
@@ -131,9 +133,9 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
 
             {/* Mobile: Fluid Island Nav */}
             <nav
-                className={`md:hidden fixed top-4 left-1/2 -translate-x-[50%] max-w-[calc(100%-2rem)] w-auto z-50 
-                           bg-[#050505]/60 backdrop-blur-xl
-                           border border-[rgba(255,255,255,0.08)] rounded-full shadow-2xl
+                className={`md:hidden fixed top-4 left-1/2 -translate-x-[50%] max-w-[calc(100%-2rem)] w-auto z-50
+                           bg-surface-1/70 backdrop-blur-xl
+                           border border-edge-default rounded-full shadow-2xl
                            transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]
                            ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
             >
@@ -141,14 +143,14 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                     <a
                         href="#intro"
                         onClick={handleEasterEgg}
-                        className="text-sm font-medium tracking-tight text-[var(--foreground)] select-none"
+                        className="text-sm font-medium tracking-tight text-primary select-none"
                     >
                         AH
                     </a>
                     <div className="flex items-center gap-3">
                         <a
                             href="mailto:adityaharikrishnan@gmail.com"
-                            className="text-xs text-[var(--text-tertiary)] hover:text-[var(--accent)] transition-colors"
+                            className="text-xs text-tertiary hover:text-accent transition-colors"
                         >
                             Email
                         </a>
@@ -156,10 +158,10 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                             href={RESUME_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-4 py-1.5 text-xs font-medium border border-[rgba(255,255,255,0.08)]
-                                       text-[var(--text-tertiary)] hover:border-[var(--accent)] hover:text-[var(--accent)]
-                                       bg-black/20 rounded-full
-                                       transition-all duration-300"
+                            className="px-4 py-1.5 text-xs font-medium rounded-full
+                                       border border-edge-default text-tertiary
+                                       hover:border-accent hover:text-accent
+                                       transition-colors duration-300"
                         >
                             Resume
                         </a>

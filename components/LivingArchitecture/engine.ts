@@ -28,7 +28,7 @@
    ══════════════════════════════════════════════════════ */
 
 import {
-  gold,
+  accent,
   DPR_CAP,
   DRAW_ZONES,
   CORE_POSITIONS,
@@ -974,9 +974,9 @@ export class LivingArchitectureEngine {
       this.core.y,
       r,
     );
-    grad.addColorStop(0, gold(opacity));
-    grad.addColorStop(0.45, gold(opacity * 0.3));
-    grad.addColorStop(1, gold(0));
+    grad.addColorStop(0, accent(opacity));
+    grad.addColorStop(0.45, accent(opacity * 0.3));
+    grad.addColorStop(1, accent(0));
 
     this.ctx.fillStyle = grad;
     this.ctx.beginPath();
@@ -998,9 +998,9 @@ export class LivingArchitectureEngine {
       this.core.y,
       r,
     );
-    grad.addColorStop(0, gold(opacity));
-    grad.addColorStop(0.6, gold(opacity * 0.4));
-    grad.addColorStop(1, gold(0));
+    grad.addColorStop(0, accent(opacity));
+    grad.addColorStop(0.6, accent(opacity * 0.4));
+    grad.addColorStop(1, accent(0));
 
     this.ctx.fillStyle = grad;
     this.ctx.beginPath();
@@ -1032,7 +1032,7 @@ export class LivingArchitectureEngine {
         const y2 = core.y - Math.sin(seg.angle) * half;
 
         ctx.lineWidth = isGlow ? cfg.lineWidth + 2 : cfg.lineWidth;
-        ctx.strokeStyle = gold(isGlow ? coreOp * 0.15 : coreOp);
+        ctx.strokeStyle = accent(isGlow ? coreOp * 0.15 : coreOp);
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -1053,7 +1053,7 @@ export class LivingArchitectureEngine {
     ctx.lineWidth = branch.currentWidth * 0.5;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = gold(baseOp);
+    ctx.strokeStyle = accent(baseOp);
 
     ctx.beginPath();
     ctx.moveTo(branch.points[0].x, branch.points[0].y);
@@ -1090,7 +1090,7 @@ export class LivingArchitectureEngine {
     ctx.lineWidth = branch.currentWidth;
     ctx.lineCap = "round";
     ctx.lineJoin = "round";
-    ctx.strokeStyle = gold(branch.currentOpacity);
+    ctx.strokeStyle = accent(branch.currentOpacity);
 
     ctx.beginPath();
     ctx.moveTo(branch.points[0].x, branch.points[0].y);
@@ -1151,7 +1151,7 @@ export class LivingArchitectureEngine {
         this.core.y + (y0 + y1 - 2 * this.core.y) * 0.2;
 
       ctx.lineWidth = 0.45;
-      ctx.strokeStyle = gold(conduit.opacity);
+      ctx.strokeStyle = accent(conduit.opacity);
       ctx.beginPath();
       ctx.moveTo(x0, y0);
       ctx.quadraticCurveTo(cx, cy, x1, y1);
@@ -1205,7 +1205,7 @@ export class LivingArchitectureEngine {
         const baseOp =
           (cluster.baseOpacity + flashBoost) * visibilityAlpha * segAlpha;
         ctx.lineWidth = isGlow ? cfg.lineWidth + 1.5 : cfg.lineWidth;
-        ctx.strokeStyle = gold(isGlow ? baseOp * 0.12 : baseOp);
+        ctx.strokeStyle = accent(isGlow ? baseOp * 0.12 : baseOp);
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
@@ -1232,13 +1232,13 @@ export class LivingArchitectureEngine {
       signal.opacity * Math.min(1, branch.currentOpacity / 0.05);
 
     // Glow halo
-    ctx.fillStyle = gold(adjustedOpacity * 0.25);
+    ctx.fillStyle = accent(adjustedOpacity * 0.25);
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, SIGNAL_GLOW_RADIUS, 0, TAU);
     ctx.fill();
 
     // Bright dot
-    ctx.fillStyle = gold(adjustedOpacity);
+    ctx.fillStyle = accent(adjustedOpacity);
     ctx.beginPath();
     ctx.arc(pos.x, pos.y, SIGNAL_RADIUS, 0, TAU);
     ctx.fill();

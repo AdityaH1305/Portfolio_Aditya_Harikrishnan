@@ -6,13 +6,17 @@
    interpolates toward when the corresponding section
    enters the viewport.
 
-   Stage index maps to SideNav sections:
+   Stage index maps to SideNav sections. The two arrays are
+   index-aligned by contract — SECTION_IDS[i] is drawn by
+   STAGES[i], so adding a section means adding a stage.
+
      0  intro     Dormant core, incomplete trunk
      1  work      Trunk establishes, primaries activate
      2  projects  Visual peak — broad network blooms
      3  research  Refinement — weak paths fade, key routes sharpen
-     4  journey   Stable maturity + upward aspiration branch
-     5  contact   Full canopy / equilibrium — spacious and complete
+     4  stack     Consolidation — the network settles into shape
+     5  journey   Stable maturity + upward aspiration branch
+     6  contact   Full canopy / equilibrium — spacious and complete
    ══════════════════════════════════════════════════════ */
 
 import { type BranchDef } from "./config";
@@ -24,6 +28,7 @@ export const SECTION_IDS = [
   "work",
   "projects",
   "research",
+  "stack",
   "journey",
   "contact",
 ] as const;
@@ -288,7 +293,36 @@ export const STAGES: StageConfig[] = [
     branchOpacityOverrides: {},
   },
 
-  /* ── Stage 4: Stable Maturity (journey) ─────────────
+  /* ── Stage 4: Consolidation (stack) ─────────────────
+     The refined network holds its shape while the reader
+     scans the toolset. Slightly denser than refinement,
+     not yet reaching upward — that belongs to journey.
+     ─────────────────────────────────────────────────── */
+  {
+    coreOpacity: 0.69,
+    coreGlowScale: 1.25,
+    coreBreathePeriod: 2.9,
+    branches: [
+      { ...TRUNK, length: 280, opacity: 0.15 },
+      { ...PRIMARY_EAST, length: 240, opacity: 0.13 },
+      { ...PRIMARY_WEST, length: 200, opacity: 0.1 },
+      { ...SECONDARY_SE, length: 180, opacity: 0.04 },
+      { ...SECONDARY_DEPTH, length: 160, opacity: 0.085 },
+      { ...SECONDARY_WIDE, length: 150, opacity: 0.02 },
+      { ...SECONDARY_LATERAL, length: 140, opacity: 0.02 },
+      { ...SECONDARY_REACH, length: 130, opacity: 0.02 },
+    ],
+    clusterSegRange: [3, 4],
+    clusterOpacity: 0.3,
+    signalMax: 5,
+    signalSpawnRange: [1.6, 3.0],
+    signalSpeedRange: [32, 60],
+    conduitCount: 3,
+    systemPulseAmplitude: 0,
+    branchOpacityOverrides: {},
+  },
+
+  /* ── Stage 5: Stable Maturity (journey) ─────────────
      The system stabilises. A distinct upward-reaching
      aspiration branch grows, suggesting direction.
      ─────────────────────────────────────────────────── */
@@ -316,7 +350,7 @@ export const STAGES: StageConfig[] = [
     branchOpacityOverrides: {},
   },
 
-  /* ── Stage 5: Full Equilibrium (contact) ────────────
+  /* ── Stage 6: Full Equilibrium (contact) ────────────
      A spacious mature canopy frames the contact section.
      Gentle heartbeat pulse. Complete and calm.
      ─────────────────────────────────────────────────── */

@@ -5,7 +5,6 @@ import dynamic from "next/dynamic";
 import SideNav from "@/components/SideNav";
 import Hero from "@/components/Hero";
 import LudexShowcase from "@/components/LudexShowcase";
-import TransitionScreen from "@/components/TransitionScreen";
 import ProjectsEnhanced from "@/components/ProjectsEnhanced";
 import ResearchMindset from "@/components/ResearchMindset";
 import Skills from "@/components/Skills";
@@ -21,10 +20,6 @@ const SpaceInvadersModal = dynamic(
     () => import("@/components/SpaceInvadersModal"),
     { ssr: false, loading: () => null },
 );
-const SignalField = dynamic(
-    () => import("@/components/SignalField"),
-    { ssr: false },
-);
 const LivingArchitecture = dynamic(
     () => import("@/components/LivingArchitecture/LivingArchitecture"),
     { ssr: false },
@@ -37,10 +32,9 @@ export default function Home() {
     const closeGame = useCallback(() => setShowGame(false), []);
 
     return (
-        <main className="bg-[#050505] text-[var(--foreground)] min-h-screen relative">
+        <main className="bg-surface-0 text-primary min-h-screen relative">
             {/* ── Background Systems ── */}
             <BackgroundAtmosphere />
-            <SignalField />
             <LivingArchitecture />
             <ScrollProgress />
             <CursorGlow />
@@ -50,33 +44,12 @@ export default function Home() {
             <CommandPalette onOpenGame={openGame} />
 
             {/* ── Content Flow ── */}
+            {/* Section order is a contract: it must match SECTION_IDS in
+                LivingArchitecture/stages.ts and `sections` in SideNav.tsx,
+                which index the atlas growth stage and the nav rail. */}
             <Hero />
-
-            <TransitionScreen
-                index="01"
-                heading="The proof is in the system"
-                body="A recommendation engine designed to combine the strengths of collaborative and content-based filtering."
-                variant="rule"
-            />
-
             <LudexShowcase />
-
-            <TransitionScreen
-                index="02"
-                heading="Systems at every scale"
-                body="From recommendation engines and discovery platforms to multiplayer experiences and real-world response systems."
-                variant="border"
-            />
-
             <ProjectsEnhanced />
-
-            <TransitionScreen
-                index="03"
-                heading="Behind every system"
-                body="Research, experimentation, measurement, and iteration shape every engineering decision."
-                variant="inline"
-            />
-
             <ResearchMindset />
             <Skills />
             <Journey />

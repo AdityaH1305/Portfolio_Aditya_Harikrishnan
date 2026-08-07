@@ -1,22 +1,20 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { EASE } from "@/lib/motion";
 
 /* ══════════════════════════════════════════════════════
    Contact Section
-   
-   Personal language replaces generic portfolio phrases.
-   All links preserved: Email, GitHub, LinkedIn.
-   Footer metadata preserved.
-   ══════════════════════════════════════════════════════ */
 
-const EASE: [number, number, number, number] = [0.25, 0.72, 0, 1];
+   The only centered section on the page — that is what
+   makes it read as the terminus.
+   ══════════════════════════════════════════════════════ */
 
 export default function Contact() {
     return (
         <section
             id="contact"
-            className="relative py-32 md:py-40 border-t border-[rgba(255,255,255,0.04)]"
+            className="relative section-y section-divide"
         >
             <div className="section-container">
                 <div className="flex flex-col items-center text-center">
@@ -27,10 +25,11 @@ export default function Contact() {
                         transition={{ duration: 0.6, ease: EASE }}
                         viewport={{ once: true }}
                     >
-                        <h2 className="heading-lg">
+                        <p className="label">07 / Contact</p>
+                        <h2 className="heading-lg mt-3">
                             Interested in building
                             <br />
-                            <span className="text-[var(--accent)]">
+                            <span className="text-accent">
                                 something meaningful?
                             </span>
                         </h2>
@@ -81,27 +80,24 @@ export default function Contact() {
             </div>
 
             {/* ── Footer ── */}
-            <footer className="mt-24 pt-8 border-t border-[rgba(255,255,255,0.04)]">
+            <footer className="mt-24 pt-8 border-t border-edge">
                 <div className="section-container">
                     <div className="flex flex-col md:flex-row justify-between items-center gap-4">
                         <div className="flex flex-wrap justify-center gap-x-6 gap-y-1">
-                            <span className="text-[10px] mono uppercase tracking-[0.15em] text-[var(--text-tertiary)]">
+                            <span className="label-muted">
                                 Status: Available
                             </span>
-                            <span className="text-[10px] mono uppercase tracking-[0.15em] text-[var(--text-tertiary)]">
+                            <span className="label-muted">
                                 Focus: ML Systems
-                            </span>
-                            <span className="text-[10px] mono uppercase tracking-[0.15em] text-[var(--text-tertiary)]">
-                                Updated: 2026
                             </span>
                         </div>
                         <div className="flex flex-wrap justify-center gap-x-4 gap-y-1">
-                            <span className="text-[10px] mono uppercase tracking-[0.15em] text-[var(--text-tertiary)]">
+                            <span className="label-muted">
                                 Built with Next.js + TypeScript
                             </span>
                         </div>
                     </div>
-                    <p className="text-xs text-[var(--text-tertiary)] text-center mt-5 pb-6">
+                    <p className="text-xs text-tertiary text-center mt-5 pb-6">
                         © {new Date().getFullYear()} Aditya Harikrishnan
                     </p>
                 </div>

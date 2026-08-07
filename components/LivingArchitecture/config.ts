@@ -7,12 +7,40 @@
    ══════════════════════════════════════════════════════ */
 
 // ── Color ──────────────────────────────────────────────
+// The accent is owned by CSS (:root { --accent-rgb }). This module
+// mirrors it at runtime so the canvas and the DOM can never drift
+// apart. The fallback covers only the frame before styles resolve.
 
-export const GOLD = { r: 212, g: 175, b: 55 };
+const ACCENT_FALLBACK = { r: 34, g: 211, b: 238 };
 
-/** Build an rgba string in the portfolio's gold accent. */
-export function gold(opacity: number): string {
-  return `rgba(${GOLD.r},${GOLD.g},${GOLD.b},${Math.max(0, Math.min(1, opacity))})`;
+let accentRGB = ACCENT_FALLBACK;
+
+/**
+ * Global opacity trim for the atlas.
+ *
+ * Every alpha in stages.ts was tuned for gold on a #050505 canvas.
+ * The canvas is now #0B0F14 and the accent is cyan, so this one knob
+ * restores the intended visual weight without retuning 13 draw sites.
+ */
+export const ACCENT_WEIGHT = 1.15;
+
+/**
+ * Read `--accent-rgb` from the document root. Call once before
+ * constructing the engine. Safe to call repeatedly; no-op on server.
+ */
+export function syncAccentFromCSS(): void {
+  if (typeof document === "undefined") return;
+  const raw = getComputedStyle(document.documentElement)
+    .getPropertyValue("--accent-rgb")
+    .trim();
+  const [r, g, b] = raw.split(/[\s,/]+/).map(Number);
+  if ([r, g, b].every((n) => Number.isFinite(n))) accentRGB = { r, g, b };
+}
+
+/** Build an rgba string in the portfolio's accent color. */
+export function accent(opacity: number): string {
+  const o = Math.max(0, Math.min(1, opacity * ACCENT_WEIGHT));
+  return `rgba(${accentRGB.r},${accentRGB.g},${accentRGB.b},${o})`;
 }
 
 // ── Breakpoint Modes ───────────────────────────────────

@@ -1,13 +1,17 @@
 "use client";
 
 import { motion } from "framer-motion";
+import { EASE } from "@/lib/motion";
 
 /* ══════════════════════════════════════════════════════
-   Skills Section — Editorial Layout
-   
+   Stack — Editorial Layout
+
    Supporting information — reduced visual prominence.
    No progress bars, no percentages, no radial charts.
-   Confident, editorial, restrained typography.
+
+   id="stack" is required: SideNav and the atlas both index
+   against it, and without an id this section was
+   unreachable from either.
    ══════════════════════════════════════════════════════ */
 
 const skillGroups = [
@@ -45,11 +49,9 @@ const skillGroups = [
     },
 ];
 
-const EASE: [number, number, number, number] = [0.32, 0.72, 0, 1];
-
 export default function Skills() {
     return (
-        <section className="py-20 md:py-28 border-t border-[rgba(255,255,255,0.04)]">
+        <section id="stack" className="section-y section-divide">
             <div className="section-container">
                 {/* ── Header ── */}
                 <motion.div
@@ -58,8 +60,8 @@ export default function Skills() {
                     transition={{ duration: 0.5, ease: EASE }}
                     viewport={{ once: true }}
                 >
-                    <p className="label">Technologies</p>
-                    <h2 className="heading-md mt-3">Skills &amp; Tools</h2>
+                    <p className="label">05 / Stack</p>
+                    <h2 className="heading-lg mt-3">Skills &amp; Tools</h2>
                 </motion.div>
 
                 {/* ── Skill Groups — editorial columns ── */}
@@ -72,14 +74,12 @@ export default function Skills() {
                 >
                     {skillGroups.map((group) => (
                         <div key={group.category}>
-                            <h3 className="text-xs mono uppercase tracking-[0.12em] text-[var(--accent)] mb-3.5">
-                                {group.category}
-                            </h3>
+                            <h3 className="label mb-4">{group.category}</h3>
                             <ul className="space-y-2.5">
                                 {group.skills.map((skill) => (
                                     <li
                                         key={skill}
-                                        className="text-sm text-[var(--text-secondary)]"
+                                        className="text-sm text-secondary"
                                     >
                                         {skill}
                                     </li>
