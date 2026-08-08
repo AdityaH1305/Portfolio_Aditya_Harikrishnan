@@ -60,8 +60,9 @@ const narrative = [
 
 /* Five figures, in report order, attention map last.
    `minW` marks the wide ones, which pan horizontally inside the panel on
-   narrow screens. Pipeline has none: it is 916×1717 portrait, so the
-   gallery's aspect-derived height cap is what keeps it on screen. */
+   narrow screens. Pipeline is 916×1717 portrait and densely labelled, so it
+   is `tall`: the height cap would have squeezed it to ~336px wide and made
+   every label unreadable. It renders near native width and scrolls instead. */
 const figures: Figure[] = [
     {
         id: "architecture",
@@ -77,6 +78,8 @@ const figures: Figure[] = [
     {
         id: "pipeline",
         label: "Pipeline",
+        tall: true,
+        minW: "min-w-[640px]",
         caption:
             "End-to-end flow from raw CASIA-B video through silhouette extraction, alignment and tensor serialisation to embedding.",
         src: "/gait/pipeline.webp",

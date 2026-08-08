@@ -12,7 +12,7 @@ import { useTabUnderline } from "@/lib/useTabUnderline";
    U-Net case studies: named tabs, prev/next arrows, and
    click-to-zoom into the full-resolution source.
 
-   Sizing rules, both learned the hard way:
+   Sizing rules, all learned the hard way:
 
    • Every figure is capped by a max-WIDTH derived from its
      own aspect ratio, not by `max-h` + `w-auto`. Auto width
@@ -25,6 +25,17 @@ import { useTabUnderline } from "@/lib/useTabUnderline";
    • Wide figures additionally carry a `minW`, so on narrow
      screens they pan inside the panel instead of shrinking
      into illegibility. The panel scrolls, never the page.
+
+   • `tall` figures opt out of the height cap entirely. Fitting
+     a 916×1717 diagram into 70vh leaves it ~336px wide — a 2.7×
+     downscale that renders its labels as 4px mush. Instead the
+     panel gets a height cap and the figure renders near its
+     native width, so the text is sharp and the reader scrolls.
+
+   Controls sit BELOW the panel, never over it. Overlaid arrows
+   covered parts of every figure, and there is no room to put
+   them outside either: `.side-nav` is fixed at left:1.5rem,
+   top:50%, exactly where a centred left arrow would land.
    ══════════════════════════════════════════════════════ */
 
 export interface Figure {
@@ -39,6 +50,8 @@ export interface Figure {
     minW?: string;
     /** Fraction of viewport height the figure may occupy. Default 0.7. */
     maxVh?: number;
+    /** Portrait figure: render near native width, scroll the panel instead. */
+    tall?: boolean;
 }
 
 export default function FigureGallery({
@@ -85,15 +98,11 @@ export default function FigureGallery({
         }
     };
 
-    /* Fully inside the panel, not straddling its edge. Sitting half-in/half-out
-       read as a mistake and clipped against the bezel's rounded corner. Solid
-       fill rather than a translucent one so they stay legible over a light
-       figure as well as a dark one. */
     const arrowBase =
-        "absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full " +
-        "flex items-center justify-center text-2xl leading-none pb-0.5 " +
-        "bg-surface-0/95 backdrop-blur-sm border border-edge-strong shadow-lg " +
-        "text-secondary hover:text-accent hover:border-accent " +
+        "w-10 h-10 rounded-full shrink-0 " +
+        "flex items-center justify-center text-xl leading-none pb-0.5 " +
+        "bg-surface-1 border border-edge-strong " +
+        "text-secondary hover:text-accent hover:border-accent hover:bg-surface-2 " +
         "transition-colors duration-200";
 
     return (
@@ -135,81 +144,118 @@ export default function FigureGallery({
                 />
             </div>
 
-            <div className="relative">
-                <div className="shell-bezel">
-                    <div className="core-bezel overflow-hidden">
+            <div className="shell-bezel">
+                <div className="core-bezel overflow-hidden">
+                    <div
+                        role="tabpanel"
+                        id={`${idPrefix}-panel-${figure.id}`}
+                        aria-labelledby={`${idPrefix}-tab-${figure.id}`}
+                        /* Focusable so the panel can be scrolled from the
+                           keyboard — which the tall figures now require. */
+                        tabIndex={0}
+                        /* Any inner scroller has to opt out of Lenis, or the
+                           page glides instead of the panel. */
+                        data-lenis-prevent={
+                            figure.tall || figure.minW ? "" : undefined
+                        }
+                        className={
+                            figure.tall
+                                ? "overflow-auto max-h-[74vh]"
+                                : figure.minW
+                                  ? "overflow-x-auto"
+                                  : "p-3"
+                        }
+                    >
                         <div
-                            role="tabpanel"
-                            id={`${idPrefix}-panel-${figure.id}`}
-                            aria-labelledby={`${idPrefix}-tab-${figure.id}`}
-                            className={figure.minW ? "overflow-x-auto" : "p-3"}
+                            className={`${figure.minW ?? ""} ${
+                                figure.minW || figure.tall ? "p-3" : ""
+                            }`}
                         >
-                            <div className={figure.minW ? `${figure.minW} p-3` : ""}>
-                                {/* The cap lives on this div, and the button
-                                    is w-full inside it. Putting max-width on
-                                    the button itself collapses the figure to
-                                    0×0: a button shrink-wraps its content,
-                                    and the content is w-full of the button. */}
-                                <div
-                                    className="mx-auto"
-                                    style={{
-                                        maxWidth: `min(100%, calc(${
-                                            figure.maxVh ?? 0.7
-                                        } * 100vh * ${figure.w} / ${figure.h}))`,
-                                    }}
+                            {/* The cap lives on this div, and the button
+                                is w-full inside it. Putting max-width on
+                                the button itself collapses the figure to
+                                0×0: a button shrink-wraps its content,
+                                and the content is w-full of the button. */}
+                            <div
+                                className="mx-auto"
+                                style={{
+                                    maxWidth: figure.tall
+                                        ? `${figure.w}px`
+                                        : `min(100%, calc(${
+                                              figure.maxVh ?? 0.7
+                                          } * 100vh * ${figure.w} / ${figure.h}))`,
+                                }}
+                            >
+                                <button
+                                    type="button"
+                                    onClick={() => setZoomed(active)}
+                                    aria-label={`Zoom into ${figure.label}`}
+                                    className="block w-full cursor-zoom-in group/zoom"
                                 >
-                                    <button
-                                        type="button"
-                                        onClick={() => setZoomed(active)}
-                                        aria-label={`Zoom into ${figure.label}`}
-                                        className="block w-full cursor-zoom-in group/zoom"
-                                    >
-                                        <Image
-                                            src={figure.src}
-                                            alt={figure.alt}
-                                            width={figure.w}
-                                            height={figure.h}
-                                            sizes="(max-width: 768px) 100vw, 940px"
-                                            className="w-full h-auto block rounded-lg transition-opacity duration-200 group-hover/zoom:opacity-90"
-                                        />
-                                    </button>
-                                </div>
+                                    <Image
+                                        src={figure.src}
+                                        alt={figure.alt}
+                                        width={figure.w}
+                                        height={figure.h}
+                                        sizes="(max-width: 768px) 100vw, 940px"
+                                        className="w-full h-auto block rounded-lg transition-opacity duration-200 group-hover/zoom:opacity-90"
+                                    />
+                                </button>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                {many && (
-                    <>
-                        <button
-                            type="button"
-                            onClick={() => go(-1)}
-                            aria-label="Previous figure"
-                            className={`${arrowBase} left-3 md:left-4`}
-                        >
-                            ‹
-                        </button>
-                        <button
-                            type="button"
-                            onClick={() => go(1)}
-                            aria-label="Next figure"
-                            className={`${arrowBase} right-3 md:right-4`}
-                        >
-                            ›
-                        </button>
-                    </>
-                )}
             </div>
 
-            <div className="mt-4 flex items-baseline gap-4">
-                <p className="body-sm text-tertiary max-w-2xl">
+            <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+                <p className="body-sm text-tertiary max-w-2xl flex-1">
                     {figure.caption}
+                    {figure.tall && (
+                        <span className="text-quaternary">
+                            {" "}
+                            Scroll the panel to read it, or enlarge for the
+                            full diagram.
+                        </span>
+                    )}
                 </p>
-                {many && (
-                    <span className="ml-auto mono text-xs text-quaternary shrink-0">
-                        {active + 1} / {figures.length}
-                    </span>
-                )}
+
+                <div className="flex items-center gap-2 shrink-0">
+                    <button
+                        type="button"
+                        onClick={() => setZoomed(active)}
+                        className="mono text-xs text-tertiary hover:text-accent transition-colors duration-200 px-1"
+                    >
+                        Enlarge ⤢
+                    </button>
+
+                    {many && (
+                        <>
+                            <span
+                                aria-hidden="true"
+                                className="w-px h-5 bg-edge mx-1"
+                            />
+                            <button
+                                type="button"
+                                onClick={() => go(-1)}
+                                aria-label="Previous figure"
+                                className={arrowBase}
+                            >
+                                ‹
+                            </button>
+                            <span className="mono text-xs text-quaternary tabular-nums w-12 text-center">
+                                {active + 1} / {figures.length}
+                            </span>
+                            <button
+                                type="button"
+                                onClick={() => go(1)}
+                                aria-label="Next figure"
+                                className={arrowBase}
+                            >
+                                ›
+                            </button>
+                        </>
+                    )}
+                </div>
             </div>
 
             {zoomed !== null && (
@@ -218,6 +264,8 @@ export default function FigureGallery({
                         src: f.src,
                         alt: f.alt,
                         caption: f.caption,
+                        w: f.w,
+                        h: f.h,
                     }))}
                     index={zoomed}
                     onNavigate={(i) => {
