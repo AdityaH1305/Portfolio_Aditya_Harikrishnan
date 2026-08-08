@@ -212,12 +212,17 @@ export default function LudexShowcase() {
                 </Reveal>
             </div>
 
-            {/* ═══════════ SPLIT — narrative scrolls, video sticks ═══════════ */}
-            <div className="section-container mt-20 md:mt-28">
+            {/* ═══════════ SPLIT — narrative scrolls, video sticks ═══════════
+                Vertical rhythm goes on the INNER element, never on
+                .section-container: that class sets `margin: 0 auto`, and
+                because it is defined after Tailwind's utilities in globals.css
+                the shorthand beats `mt-*` at equal specificity — the margin
+                silently computes to 0 and the sections butt together. */}
+            <div className="section-container">
                 {/* 5fr/7fr weights the split toward the media: these are 1280px
                     UI screen recordings whose whole value is legibility, so the
                     video column gets the larger share. */}
-                <div className="grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-14 lg:gap-16 items-start">
+                <div className="mt-20 md:mt-28 grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-14 lg:gap-16 items-start">
                     {/* Left: narrative. stagger mode puts the start state on the
                         children, so all three share one ScrollTrigger instead of
                         three independent ones that only looked staggered when
@@ -257,11 +262,15 @@ export default function LudexShowcase() {
                     </Reveal>
 
                     {/* Right: sticky media.
-                        This element must NOT be wrapped in <Reveal>. Reveal
-                        applies an inline transform, and a transformed ancestor
-                        establishes a containing block that breaks position:
-                        sticky. The reveal goes inside instead. */}
-                    <div className="lg:sticky lg:top-24">
+                        Not wrapped in <Reveal>: the reveal must not become a
+                        stretched grid item, or its height equals the row height
+                        and sticky would have zero travel. The reveal goes
+                        inside instead.
+
+                        lg:mt-14 drops the tabs below the metric caption, which
+                        is max-w-[20rem] and wraps into this column's x-range —
+                        without it the two collide. */}
+                    <div className="lg:sticky lg:top-24 lg:mt-14">
                         <Reveal y={20} duration={0.6}>
                             <div ref={mediaRef}>
                                 {/* Tab selectors */}
@@ -350,11 +359,12 @@ export default function LudexShowcase() {
                 rule segments abut and each ROW reads as one unbroken line —
                 including the second row of the 2×2 mobile wrap, which a single
                 absolutely-positioned rule would have left without one. */}
+            <div className="section-container">
             <Reveal
                 stagger={0.08}
                 delay={0.06}
                 duration={0.6}
-                className="section-container mt-24 md:mt-32 grid grid-cols-2 md:grid-cols-4 gap-y-10"
+                className="mt-24 md:mt-32 grid grid-cols-2 md:grid-cols-4 gap-y-10"
             >
                 {stages.map((s) => (
                     <div
@@ -394,6 +404,7 @@ export default function LudexShowcase() {
                     </div>
                 ))}
             </Reveal>
+            </div>
 
             {/* ═══════════ STACK + CTAs ═══════════ */}
             <div className="section-container">
