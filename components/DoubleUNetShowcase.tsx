@@ -24,7 +24,6 @@ import { useTabUnderline } from "@/lib/useTabUnderline";
 
 const PAPER_DOI = "https://doi.org/10.1109/TRPMS.2022.3221471";
 const REPO = "https://github.com/AdityaH1305/Modified_DoubleUNet_Implementation";
-const REPORT = "/modified-double-unet-report.pdf";
 
 /** Binary segmentation, all three trained and evaluated on the same data. */
 const baseline = [
@@ -417,46 +416,35 @@ export default function DoubleUNetShowcase() {
                         {techStack.join("  ·  ")}
                     </p>
 
-                    <div data-reveal-child>
-                        <div className="flex flex-wrap gap-4">
-                            <a
-                                href={REPORT}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-primary"
+                    {/* The report CTA is deliberately absent for now. GitHub
+                        takes primary weight so the row still has an anchor. */}
+                    <div data-reveal-child className="flex flex-wrap gap-4">
+                        <a
+                            href={REPO}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-primary"
+                        >
+                            View on GitHub
+                            <svg
+                                className="w-3.5 h-3.5"
+                                viewBox="0 0 24 24"
+                                fill="none"
+                                stroke="currentColor"
+                                strokeWidth="2"
+                                aria-hidden="true"
                             >
-                                Read the Report
-                                <svg
-                                    className="w-3.5 h-3.5"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M7 17L17 7M17 7H7M17 7v10" />
-                                </svg>
-                            </a>
-                            <a
-                                href={REPO}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-secondary"
-                            >
-                                View on GitHub
-                            </a>
-                            <a
-                                href={PAPER_DOI}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-secondary"
-                            >
-                                Source Paper
-                            </a>
-                        </div>
-                        <p className="label-muted mt-4 normal-case tracking-normal">
-                            PDF · 2.9 MB
-                        </p>
+                                <path d="M7 17L17 7M17 7H7M17 7v10" />
+                            </svg>
+                        </a>
+                        <a
+                            href={PAPER_DOI}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-secondary"
+                        >
+                            Source Paper
+                        </a>
                     </div>
                 </Reveal>
             </div>
