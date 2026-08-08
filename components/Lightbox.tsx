@@ -132,11 +132,11 @@ export default function Lightbox({
                                 e.stopPropagation();
                                 goPrev();
                             }}
-                            className="absolute -left-4 md:-left-16 top-1/2 -translate-y-1/2 w-11 h-11
+                            className="absolute left-3 top-1/2 -translate-y-1/2 w-11 h-11
                                        flex items-center justify-center rounded-full
-                                       bg-black/70 border border-edge-default
-                                       text-white/70 hover:text-white hover:bg-black
-                                       transition-colors duration-200 text-2xl leading-none"
+                                       bg-surface-0/95 backdrop-blur-sm border border-edge-strong shadow-lg
+                                       text-secondary hover:text-accent hover:border-accent
+                                       transition-colors duration-200 text-2xl leading-none pb-0.5"
                             aria-label="Previous image"
                         >
                             ‹
@@ -146,11 +146,11 @@ export default function Lightbox({
                                 e.stopPropagation();
                                 goNext();
                             }}
-                            className="absolute -right-4 md:-right-16 top-1/2 -translate-y-1/2 w-11 h-11
+                            className="absolute right-3 top-1/2 -translate-y-1/2 w-11 h-11
                                        flex items-center justify-center rounded-full
-                                       bg-black/70 border border-edge-default
-                                       text-white/70 hover:text-white hover:bg-black
-                                       transition-colors duration-200 text-2xl leading-none"
+                                       bg-surface-0/95 backdrop-blur-sm border border-edge-strong shadow-lg
+                                       text-secondary hover:text-accent hover:border-accent
+                                       transition-colors duration-200 text-2xl leading-none pb-0.5"
                             aria-label="Next image"
                         >
                             ›

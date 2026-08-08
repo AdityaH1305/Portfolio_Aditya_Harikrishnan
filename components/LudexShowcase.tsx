@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import Reveal from "@/components/Reveal";
+import VideoPlayer from "@/components/VideoPlayer";
 import { useTabUnderline } from "@/lib/useTabUnderline";
 
 /* ══════════════════════════════════════════════════════
@@ -101,6 +102,8 @@ const narrative = [
 export default function LudexShowcase() {
     const [activeVideo, setActiveVideo] = useState(0);
     const [inView, setInView] = useState(false);
+    /* Index of the video open in the expanded player; null = closed. */
+    const [expanded, setExpanded] = useState<number | null>(null);
     const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
     const mediaRef = useRef<HTMLDivElement>(null);
 
@@ -128,7 +131,7 @@ export default function LudexShowcase() {
     useEffect(() => {
         videoRefs.current.forEach((el, i) => {
             if (!el) return;
-            if (inView && i === activeVideo) {
+            if (inView && i === activeVideo && expanded === null) {
                 el.play().catch(() => {
                     /* autoplay can be refused; the poster stays up */
                 });
@@ -136,7 +139,7 @@ export default function LudexShowcase() {
                 el.pause();
             }
         });
-    }, [activeVideo, inView]);
+    }, [activeVideo, inView, expanded]);
 
     return (
         <article>
@@ -269,7 +272,39 @@ export default function LudexShowcase() {
                                 {/* The one framed element in the section */}
                                 <div className="shell-bezel">
                                     <div className="core-bezel overflow-hidden">
-                                        <div className="relative">
+                                        <div className="relative group/media">
+                                            {/* Expand control. Overlaid rather
+                                                than placed in the flow so the
+                                                inline layout is unchanged. */}
+                                            <button
+                                                type="button"
+                                                onClick={() =>
+                                                    setExpanded(activeVideo)
+                                                }
+                                                aria-label={`Expand ${videos[activeVideo].label} video`}
+                                                className="absolute top-3 right-3 z-10 flex items-center gap-2
+                                                           px-3 py-2 rounded-full
+                                                           bg-surface-0/90 backdrop-blur-sm border border-edge-strong
+                                                           text-secondary hover:text-accent hover:border-accent
+                                                           opacity-0 group-hover/media:opacity-100 focus-visible:opacity-100
+                                                           transition-all duration-200"
+                                            >
+                                                <svg
+                                                    width="13"
+                                                    height="13"
+                                                    viewBox="0 0 24 24"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    strokeWidth="2"
+                                                    aria-hidden="true"
+                                                >
+                                                    <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
+                                                </svg>
+                                                <span className="mono text-[10px] tracking-widest uppercase">
+                                                    Expand
+                                                </span>
+                                            </button>
+
                                             {videos.map((v, i) => (
                                                 <div
                                                     key={v.id}
@@ -428,6 +463,15 @@ export default function LudexShowcase() {
                     </div>
                 </Reveal>
             </div>
+
+            {expanded !== null && (
+                <VideoPlayer
+                    src={videos[expanded].src}
+                    poster={videos[expanded].poster}
+                    label={videos[expanded].label}
+                    onClose={() => setExpanded(null)}
+                />
+            )}
         </article>
     );
 }

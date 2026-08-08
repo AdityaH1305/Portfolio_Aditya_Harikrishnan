@@ -85,11 +85,15 @@ export default function FigureGallery({
         }
     };
 
+    /* Fully inside the panel, not straddling its edge. Sitting half-in/half-out
+       read as a mistake and clipped against the bezel's rounded corner. Solid
+       fill rather than a translucent one so they stay legible over a light
+       figure as well as a dark one. */
     const arrowBase =
-        "absolute top-1/2 -translate-y-1/2 z-10 w-10 h-10 rounded-full " +
-        "flex items-center justify-center text-xl leading-none " +
-        "bg-surface-2/90 backdrop-blur border border-edge-default " +
-        "text-secondary hover:text-primary hover:border-edge-strong " +
+        "absolute top-1/2 -translate-y-1/2 z-10 w-11 h-11 rounded-full " +
+        "flex items-center justify-center text-2xl leading-none pb-0.5 " +
+        "bg-surface-0/95 backdrop-blur-sm border border-edge-strong shadow-lg " +
+        "text-secondary hover:text-accent hover:border-accent " +
         "transition-colors duration-200";
 
     return (
@@ -181,7 +185,7 @@ export default function FigureGallery({
                             type="button"
                             onClick={() => go(-1)}
                             aria-label="Previous figure"
-                            className={`${arrowBase} left-2 md:-left-5`}
+                            className={`${arrowBase} left-3 md:left-4`}
                         >
                             ‹
                         </button>
@@ -189,7 +193,7 @@ export default function FigureGallery({
                             type="button"
                             onClick={() => go(1)}
                             aria-label="Next figure"
-                            className={`${arrowBase} right-2 md:-right-5`}
+                            className={`${arrowBase} right-3 md:right-4`}
                         >
                             ›
                         </button>
