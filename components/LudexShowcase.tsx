@@ -1,9 +1,8 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useGSAP } from "@gsap/react";
 import Reveal from "@/components/Reveal";
-import { gsap, EASE } from "@/lib/motion";
+import { useTabUnderline } from "@/lib/useTabUnderline";
 
 /* ══════════════════════════════════════════════════════
    LudexShowcase — Featured Work case study
@@ -104,44 +103,9 @@ export default function LudexShowcase() {
     const [inView, setInView] = useState(false);
     const videoRefs = useRef<(HTMLVideoElement | null)[]>([]);
     const mediaRef = useRef<HTMLDivElement>(null);
-    const tabRowRef = useRef<HTMLDivElement>(null);
-    const tabRefs = useRef<(HTMLButtonElement | null)[]>([]);
-    const underlineRef = useRef<HTMLSpanElement>(null);
 
-    /* Slide the tab underline. Replaces Framer's layoutId projection with a
-       direct measurement — the two tabs are siblings in a flex row, so this
-       is simpler than a FLIP and keeps the underline a single element.
-       tabRowRef must stay position:relative and the direct offsetParent of
-       the buttons, because this reads btn.offsetLeft. */
-    useGSAP(
-        () => {
-            const move = (animate: boolean) => {
-                const btn = tabRefs.current[activeVideo];
-                const bar = underlineRef.current;
-                if (!btn || !bar) return;
-                gsap.to(bar, {
-                    x: btn.offsetLeft,
-                    width: btn.offsetWidth,
-                    duration: animate ? 0.3 : 0,
-                    ease: EASE,
-                    overwrite: "auto",
-                });
-            };
-
-            move(false);
-
-            /* Re-measure after the webfont swaps in: next/font uses
-               display:swap, so button widths change once Space Grotesk
-               replaces the fallback and the underline would be stale. */
-            const row = tabRowRef.current;
-            const ro = new ResizeObserver(() => move(false));
-            if (row) ro.observe(row);
-            document.fonts?.ready.then(() => move(false));
-
-            return () => ro.disconnect();
-        },
-        { dependencies: [activeVideo] },
-    );
+    const { rowRef: tabRowRef, tabRefs, underlineRef } =
+        useTabUnderline(activeVideo);
 
     /* Both videos used to mount with autoPlay and merely crossfade, so
        both downloaded (6.4 MB) and both decoded forever — including the
@@ -175,18 +139,16 @@ export default function LudexShowcase() {
     }, [activeVideo, inView]);
 
     return (
-        <section id="work" className="relative section-y section-divide">
-            {/* Subtle accent radial glow — visual differentiation
-                within the dark theme, not a theme switch */}
-            <div className="ludex-glow" aria-hidden="true" />
-
-            {/* ═══════════ HEADER ═══════════ */}
+        <article>
+            {/* ═══════════ HEADER ═══════════
+                The section eyebrow and the <section> wrapper live in
+                FeaturedWork now — this is one project block among several. */}
             <div className="section-container">
                 <Reveal stagger={0.08}>
-                    <p data-reveal-child className="label">
-                        02 / Featured Work
+                    <p data-reveal-child className="label-muted">
+                        Recommendation Systems
                     </p>
-                    <h2 data-reveal-child className="heading-xl mt-5">
+                    <h2 data-reveal-child className="heading-xl mt-4">
                         Ludex
                     </h2>
                     <p data-reveal-child className="body-lg mt-6 max-w-2xl">
@@ -466,6 +428,6 @@ export default function LudexShowcase() {
                     </div>
                 </Reveal>
             </div>
-        </section>
+        </article>
     );
 }
