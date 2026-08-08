@@ -1,9 +1,8 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import Reveal from "@/components/Reveal";
-import { useTabUnderline } from "@/lib/useTabUnderline";
+import FigureGallery, { type Figure } from "@/components/FigureGallery";
 
 /* ══════════════════════════════════════════════════════
    GaitShowcase — Featured Work, project 01
@@ -60,24 +59,13 @@ const narrative = [
 ];
 
 /* Five figures, in report order, attention map last.
-   `layout` matters: `wide` figures pan horizontally inside the panel on
-   narrow screens; `portrait` is capped by height instead, because
-   pipeline.png is 916×1717 and at full width would render ~1700px tall. */
-const figures: {
-    id: string;
-    label: string;
-    layout: "wide" | "portrait";
-    minW?: string;
-    caption: string;
-    src: string;
-    w: number;
-    h: number;
-    alt: string;
-}[] = [
+   `minW` marks the wide ones, which pan horizontally inside the panel on
+   narrow screens. Pipeline has none: it is 916×1717 portrait, so the
+   gallery's aspect-derived height cap is what keeps it on screen. */
+const figures: Figure[] = [
     {
         id: "architecture",
         label: "Architecture",
-        layout: "wide",
         minW: "min-w-[700px]",
         caption:
             "Spatial set-pooling backbone and temporal template branch fusing into a 256-d embedding.",
@@ -89,7 +77,6 @@ const figures: {
     {
         id: "pipeline",
         label: "Pipeline",
-        layout: "portrait",
         caption:
             "End-to-end flow from raw CASIA-B video through silhouette extraction, alignment and tensor serialisation to embedding.",
         src: "/gait/pipeline.webp",
@@ -100,7 +87,6 @@ const figures: {
     {
         id: "training",
         label: "Training",
-        layout: "wide",
         minW: "min-w-[720px]",
         caption:
             "150 epochs — cross-entropy and triplet loss falling together as classification accuracy climbs.",
@@ -112,7 +98,6 @@ const figures: {
     {
         id: "roc-eer",
         label: "ROC–EER",
-        layout: "wide",
         minW: "min-w-[480px]",
         caption:
             "Open-set verification: AUC 0.5876, with the equal error rate at 44.94% where FAR meets FRR.",
@@ -124,7 +109,6 @@ const figures: {
     {
         id: "attention",
         label: "Attention",
-        layout: "wide",
         minW: "min-w-[520px]",
         caption:
             "Dynamic-branch attention at epochs 10, 50, 100 and 150 — sharp early hot spots settling into an even distribution as the fusion learns.",
@@ -154,11 +138,6 @@ const techStack = [
 /* ══════════════════════════════════════════════════════ */
 
 export default function GaitShowcase() {
-    const [activeFigure, setActiveFigure] = useState(0);
-    const { rowRef, tabRefs, underlineRef } = useTabUnderline(activeFigure);
-
-    const figure = figures[activeFigure];
-
     return (
         <article>
             {/* ═══════════ HEADER ═══════════ */}
@@ -301,112 +280,11 @@ export default function GaitShowcase() {
                         </p>
                     </Reveal>
 
-                    {/* rowRef must stay relative and be the direct offsetParent
-                        of the buttons — the underline tween reads offsetLeft. */}
-                    <div
-                        ref={rowRef}
-                        role="tablist"
-                        aria-label="Gait recognition figures"
-                        className="flex flex-wrap gap-6 mb-5 relative"
-                    >
-                        {figures.map((f, i) => (
-                            <button
-                                key={f.id}
-                                ref={(el) => {
-                                    tabRefs.current[i] = el;
-                                }}
-                                role="tab"
-                                id={`gait-tab-${f.id}`}
-                                aria-selected={activeFigure === i}
-                                aria-controls={`gait-panel-${f.id}`}
-                                onClick={() => setActiveFigure(i)}
-                                className={`text-sm font-medium pb-1.5 transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                                    activeFigure === i
-                                        ? "text-primary"
-                                        : "text-tertiary hover:text-secondary"
-                                }`}
-                            >
-                                {f.label}
-                            </button>
-                        ))}
-                        <span
-                            ref={underlineRef}
-                            aria-hidden="true"
-                            className="absolute bottom-0 left-0 h-px w-0 bg-accent pointer-events-none"
-                        />
-                    </div>
-
-                    <div className="shell-bezel">
-                        <div className="core-bezel overflow-hidden">
-                            <div
-                                role="tabpanel"
-                                id={`gait-panel-${figure.id}`}
-                                aria-labelledby={`gait-tab-${figure.id}`}
-                                className={
-                                    figure.layout === "portrait"
-                                        ? "p-3"
-                                        : "overflow-x-auto"
-                                }
-                            >
-                                {figure.layout === "portrait" ? (
-                                    /* Height-capped and centred: at full width
-                                       this diagram would be ~1700px tall.
-
-                                       The cap is a max-WIDTH derived from the
-                                       aspect ratio, not `max-h` + `w-auto`.
-                                       Auto width resolves against the image's
-                                       natural size, which is 0 until a lazy
-                                       image loads — so the figure collapsed to
-                                       0×0. A width-based cap is definite from
-                                       first paint. */
-                                    <div
-                                        className="mx-auto"
-                                        style={{
-                                            maxWidth: `min(100%, calc(70vh * ${figure.w} / ${figure.h}))`,
-                                        }}
-                                    >
-                                        <Image
-                                            src={figure.src}
-                                            alt={figure.alt}
-                                            width={figure.w}
-                                            height={figure.h}
-                                            sizes="(max-width: 768px) 100vw, 480px"
-                                            className="w-full h-auto block rounded-lg"
-                                        />
-                                    </div>
-                                ) : (
-                                    <div className={`${figure.minW} p-3`}>
-                                        {/* Same height cap as the portrait
-                                            branch. For genuinely wide figures
-                                            the computed width exceeds the
-                                            container so `min()` picks 100% and
-                                            it never binds; for the near-square
-                                            ROC and attention figures it stops
-                                            them growing past one screen. */}
-                                        <div
-                                            className="mx-auto"
-                                            style={{
-                                                maxWidth: `min(100%, calc(70vh * ${figure.w} / ${figure.h}))`,
-                                            }}
-                                        >
-                                            <Image
-                                                src={figure.src}
-                                                alt={figure.alt}
-                                                width={figure.w}
-                                                height={figure.h}
-                                                sizes="(max-width: 768px) 100vw, 940px"
-                                                className="w-full h-auto block rounded-lg"
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                    </div>
-
-                    <p className="body-sm mt-4 text-tertiary max-w-2xl">
-                        {figure.caption}
-                    </p>
+                    <FigureGallery
+                        figures={figures}
+                        idPrefix="gait"
+                        ariaLabel="Gait recognition figures"
+                    />
                 </div>
             </div>
 

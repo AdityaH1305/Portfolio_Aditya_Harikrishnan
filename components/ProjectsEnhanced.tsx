@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Image from "next/image";
 import Reveal from "@/components/Reveal";
-import { lockScroll, unlockScroll } from "@/lib/lenis";
+import Lightbox from "@/components/Lightbox";
 
 /* ══════════════════════════════════════════════════════
    Projects Section — Balanced Two-Column Composition
@@ -90,131 +90,6 @@ const projects: ProjectData[] = [
 ];
 
 /* ═══════════════════════════════════════════════════════
-   Lightbox Modal — shared gallery viewer
-
-   Supports keyboard navigation (Esc, ←, →) and
-   multi-image galleries with prev/next arrows.
-   ═══════════════════════════════════════════════════════ */
-function LightboxModal({
-    src,
-    alt,
-    onClose,
-    images,
-    currentIndex,
-    onNavigate,
-}: {
-    src: string;
-    alt: string;
-    onClose: () => void;
-    images?: string[];
-    currentIndex?: number;
-    onNavigate?: (idx: number) => void;
-}) {
-    const canNavigate = images && images.length > 1 && onNavigate;
-
-    const goPrev = useCallback(() => {
-        if (!canNavigate) return;
-        const prevIdx =
-            (currentIndex! - 1 + images!.length) % images!.length;
-        onNavigate!(prevIdx);
-    }, [canNavigate, currentIndex, images, onNavigate]);
-
-    const goNext = useCallback(() => {
-        if (!canNavigate) return;
-        const nextIdx = (currentIndex! + 1) % images!.length;
-        onNavigate!(nextIdx);
-    }, [canNavigate, currentIndex, images, onNavigate]);
-
-    const handleKey = useCallback(
-        (e: KeyboardEvent) => {
-            if (e.key === "Escape") onClose();
-            if (e.key === "ArrowLeft") goPrev();
-            if (e.key === "ArrowRight") goNext();
-        },
-        [onClose, goPrev, goNext]
-    );
-
-    /* This overlay never locked scroll — the page scrolled behind it. Under
-       Lenis that becomes a smooth glide behind a fullscreen modal, so the
-       lock is added here rather than left as a pre-existing bug. */
-    useEffect(() => {
-        lockScroll();
-        window.addEventListener("keydown", handleKey);
-        return () => {
-            unlockScroll();
-            window.removeEventListener("keydown", handleKey);
-        };
-    }, [handleKey]);
-
-    /* Enter transition only. The lightbox unmounts immediately on close,
-       matching the previous exit duration closely enough that adding a
-       mount/visibility split here would be ceremony for 0.25s. */
-    const [shown, setShown] = useState(false);
-    useEffect(() => {
-        const id = requestAnimationFrame(() =>
-            requestAnimationFrame(() => setShown(true)),
-        );
-        return () => cancelAnimationFrame(id);
-    }, []);
-
-    return (
-        <div
-            className={`fixed inset-0 z-[9999] flex items-center justify-center bg-black/90 backdrop-blur-md cursor-pointer transition-opacity duration-[250ms] ${
-                shown ? "opacity-100" : "opacity-0"
-            }`}
-            onClick={onClose}
-        >
-            <div
-                className={`relative max-w-[90vw] max-h-[85vh] w-auto h-auto shadow-2xl transition-all duration-[250ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                    shown ? "opacity-100 scale-100" : "opacity-0 scale-90"
-                }`}
-                onClick={(e) => e.stopPropagation()}
-            >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                    src={src}
-                    alt={alt}
-                    className="max-w-full max-h-[85vh] object-contain bg-black"
-                />
-
-                {canNavigate && (
-                    <>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                goPrev();
-                            }}
-                            className="absolute left-3 top-1/2 -translate-y-1/2 w-10 h-10
-                                       flex items-center justify-center
-                                       bg-black/80 border border-edge-default
-                                       text-white/70 hover:text-white hover:bg-black
-                                       transition-all duration-200 text-xl shadow-md"
-                            aria-label="Previous image"
-                        >
-                            ‹
-                        </button>
-                        <button
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                goNext();
-                            }}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 w-10 h-10
-                                       flex items-center justify-center
-                                       bg-black/80 border border-edge-default
-                                       text-white/70 hover:text-white hover:bg-black
-                                       transition-all duration-200 text-xl shadow-md"
-                            aria-label="Next image"
-                        >
-                            ›
-                        </button>
-                    </>
-                )}
-            </div>
-        </div>
-    );
-}
-
-/* ═══════════════════════════════════════════════════════
    ProjectCard — Shared card architecture
 
    Both PlayNexus and SynthRescue use this component.
@@ -236,18 +111,16 @@ function ProjectCard({
     project: ProjectData;
     staggerIndex: number;
 }) {
-    const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
-    const [lightboxIndex, setLightboxIndex] = useState(0);
+    /* null = closed. Tracking the index alone avoids keeping src and index
+       in sync as two pieces of state. */
+    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
 
-    const openLightbox = (idx: number) => {
-        setLightboxIndex(idx);
-        setLightboxSrc(project.images[idx]);
-    };
+    const lightboxImages = project.images.map((src, i) => ({
+        src,
+        alt: `${project.title} screenshot ${i + 1} of ${project.images.length}`,
+    }));
 
-    const navigateLightbox = (idx: number) => {
-        setLightboxIndex(idx);
-        setLightboxSrc(project.images[idx]);
-    };
+    const openLightbox = (idx: number) => setLightboxIndex(idx);
 
     const baseDelay = staggerIndex * 0.1;
 
@@ -341,19 +214,14 @@ function ProjectCard({
                 </div>
             </Reveal>
 
-            {/* Lightbox */}
-            <>
-                {lightboxSrc && (
-                    <LightboxModal
-                        src={lightboxSrc}
-                        alt={project.title}
-                        onClose={() => setLightboxSrc(null)}
-                        images={project.images}
-                        currentIndex={lightboxIndex}
-                        onNavigate={navigateLightbox}
-                    />
-                )}
-            </>
+            {lightboxIndex !== null && (
+                <Lightbox
+                    images={lightboxImages}
+                    index={lightboxIndex}
+                    onNavigate={setLightboxIndex}
+                    onClose={() => setLightboxIndex(null)}
+                />
+            )}
         </div>
     );
 }

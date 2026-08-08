@@ -1,9 +1,7 @@
 "use client";
 
-import { useState } from "react";
-import Image from "next/image";
 import Reveal from "@/components/Reveal";
-import { useTabUnderline } from "@/lib/useTabUnderline";
+import FigureGallery, { type Figure } from "@/components/FigureGallery";
 
 /* ══════════════════════════════════════════════════════
    DoubleUNetShowcase — Featured Work, project 02
@@ -69,71 +67,66 @@ const narrative = [
     },
 ];
 
-/* Figures are wide, so each carries a min width and pans horizontally on
-   small screens instead of shrinking into illegibility. */
-const figures: {
-    id: string;
-    label: string;
-    minW: string;
-    images: { src: string; w: number; h: number; alt: string }[];
-}[] = [
+/* One figure per tab, so the gallery's prev/next reaches every image.
+   `minW` marks the wide ones, which pan horizontally on small screens.
+   `maxVh` caps a figure's height as a fraction of the viewport. */
+const figures: Figure[] = [
     {
         id: "segmentation",
         label: "Segmentation",
-        minW: "min-w-[420px]",
-        images: [
-            {
-                src: "/mod-dun/High-PrecisionMedicalImageSegmentationusingaHybridXception-VGGDoubleUNet.avif",
-                w: 1600,
-                h: 1000,
-                alt: "Breast ultrasound scans showing benign and malignant lesions alongside their predicted segmentation masks and colour-coded overlays marking the detected lesion regions.",
-            },
-        ],
+        // Held to half the viewport: at full measure this one dominated
+        // everything around it.
+        maxVh: 0.5,
+        caption:
+            "Ultrasound scans with predicted masks and colour-coded overlays marking the detected lesion regions.",
+        src: "/mod-dun/High-PrecisionMedicalImageSegmentationusingaHybridXception-VGGDoubleUNet.avif",
+        w: 1600,
+        h: 1000,
+        alt: "Breast ultrasound scans showing benign and malignant lesions alongside their predicted segmentation masks and colour-coded overlays marking the detected lesion regions.",
     },
     {
         id: "architecture",
         label: "Architecture",
         minW: "min-w-[860px]",
-        images: [
-            {
-                src: "/mod-dun/ModelArchitectureDiagram.avif",
-                w: 1920,
-                h: 282,
-                alt: "Architecture diagram of the modified Double U-Net: an ensemble encoder feeding a first U-Net, whose output mask is refined by a second stacked U-Net.",
-            },
-        ],
+        caption:
+            "Two stacked U-Nets: an ensemble encoder feeds the first, whose mask the second refines.",
+        src: "/mod-dun/ModelArchitectureDiagram.avif",
+        w: 1920,
+        h: 282,
+        alt: "Architecture diagram of the modified Double U-Net: an ensemble encoder feeding a first U-Net, whose output mask is refined by a second stacked U-Net.",
     },
     {
-        id: "per-class",
-        label: "Per-class output",
+        id: "benign",
+        label: "Benign",
         minW: "min-w-[620px]",
-        images: [
-            {
-                src: "/mod-dun/BenignLesionSegmentation_Jaccard-0.avif",
-                w: 1320,
-                h: 256,
-                alt: "Benign lesion segmentation: input ultrasound, ground-truth mask and model prediction shown side by side.",
-            },
-            {
-                src: "/mod-dun/MalignantLesionSegmentation_Jaccard-0.avif",
-                w: 1320,
-                h: 256,
-                alt: "Malignant lesion segmentation: input ultrasound, ground-truth mask and model prediction shown side by side.",
-            },
-        ],
+        caption:
+            "Benign lesion — input ultrasound, ground-truth mask and model prediction side by side.",
+        src: "/mod-dun/BenignLesionSegmentation_Jaccard-0.avif",
+        w: 1320,
+        h: 256,
+        alt: "Benign lesion segmentation: input ultrasound, ground-truth mask and model prediction shown side by side.",
+    },
+    {
+        id: "malignant",
+        label: "Malignant",
+        minW: "min-w-[620px]",
+        caption:
+            "Malignant lesion — the harder class, where irregular boundaries cost the most accuracy.",
+        src: "/mod-dun/MalignantLesionSegmentation_Jaccard-0.avif",
+        w: 1320,
+        h: 256,
+        alt: "Malignant lesion segmentation: input ultrasound, ground-truth mask and model prediction shown side by side.",
     },
     {
         id: "training",
         label: "Training",
         minW: "min-w-[700px]",
-        images: [
-            {
-                src: "/mod-dun/BUSITrainingandValidationCurves.avif",
-                w: 1920,
-                h: 800,
-                alt: "Training and validation curves on the BUSI dataset across epochs.",
-            },
-        ],
+        caption:
+            "Training and validation curves on the BUSI dataset across epochs.",
+        src: "/mod-dun/BUSITrainingandValidationCurves.avif",
+        w: 1920,
+        h: 800,
+        alt: "Training and validation curves on the BUSI dataset across epochs.",
     },
 ];
 
@@ -150,11 +143,6 @@ const techStack = [
 /* ══════════════════════════════════════════════════════ */
 
 export default function DoubleUNetShowcase() {
-    const [activeFigure, setActiveFigure] = useState(0);
-    const { rowRef, tabRefs, underlineRef } = useTabUnderline(activeFigure);
-
-    const figure = figures[activeFigure];
-
     return (
         <article>
             {/* ═══════════ HEADER ═══════════ */}
@@ -276,72 +264,11 @@ export default function DoubleUNetShowcase() {
             {/* ═══════════ MEDIA — full measure ═══════════ */}
             <div className="section-container">
                 <div className="mt-20 md:mt-28">
-                    {/* Tab row. rowRef must stay relative and be the direct
-                        offsetParent of the buttons — the underline tween reads
-                        btn.offsetLeft. */}
-                    <div
-                        ref={rowRef}
-                        role="tablist"
-                        aria-label="Modified Double U-Net figures"
-                        className="flex flex-wrap gap-6 mb-5 relative"
-                    >
-                        {figures.map((f, i) => (
-                            <button
-                                key={f.id}
-                                ref={(el) => {
-                                    tabRefs.current[i] = el;
-                                }}
-                                role="tab"
-                                id={`dun-tab-${f.id}`}
-                                aria-selected={activeFigure === i}
-                                aria-controls={`dun-panel-${f.id}`}
-                                onClick={() => setActiveFigure(i)}
-                                className={`text-sm font-medium pb-1.5 transition-colors duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-                                    activeFigure === i
-                                        ? "text-primary"
-                                        : "text-tertiary hover:text-secondary"
-                                }`}
-                            >
-                                {f.label}
-                            </button>
-                        ))}
-                        <span
-                            ref={underlineRef}
-                            aria-hidden="true"
-                            className="absolute bottom-0 left-0 h-px w-0 bg-accent pointer-events-none"
-                        />
-                    </div>
-
-                    <div className="shell-bezel">
-                        <div className="core-bezel overflow-hidden">
-                            {/* Only the active figure renders. The aspect
-                                ratios span 1.6:1 to 6.8:1, so stacking them
-                                in one box would leave the flat diagrams
-                                floating in ~450px of dead space. */}
-                            <div
-                                role="tabpanel"
-                                id={`dun-panel-${figure.id}`}
-                                aria-labelledby={`dun-tab-${figure.id}`}
-                                className="overflow-x-auto"
-                            >
-                                <div
-                                    className={`${figure.minW} flex flex-col gap-3 p-3`}
-                                >
-                                    {figure.images.map((img) => (
-                                        <Image
-                                            key={img.src}
-                                            src={img.src}
-                                            alt={img.alt}
-                                            width={img.w}
-                                            height={img.h}
-                                            sizes="(max-width: 768px) 100vw, 940px"
-                                            className="w-full h-auto block rounded-lg"
-                                        />
-                                    ))}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
+                    <FigureGallery
+                        figures={figures}
+                        idPrefix="dun"
+                        ariaLabel="Modified Double U-Net figures"
+                    />
                 </div>
             </div>
 
