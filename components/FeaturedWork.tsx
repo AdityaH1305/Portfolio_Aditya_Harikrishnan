@@ -1,6 +1,7 @@
 "use client";
 
 import Reveal from "@/components/Reveal";
+import GaitShowcase from "@/components/GaitShowcase";
 import LudexShowcase from "@/components/LudexShowcase";
 import DoubleUNetShowcase from "@/components/DoubleUNetShowcase";
 
@@ -33,11 +34,19 @@ export default function FeaturedWork() {
             </div>
 
             <div className="mt-10 md:mt-14">
+                <GaitShowcase />
+            </div>
+
+            {/* Rules between case studies. The section's own top border comes
+                from `section-divide`, so these are the internal ones. */}
+            <div className="section-container">
+                <div className="mt-24 md:mt-36 border-t border-edge" />
+            </div>
+
+            <div className="mt-24 md:mt-32">
                 <LudexShowcase />
             </div>
 
-            {/* Divider between case studies — the section already has one at
-                its top, so this is the only internal rule. */}
             <div className="section-container">
                 <div className="mt-24 md:mt-36 border-t border-edge" />
             </div>
