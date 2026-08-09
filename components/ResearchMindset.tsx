@@ -14,34 +14,38 @@ import Reveal from "@/components/Reveal";
    against it.
    ══════════════════════════════════════════════════════ */
 
+/* Every entry names the project that proves it. That constraint is the
+   section's whole point, so entry 04's old evidence — "Currently exploring" —
+   was the one thing it could not say. It has been replaced with the ISRO
+   work, which is both real and the strongest item on the site. */
 const capabilities = [
     {
         number: "01",
+        title: "Biometric Recognition",
+        description:
+            "Set-based sequence models that stay accurate when the input degrades — changed viewpoint, dropped frames, occlusion.",
+        evidence: "Gait Fusion · ISRO / LPSC · 98.00% Rank-1 on CASIA-B",
+    },
+    {
+        number: "02",
+        title: "Medical Image Segmentation",
+        description:
+            "Encoder–decoder architectures extended past the published baseline, and evaluated where the extension holds and where it doesn't.",
+        evidence: "Modified Double U-Net · 95.94% mean IoU · ternary extension",
+    },
+    {
+        number: "03",
         title: "Recommendation Systems",
         description:
             "Hybrid models that fuse collaborative and content-based signals into a single ranking.",
         evidence: "Ludex · TF-IDF + implicit ALS · +27% Precision@20",
     },
     {
-        number: "02",
+        number: "04",
         title: "Data-Driven Platforms",
         description:
-            "Applications built on real-time APIs, analytics pipelines, and custom scoring systems.",
-        evidence: "PlayNexus · multi-region price pipeline · value scoring",
-    },
-    {
-        number: "03",
-        title: "Applied Computer Vision",
-        description:
-            "Detection pipelines that turn raw imagery into structured, actionable output.",
-        evidence: "SynthRescue · YOLO detection + Gemini triage",
-    },
-    {
-        number: "04",
-        title: "Intelligent Developer Tools",
-        description:
-            "Systems that make large codebases legible — retrieval, embeddings, and code intelligence.",
-        evidence: "Currently exploring",
+            "Applications built on real-time APIs, analytics pipelines, custom scoring, and vision in the loop.",
+        evidence: "PlayNexus · multi-region pipeline  ·  SynthRescue · YOLO triage",
     },
 ];
 

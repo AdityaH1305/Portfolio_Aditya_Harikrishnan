@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
+import { useRouter } from "next/navigation";
 import { lockScroll, unlockScroll, scrollToSection } from "@/lib/lenis";
+import { CASE_STUDIES } from "@/lib/caseStudies";
 
 const RESUME_URL =
     "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
@@ -30,7 +32,10 @@ const NAV: { id: string; label: string; icon: string }[] = [
 const openExternal = (url: string) =>
     window.open(url, "_blank", "noopener,noreferrer");
 
-function getCommands(onOpenGame: () => void): Command[] {
+function getCommands(
+    onOpenGame: () => void,
+    push: (href: string) => void,
+): Command[] {
     return [
         ...NAV.map(({ id, label, icon }) => ({
             id,
@@ -38,6 +43,13 @@ function getCommands(onOpenGame: () => void): Command[] {
             icon,
             section: "Navigate",
             action: () => scrollToSection(id),
+        })),
+        ...CASE_STUDIES.map((study) => ({
+            id: study.slug,
+            label: study.title,
+            icon: "▸",
+            section: "Case Studies",
+            action: () => push(`/work/${study.slug}`),
         })),
         {
             id: "resume",
@@ -81,8 +93,9 @@ export default function CommandPalette({
     const [render, setRender] = useState(false);
     const [shown, setShown] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const router = useRouter();
 
-    const commands = getCommands(onOpenGame);
+    const commands = getCommands(onOpenGame, (href) => router.push(href));
 
     const filtered = query.trim()
         ? commands.filter((c) =>

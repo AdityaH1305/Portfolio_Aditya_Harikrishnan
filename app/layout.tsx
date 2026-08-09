@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import ScrollProvider from "@/components/ScrollProvider";
+import RouteScrollReset from "@/components/RouteScrollReset";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -68,7 +69,10 @@ export default function RootLayout({
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <ScrollProvider>{children}</ScrollProvider>
+        <ScrollProvider>
+          <RouteScrollReset />
+          {children}
+        </ScrollProvider>
       </body>
     </html>
   );

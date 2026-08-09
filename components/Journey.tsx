@@ -41,6 +41,12 @@ const timelineEntries = [
             "SynthRescue put computer vision into a full response pipeline, from upload to generated report.",
     },
     {
+        year: "2025",
+        title: "Research internship at ISRO",
+        description:
+            "Cross-view gait recognition at the Liquid Propulsion Systems Centre — treating a walk as an unordered set of silhouettes, then adding a multi-modal fusion branch. 98.00% Rank-1 on CASIA-B under normal walking, and an honest account of where occlusion breaks it.",
+    },
+    {
         year: "2026",
         title: "What's next",
         description:

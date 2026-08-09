@@ -78,7 +78,25 @@ function attachScrub(engine: LivingArchitectureEngine): () => void {
   return () => st.kill();
 }
 
-export default function LivingArchitecture() {
+export interface LivingArchitectureProps {
+  /**
+   * Ambient mode: hold one stage instead of scrubbing through all seven.
+   *
+   * The scrub anchors against SECTION_IDS, which only exist on the home
+   * page — on a case-study route every anchor would resolve to 0 and the
+   * atlas would sit dead at stage 0. Ambient draws itself in once on mount
+   * and then holds, so it reads as texture behind the content rather than
+   * a second thing competing with the figures for attention.
+   */
+  ambient?: boolean;
+  /** Stage to hold in ambient mode. 4 is the settled, consolidated network. */
+  stage?: number;
+}
+
+export default function LivingArchitecture({
+  ambient = false,
+  stage = 4,
+}: LivingArchitectureProps = {}) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<LivingArchitectureEngine | null>(null);
 
@@ -146,6 +164,15 @@ export default function LivingArchitecture() {
       reducedMotion = false;
       engine.setReducedMotion(false);
       engine.start();
+
+      /* Ambient: no scrub. setStage moves the targets once and the
+         engine's lerp walks it in, so the atlas grows on mount and
+         then holds. */
+      if (ambient) {
+        engine.setStage(stage);
+        return () => engine.stop();
+      }
+
       const detach = attachScrub(engine);
       return () => {
         detach();
@@ -159,6 +186,12 @@ export default function LivingArchitecture() {
       reducedMotion = true;
       engine.setReducedMotion(true);
       engine.stop();
+
+      if (ambient) {
+        engine.setStage(stage);
+        engine.drawStatic();
+        return;
+      }
 
       const observers = SECTION_IDS.map((sectionId, stageIndex) => {
         const element = document.getElementById(sectionId);
@@ -190,12 +223,12 @@ export default function LivingArchitecture() {
       document.removeEventListener("visibilitychange", handleVisibility);
       engineRef.current = null;
     };
-  }, []);
+  }, [ambient, stage]);
 
   return (
     <canvas
       ref={canvasRef}
-      className="living-architecture-canvas"
+      className={`living-architecture-canvas${ambient ? " is-ambient" : ""}`}
       aria-hidden="true"
       role="presentation"
     />

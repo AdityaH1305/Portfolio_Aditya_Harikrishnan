@@ -412,6 +412,12 @@ body {
   background: transparent;
 }
 
+/* Case-study routes. The atlas is texture there, not the subject — at full
+   strength it draws the eye away from dense figures and diagrams. */
+.living-architecture-canvas.is-ambient {
+  opacity: 0.32;
+}
+
 /* ══════════════════════════════════════════════════════
    Ludex Case Study — section differentiation
    ══════════════════════════════════════════════════════ */

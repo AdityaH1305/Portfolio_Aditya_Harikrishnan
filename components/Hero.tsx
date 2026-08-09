@@ -22,8 +22,13 @@ import { gsap, EASE } from "@/lib/motion";
    it invisible, then animate — a flash on every load.
    ══════════════════════════════════════════════════════ */
 
+/* Experience sits second, directly after Education: the ISRO internship is
+   the strongest single credential here and it previously appeared nowhere
+   above the Gait case study — a reader could finish the whole timeline
+   without ever learning about it. */
 const facts = [
     { label: "Education", lines: ["B.Tech Computer Science", "IIIT Pune"] },
+    { label: "Experience", lines: ["Research Intern", "ISRO · LPSC"] },
     { label: "Focus", lines: ["ML Systems", "Full-Stack", "System Design"] },
     { label: "Status", lines: ["Open to internships", "& research roles"] },
 ];
