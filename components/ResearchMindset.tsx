@@ -57,7 +57,7 @@ export default function ResearchMindset() {
                 <Reveal y={16}>
                     <p className="label">04 / Approach</p>
                     <h2 className="heading-lg mt-3">What I Build</h2>
-                    <p className="body-lg mt-4 max-w-xl">
+                    <p className="body-lg mt-4 measure-tight">
                         Systems that combine software engineering with machine
                         learning — each one shipped, measured, and running.
                     </p>

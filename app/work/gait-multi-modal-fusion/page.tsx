@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import CaseStudyHero from "@/components/CaseStudyHero";
 import GaitShowcase from "@/components/GaitShowcase";
 
 export const metadata: Metadata = {
@@ -18,7 +19,10 @@ export const metadata: Metadata = {
 export default function GaitCaseStudy() {
     return (
         <div className="pt-16 md:pt-24 pb-24 md:pb-32">
-            <GaitShowcase />
+            <CaseStudyHero slug="gait-multi-modal-fusion" />
+            <div className="mt-20 md:mt-28">
+                <GaitShowcase />
+            </div>
         </div>
     );
 }

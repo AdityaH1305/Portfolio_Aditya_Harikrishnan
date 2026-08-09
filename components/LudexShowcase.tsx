@@ -143,18 +143,11 @@ export default function LudexShowcase() {
 
     return (
         <article>
-            {/* ═══════════ HEADER ═══════════
-                The section eyebrow and the <section> wrapper live in
-                FeaturedWork now — this is one project block among several. */}
+            {/* Eyebrow and title live in CaseStudyHero — this is a route
+                now, so that block owns the page's <h1>. */}
             <div className="section-container">
-                <Reveal stagger={0.08}>
-                    <p data-reveal-child className="label-muted">
-                        Recommendation Systems
-                    </p>
-                    <h2 data-reveal-child className="heading-xl mt-4">
-                        Ludex
-                    </h2>
-                    <p data-reveal-child className="body-lg mt-6 max-w-2xl">
+                <Reveal y={20}>
+                    <p className="body-lg measure">
                         A hybrid recommendation engine that fuses content-based
                         filtering with implicit ALS (Alternating Least Squares) to
                         deliver measurably better Steam game discovery — evaluated
@@ -162,19 +155,10 @@ export default function LudexShowcase() {
                     </p>
                 </Reveal>
 
-                {/* ═══════════ HERO METRIC — full measure ═══════════
-                    One number, alone. The supporting stats moved down into
-                    the narrative rail: a band carrying +27% AND three more
-                    numerals dilutes the headline claim, and the rail needs
-                    the height for the sticky hold to have travel. */}
-                <Reveal y={28} duration={0.8} className="mt-14 md:mt-20">
-                    <div className="flex flex-col md:flex-row md:items-baseline gap-2 md:gap-5">
-                        <span className="ludex-hero-metric">+27%</span>
-                        <span className="text-base md:text-lg text-secondary max-w-[20rem] leading-snug">
-                            Precision@20 improvement over content-based baseline
-                        </span>
-                    </div>
-                </Reveal>
+                {/* The +27% hero metric moved to CaseStudyHero when this
+                    became a route. Its supporting stats still live in the
+                    narrative rail below, which needs that height for the
+                    sticky hold to have travel. */}
             </div>
 
             {/* ═══════════ SPLIT — narrative scrolls, video sticks ═══════════

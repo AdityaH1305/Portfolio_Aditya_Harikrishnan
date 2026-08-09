@@ -51,13 +51,11 @@ function CaseStudyCard({ study, index }: { study: CaseStudy; index: number }) {
                         <p className="label mt-3">{study.context}</p>
                     )}
 
-                    <p className="body-sm mt-5 max-w-xl">{study.thesis}</p>
+                    <p className="body-sm mt-5 measure">{study.thesis}</p>
 
                     {/* Headline metric — the reason to click. */}
                     <div className="mt-7 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-                        <span className="ludex-hero-metric">
-                            {study.metric}
-                        </span>
+                        <span className="metric-card">{study.metric}</span>
                         <span className="body-sm text-secondary">
                             {study.metricLabel}
                         </span>
@@ -116,7 +114,7 @@ export default function FeaturedWork() {
                 <Reveal>
                     <p className="label">02 / Featured Work</p>
                     <h2 className="heading-lg mt-3">Case Studies</h2>
-                    <p className="body-lg mt-5 max-w-xl">
+                    <p className="body-lg mt-5 measure-tight">
                         Three systems built end to end — each one measured
                         against a real baseline and written up with its limits
                         intact.

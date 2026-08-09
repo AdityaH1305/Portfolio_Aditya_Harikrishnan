@@ -100,7 +100,7 @@ export default function Skills() {
                 <Reveal y={12}>
                     <p className="label">05 / Stack</p>
                     <h2 className="heading-lg mt-3">Skills &amp; Tools</h2>
-                    <p className="body-lg mt-5 max-w-xl">
+                    <p className="body-lg mt-5 measure-tight">
                         Listed against the work that used them, not as a
                         checklist.
                     </p>

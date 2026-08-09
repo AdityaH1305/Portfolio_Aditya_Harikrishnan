@@ -146,16 +146,11 @@ const techStack = [
 export default function DoubleUNetShowcase() {
     return (
         <article>
-            {/* ═══════════ HEADER ═══════════ */}
+            {/* Eyebrow and title live in CaseStudyHero — this is a route
+                now, so that block owns the page's <h1>. */}
             <div className="section-container">
-                <Reveal stagger={0.08}>
-                    <p data-reveal-child className="label-muted">
-                        Medical Imaging / Deep Learning
-                    </p>
-                    <h2 data-reveal-child className="heading-xl mt-4">
-                        Modified Double U-Net
-                    </h2>
-                    <p data-reveal-child className="body-lg mt-6 max-w-2xl">
+                <Reveal y={20}>
+                    <p className="body-lg measure">
                         An implementation of the modified Double U-Net{" "}
                         <a
                             href={PAPER_DOI}
@@ -176,11 +171,15 @@ export default function DoubleUNetShowcase() {
                     The number and the table it rests on, together: a bare
                     percentage is unverifiable, the comparison is the result. */}
                 <div className="mt-14 md:mt-20 grid lg:grid-cols-[minmax(0,4fr)_minmax(0,6fr)] gap-12 lg:gap-16 items-start">
+                    {/* Display numeral moved to CaseStudyHero; the number and
+                        the table it rests on still sit together, which was
+                        always the point of this pairing. */}
                     <Reveal y={28} duration={0.8}>
-                        <span className="ludex-hero-metric">95.94%</span>
-                        <p className="text-base md:text-lg text-secondary max-w-[22rem] leading-snug mt-2">
-                            Mean IoU on binary segmentation — 1.58 points above
-                            the Double U-Net baseline, with fewer parameters.
+                        <p className="label-muted">Against the baseline</p>
+                        <p className="body-lg mt-3 measure-tight">
+                            95.94% mean IoU on binary segmentation — 1.58
+                            points above the Double U-Net baseline, with fewer
+                            parameters.
                         </p>
                     </Reveal>
 

@@ -144,19 +144,11 @@ const techStack = [
 export default function GaitShowcase() {
     return (
         <article>
-            {/* ═══════════ HEADER ═══════════ */}
+            {/* Eyebrow, title and affiliation live in CaseStudyHero — this
+                is a route now, so that block owns the page's <h1>. */}
             <div className="section-container">
-                <Reveal stagger={0.08}>
-                    <p data-reveal-child className="label-muted">
-                        Gait Biometrics / Computer Vision
-                    </p>
-                    <h2 data-reveal-child className="heading-xl mt-4">
-                        Gait Recognition via Multi-Modal Fusion
-                    </h2>
-                    <p data-reveal-child className="label mt-5">
-                        ISRO · Liquid Propulsion Systems Centre
-                    </p>
-                    <p data-reveal-child className="body-lg mt-6 max-w-2xl">
+                <Reveal y={20}>
+                    <p className="body-lg measure">
                         A cross-view gait recognition pipeline built on GaitSet,
                         which treats a walking sequence as an unordered set of
                         silhouettes rather than a time series — so identity
@@ -172,10 +164,14 @@ export default function GaitShowcase() {
                     global threshold. Reporting one number for both would
                     misrepresent what the model does well. */}
                 <div className="mt-14 md:mt-20 grid lg:grid-cols-[minmax(0,4fr)_minmax(0,6fr)] gap-12 lg:gap-16 items-start">
+                    {/* The display numeral moved to CaseStudyHero. Two 96px
+                        numerals on one page is one too many; the comparison
+                        against the published baseline is what this column is
+                        actually for. */}
                     <Reveal y={28} duration={0.8}>
-                        <span className="ludex-hero-metric">98.00%</span>
-                        <p className="text-base md:text-lg text-secondary max-w-[22rem] leading-snug mt-2">
-                            Rank-1 accuracy under normal walking, above the
+                        <p className="label-muted">Against the baseline</p>
+                        <p className="body-lg mt-3 measure-tight">
+                            98.00% Rank-1 under normal walking, above the
                             published GaitSet baseline of 96.1% on the same
                             dataset.
                         </p>

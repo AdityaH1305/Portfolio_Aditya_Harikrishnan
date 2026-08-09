@@ -126,10 +126,22 @@ body {
 
    Minimums stay proportional to maximums so the hierarchy
    survives at 375px instead of collapsing to a 20% gap.
+
+   Every fluid middle term is `rem + vw`, never bare `vw`.
+   A bare-vw font-size ignores the reader's default font
+   size entirely: browser zoom happens to scale it because
+   zoom changes the CSS viewport, but a user who raises
+   their base font size — the accessibility setting people
+   actually use — gets nothing. Mixing in rem restores that,
+   which is what WCAG 1.4.4 is asking for.
+
+   The rem/vw split is chosen to land each maximum at
+   roughly the viewport width it landed at before, so the
+   change is an accessibility fix and not a redesign.
    ══════════════════════════════════════════════════════ */
 
 .display {
-  font-size: clamp(3rem, 8vw, 6rem);
+  font-size: clamp(3rem, 1rem + 6.7vw, 6rem);
   font-weight: 700;
   letter-spacing: -0.035em;
   line-height: 0.92;
@@ -137,7 +149,7 @@ body {
 }
 
 .heading-xl {
-  font-size: clamp(2.5rem, 6vw, 4.25rem);
+  font-size: clamp(2.5rem, 1rem + 4.4vw, 4.25rem);
   font-weight: 700;
   letter-spacing: -0.03em;
   line-height: 1;
@@ -145,7 +157,7 @@ body {
 }
 
 .heading-lg {
-  font-size: clamp(2rem, 4.5vw, 3rem);
+  font-size: clamp(2rem, 1rem + 3.1vw, 3rem);
   font-weight: 600;
   letter-spacing: -0.025em;
   line-height: 1.1;
@@ -153,7 +165,7 @@ body {
 }
 
 .heading-md {
-  font-size: clamp(1.5rem, 3vw, 2.125rem);
+  font-size: clamp(1.5rem, 1rem + 1.8vw, 2.125rem);
   font-weight: 600;
   letter-spacing: -0.015em;
   line-height: 1.2;
@@ -161,23 +173,45 @@ body {
 }
 
 .heading-sm {
-  font-size: clamp(1.125rem, 2vw, 1.5rem);
+  font-size: clamp(1.125rem, 0.95rem + 0.6vw, 1.5rem);
   font-weight: 600;
   letter-spacing: -0.01em;
   line-height: 1.35;
   color: var(--text-primary);
 }
 
+/* Body copy was fixed at every viewport — 18px on a 390px phone and on a
+   1920px display. Now it breathes a little, within a deliberately narrow
+   range: body text that scales as hard as a display face gets unreadable. */
 .body-lg {
-  font-size: 1.125rem;
+  /* Min stays at the old fixed 1.125rem so phones are unchanged; the fluid
+     term only ever adds. Shrinking body copy on the smallest screens to buy
+     growth on the largest is the wrong trade. */
+  font-size: clamp(1.125rem, 1.05rem + 0.25vw, 1.25rem);
   line-height: 1.7;
   color: var(--text-secondary);
 }
 
 .body-sm {
-  font-size: 0.875rem;
+  font-size: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem);
   line-height: 1.65;
   color: var(--text-secondary);
+}
+
+/* Measure. Long-form copy used to cap with max-w-xl / max-w-2xl, which are
+   rem widths — they hold a line length only at one font size, and the scale
+   above now moves it. `ch` tracks the font, so the line stays in the 60–75
+   character band wherever it renders.
+
+   BODY COPY ONLY. `ch` resolves against the element's own font-size, so
+   68ch on a 68px heading is ~3000px and the cap silently does nothing.
+   Cap display type with the container or an explicit rem width. */
+.measure {
+  max-width: 68ch;
+}
+
+.measure-tight {
+  max-width: 54ch;
 }
 
 /* ── Micro-labels — exactly two, both mono ──
@@ -440,7 +474,19 @@ body {
 }
 
 .ludex-hero-metric {
-  font-size: clamp(3.5rem, 10vw, 7rem);
+  font-size: clamp(3.5rem, 1rem + 8vw, 7rem);
+  font-weight: 700;
+  color: var(--accent);
+  letter-spacing: -0.04em;
+  line-height: 1;
+}
+
+/* Card-scale metric. The hero numeral tops out at 112px, which works when
+   it is the largest thing on the page — on an index card it would outrun
+   the card's own title (heading-lg, max 48px) by more than 2×. This lands
+   just above the title so the number still leads, without shouting. */
+.metric-card {
+  font-size: clamp(2.25rem, 1rem + 3.2vw, 3.25rem);
   font-weight: 700;
   color: var(--accent);
   letter-spacing: -0.04em;

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import CaseStudyHero from "@/components/CaseStudyHero";
 import LudexShowcase from "@/components/LudexShowcase";
 
 export const metadata: Metadata = {
@@ -20,7 +21,10 @@ export default function LudexCaseStudy() {
         <div className="relative pt-16 md:pt-24 pb-24 md:pb-32">
             {/* Accent radial the Ludex block was designed against. */}
             <div className="ludex-glow" aria-hidden="true" />
-            <LudexShowcase />
+            <CaseStudyHero slug="ludex" />
+            <div className="mt-20 md:mt-28">
+                <LudexShowcase />
+            </div>
         </div>
     );
 }
