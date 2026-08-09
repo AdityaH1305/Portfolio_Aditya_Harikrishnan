@@ -1,6 +1,7 @@
 "use client";
 
 import Reveal from "@/components/Reveal";
+import MagneticLink from "@/components/MagneticLink";
 
 /* ══════════════════════════════════════════════════════
    Contact Section
@@ -41,33 +42,28 @@ export default function Contact() {
                         delay={0.1}
                         className="mt-14 flex flex-col sm:flex-row gap-4"
                     >
-                        {/* Email */}
-                        <a
+                        <MagneticLink
                             href="mailto:adityaharikrishnan@gmail.com"
                             className="btn-primary"
                         >
                             Email Me
-                        </a>
+                        </MagneticLink>
 
-                        {/* GitHub */}
-                        <a
+                        <MagneticLink
                             href="https://github.com/AdityaH1305"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            external
                             className="btn-secondary"
                         >
                             GitHub
-                        </a>
+                        </MagneticLink>
 
-                        {/* LinkedIn */}
-                        <a
+                        <MagneticLink
                             href="https://www.linkedin.com/in/aditya-harikrishnan-3932192a4/"
-                            target="_blank"
-                            rel="noopener noreferrer"
+                            external
                             className="btn-secondary"
                         >
                             LinkedIn
-                        </a>
+                        </MagneticLink>
                     </Reveal>
                 </div>
             </div>

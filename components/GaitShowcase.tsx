@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Reveal from "@/components/Reveal";
 import FigureGallery, { type Figure } from "@/components/FigureGallery";
+import GaitPipeline from "@/components/GaitPipeline";
 
 /* ══════════════════════════════════════════════════════
    GaitShowcase — Featured Work, project 01
@@ -350,6 +351,14 @@ export default function GaitShowcase() {
                         </div>
                     </div>
                 </div>
+            </div>
+
+            {/* ═══════════ INTERACTIVE PIPELINE ═══════════
+                Sits directly after the input strip: the reader has just seen
+                the three silhouettes, and this shows what the pipeline does
+                to them — computed live from those same three files. */}
+            <div className="mt-24 md:mt-32">
+                <GaitPipeline />
             </div>
 
             {/* ═══════════ DATASET NOTE + STACK + CTAs ═══════════ */}
