@@ -25,6 +25,7 @@ import FigureGallery, { type Figure } from "@/components/FigureGallery";
    matches neither reference paper — deliberately not used.
    ══════════════════════════════════════════════════════ */
 
+const REPO = "https://github.com/AdityaH1305/Gait-Multi-Modal-Fusion";
 const GAITSET_PAPER = "/gaitset-cross-view-gait-recognition.pdf";
 const FUSION_PAPER = "/gaitset-multimodal-fusion.pdf";
 
@@ -379,16 +380,17 @@ export default function GaitShowcase() {
                         {techStack.join("  ·  ")}
                     </p>
 
-                    {/* No report CTA for this project — the two reference
-                        papers it builds on get the credit instead. */}
+                    {/* No report CTA for this project. GitHub leads, as it does
+                        on the other two case studies; the two reference papers
+                        it builds on follow as secondary credit. */}
                     <div data-reveal-child className="flex flex-wrap gap-4">
                         <a
-                            href={GAITSET_PAPER}
+                            href={REPO}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn-primary"
                         >
-                            GaitSet Paper
+                            View on GitHub
                             <svg
                                 className="w-3.5 h-3.5"
                                 viewBox="0 0 24 24"
@@ -399,6 +401,14 @@ export default function GaitShowcase() {
                             >
                                 <path d="M7 17L17 7M17 7H7M17 7v10" />
                             </svg>
+                        </a>
+                        <a
+                            href={GAITSET_PAPER}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn-secondary"
+                        >
+                            GaitSet Paper
                         </a>
                         <a
                             href={FUSION_PAPER}
