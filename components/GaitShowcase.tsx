@@ -67,7 +67,7 @@ const figures: Figure[] = [
     {
         id: "architecture",
         label: "Architecture",
-        minW: "min-w-[700px]",
+        minW: "max-md:min-w-[700px]",
         caption:
             "Spatial set-pooling backbone and temporal template branch fusing into a 256-d embedding.",
         src: "/gait/architecture.webp",
@@ -79,7 +79,7 @@ const figures: Figure[] = [
         id: "pipeline",
         label: "Pipeline",
         tall: true,
-        minW: "min-w-[640px]",
+        minW: "max-md:min-w-[640px]",
         caption:
             "End-to-end flow from raw CASIA-B video through silhouette extraction, alignment and tensor serialisation to embedding.",
         src: "/gait/pipeline.webp",
@@ -90,7 +90,7 @@ const figures: Figure[] = [
     {
         id: "training",
         label: "Training",
-        minW: "min-w-[720px]",
+        minW: "max-md:min-w-[720px]",
         caption:
             "150 epochs — cross-entropy and triplet loss falling together as classification accuracy climbs.",
         src: "/gait/training.webp",
@@ -101,7 +101,7 @@ const figures: Figure[] = [
     {
         id: "roc-eer",
         label: "ROC–EER",
-        minW: "min-w-[480px]",
+        minW: "max-md:min-w-[480px]",
         caption:
             "Open-set verification: AUC 0.5876, with the equal error rate at 44.94% where FAR meets FRR.",
         src: "/gait/roc-eer.webp",
@@ -112,7 +112,7 @@ const figures: Figure[] = [
     {
         id: "attention",
         label: "Attention",
-        minW: "min-w-[520px]",
+        minW: "max-md:min-w-[520px]",
         caption:
             "Dynamic-branch attention at epochs 10, 50, 100 and 150 — sharp early hot spots settling into an even distribution as the fusion learns.",
         src: "/gait/attenion_map.webp",

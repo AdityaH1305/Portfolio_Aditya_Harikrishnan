@@ -36,7 +36,32 @@ import { useTabUnderline } from "@/lib/useTabUnderline";
    covered parts of every figure, and there is no room to put
    them outside either: `.side-nav` is fixed at left:1.5rem,
    top:50%, exactly where a centred left arrow would land.
+
+   Because the controls sit below, the frame must be a FIXED
+   height for the whole gallery. Sized to the active figure it
+   grew and shrank as you cycled, so the arrow you just clicked
+   slid out from under the cursor and had to be chased. The
+   height comes from invisible sizers — one per figure, the
+   tallest wins — and the active figure is centred inside it.
+
+   Sizers rather than stacking the real images in one grid cell:
+   stacking would reserve the same height, but every figure in
+   the gallery would download on mount instead of on demand.
    ══════════════════════════════════════════════════════ */
+
+/* Fraction of viewport height a figure may occupy unless it says otherwise.
+   This now sets the shared frame height, so it trades two things off: raise it
+   and the tall figures get bigger, but the wide short ones float in more empty
+   space. 0.42 keeps both galleries near a 380px frame, which is about where
+   the wide short figures stop looking stranded in it. */
+const DEFAULT_MAX_VH = 0.42;
+
+/** The width cap that, with the figure's own aspect, decides its height. */
+function capWidth(f: Figure): string {
+    return f.tall
+        ? `${f.w}px`
+        : `min(100%, calc(${f.maxVh ?? DEFAULT_MAX_VH} * 100vh * ${f.w} / ${f.h}))`;
+}
 
 export interface Figure {
     id: string;
@@ -46,7 +71,8 @@ export interface Figure {
     w: number;
     h: number;
     alt: string;
-    /** Tailwind min-width class — wide figures pan on small screens. */
+    /** Tailwind min-width class — wide figures pan on small screens. Scope it
+     *  to `max-md:`, or it outranks the height cap and inflates the frame. */
     minW?: string;
     /** Fraction of viewport height the figure may occupy. Default 0.7. */
     maxVh?: number;
@@ -146,45 +172,59 @@ export default function FigureGallery({
 
             <div className="shell-bezel">
                 <div className="core-bezel overflow-hidden">
-                    <div
-                        role="tabpanel"
-                        id={`${idPrefix}-panel-${figure.id}`}
-                        aria-labelledby={`${idPrefix}-tab-${figure.id}`}
-                        /* Focusable so the panel can be scrolled from the
-                           keyboard — which the tall figures now require. */
-                        tabIndex={0}
-                        /* Any inner scroller has to opt out of Lenis, or the
-                           page glides instead of the panel. */
-                        data-lenis-prevent={
-                            figure.tall || figure.minW ? "" : undefined
-                        }
-                        className={
-                            figure.tall
-                                ? "overflow-auto max-h-[74vh]"
-                                : figure.minW
-                                  ? "overflow-x-auto"
-                                  : "p-3"
-                        }
-                    >
+                    <div className="relative p-3">
+                        {/* Reserves the frame. Stacked in one grid cell so the
+                            tallest figure sets the height for all of them. */}
+                        <div className="grid" aria-hidden="true">
+                            {figures.map((f) => (
+                                <div
+                                    key={f.id}
+                                    className={`[grid-area:1/1] w-full mx-auto invisible pointer-events-none ${
+                                        f.minW ?? ""
+                                    }`}
+                                    style={
+                                        f.tall
+                                            ? {
+                                                  height: `calc(${
+                                                      f.maxVh ?? DEFAULT_MAX_VH
+                                                  } * 100vh)`,
+                                              }
+                                            : {
+                                                  maxWidth: capWidth(f),
+                                                  aspectRatio: `${f.w} / ${f.h}`,
+                                              }
+                                    }
+                                />
+                            ))}
+                        </div>
+
+                        {/* Absolute, so a tall figure's own height can never
+                            feed back into the reserved box — it scrolls
+                            within it instead. inset-3 mirrors the p-3. */}
                         <div
-                            className={`${figure.minW ?? ""} ${
-                                figure.minW || figure.tall ? "p-3" : ""
-                            }`}
+                            role="tabpanel"
+                            id={`${idPrefix}-panel-${figure.id}`}
+                            aria-labelledby={`${idPrefix}-tab-${figure.id}`}
+                            /* Focusable so the panel can be scrolled from the
+                               keyboard — which tall figures now require. */
+                            tabIndex={0}
+                            /* Any inner scroller has to opt out of Lenis, or
+                               the page glides instead of the panel. */
+                            data-lenis-prevent=""
+                            className="absolute inset-3 overflow-auto flex"
                         >
-                            {/* The cap lives on this div, and the button
-                                is w-full inside it. Putting max-width on
-                                the button itself collapses the figure to
-                                0×0: a button shrink-wraps its content,
-                                and the content is w-full of the button. */}
+                            {/* The cap lives on this div, and the button is
+                                w-full inside it. Putting max-width on the
+                                button itself collapses the figure to 0×0: a
+                                button shrink-wraps its content, and the
+                                content is w-full of the button.
+
+                                `m-auto` centres the figure in the frame and,
+                                unlike justify-center, does not clip the top
+                                when the figure overflows. */}
                             <div
-                                className="mx-auto"
-                                style={{
-                                    maxWidth: figure.tall
-                                        ? `${figure.w}px`
-                                        : `min(100%, calc(${
-                                              figure.maxVh ?? 0.7
-                                          } * 100vh * ${figure.w} / ${figure.h}))`,
-                                }}
+                                className={`m-auto w-full ${figure.minW ?? ""}`}
+                                style={{ maxWidth: capWidth(figure) }}
                             >
                                 <button
                                     type="button"
@@ -207,7 +247,10 @@ export default function FigureGallery({
                 </div>
             </div>
 
-            <div className="mt-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:gap-6">
+            {/* col-reverse on mobile puts the controls directly under the
+                frame, so a caption that wraps to a different number of lines
+                cannot push them around either. */}
+            <div className="mt-4 flex flex-col-reverse gap-4 sm:flex-row sm:items-start sm:gap-6">
                 <p className="body-sm text-tertiary max-w-2xl flex-1">
                     {figure.caption}
                     {figure.tall && (

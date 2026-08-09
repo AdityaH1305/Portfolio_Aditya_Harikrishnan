@@ -74,9 +74,10 @@ const figures: Figure[] = [
     {
         id: "segmentation",
         label: "Segmentation",
-        // Held to half the viewport: at full measure this one dominated
-        // everything around it.
-        maxVh: 0.5,
+        // No maxVh override: this was the tallest figure here, so capping it
+        // above the gallery default only stretched the shared frame and
+        // stranded the wide architecture strip in empty space.
+        minW: "max-md:min-w-[560px]",
         caption:
             "Ultrasound scans with predicted masks and colour-coded overlays marking the detected lesion regions.",
         src: "/mod-dun/High-PrecisionMedicalImageSegmentationusingaHybridXception-VGGDoubleUNet.avif",
@@ -87,7 +88,7 @@ const figures: Figure[] = [
     {
         id: "architecture",
         label: "Architecture",
-        minW: "min-w-[860px]",
+        minW: "max-md:min-w-[860px]",
         caption:
             "Two stacked U-Nets: an ensemble encoder feeds the first, whose mask the second refines.",
         src: "/mod-dun/ModelArchitectureDiagram.avif",
@@ -98,7 +99,7 @@ const figures: Figure[] = [
     {
         id: "benign",
         label: "Benign",
-        minW: "min-w-[620px]",
+        minW: "max-md:min-w-[620px]",
         caption:
             "Benign lesion — input ultrasound, ground-truth mask and model prediction side by side.",
         src: "/mod-dun/BenignLesionSegmentation_Jaccard-0.avif",
@@ -109,7 +110,7 @@ const figures: Figure[] = [
     {
         id: "malignant",
         label: "Malignant",
-        minW: "min-w-[620px]",
+        minW: "max-md:min-w-[620px]",
         caption:
             "Malignant lesion — the harder class, where irregular boundaries cost the most accuracy.",
         src: "/mod-dun/MalignantLesionSegmentation_Jaccard-0.avif",
@@ -120,7 +121,7 @@ const figures: Figure[] = [
     {
         id: "training",
         label: "Training",
-        minW: "min-w-[700px]",
+        minW: "max-md:min-w-[700px]",
         caption:
             "Training and validation curves on the BUSI dataset across epochs.",
         src: "/mod-dun/BUSITrainingandValidationCurves.avif",
