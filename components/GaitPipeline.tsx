@@ -124,6 +124,8 @@ function toCanvas(gray: Gray, rgb: [number, number, number]): HTMLCanvasElement 
 
 export default function GaitPipeline() {
     const wrapRef = useRef<HTMLDivElement>(null);
+    const gridRef = useRef<HTMLDivElement>(null);
+    const barRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
 
     const framesRef = useRef<Frame[] | null>(null);
@@ -379,10 +381,14 @@ export default function GaitPipeline() {
             const mm = gsap.matchMedia();
 
             mm.add("(prefers-reduced-motion: no-preference)", () => {
+                /* Trigger on the GRID, not the whole section. The section
+                   includes the heading above it, which pushed the scrub range
+                   out of step with the sticky travel — the last stages landed
+                   after the panel had already unstuck. */
                 const st = ScrollTrigger.create({
-                    trigger: wrapRef.current,
-                    start: "top 65%",
-                    end: "bottom 40%",
+                    trigger: gridRef.current,
+                    start: "top 20%",
+                    end: "bottom 80%",
                     scrub: true,
                     onUpdate: (self) => {
                         progress.current = self.progress * (STAGES.length - 1);
@@ -392,6 +398,12 @@ export default function GaitPipeline() {
                                 Math.round(progress.current),
                             ),
                         );
+                        // Written straight to the DOM: this fires every
+                        // frame, and a setState per frame would re-render
+                        // the whole stage list for a 1px bar.
+                        if (barRef.current) {
+                            barRef.current.style.transform = `scaleX(${self.progress})`;
+                        }
                         draw();
                     },
                 });
@@ -403,6 +415,7 @@ export default function GaitPipeline() {
             mm.add("(prefers-reduced-motion: reduce)", () => {
                 progress.current = STAGES.length - 1;
                 setStage(STAGES.length - 1);
+                if (barRef.current) barRef.current.style.transform = "scaleX(1)";
                 draw();
             });
 
@@ -432,16 +445,57 @@ export default function GaitPipeline() {
                 </p>
             </div>
 
-            <div className="mt-10 grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-10 lg:gap-16 items-start">
-                <div className="shell-bezel">
-                    <div className="core-bezel overflow-hidden p-3">
-                        <canvas
-                            ref={canvasRef}
-                            className="w-full block"
-                            style={{ aspectRatio: `${W} / ${H}` }}
-                            role="img"
-                            aria-label="Diagram of the gait preprocessing pipeline: three CASIA-B silhouettes with measured centroid and bounding box, a 64 by 64 sampling grid, and the per-pixel max and mean computed across the set."
-                        />
+            {/* `items-start` is load-bearing. A grid item defaults to
+                align-self: stretch, which makes the sticky column exactly as
+                tall as the row — and a sticky element with no room to move
+                inside its container never moves at all.
+
+                Not wrapped in Reveal for the same reason: as a stretched grid
+                item it would lose its travel again. */}
+            <div
+                ref={gridRef}
+                className="mt-10 grid lg:grid-cols-[minmax(0,7fr)_minmax(0,5fr)] gap-10 lg:gap-16 items-start"
+            >
+                {/* Sticky at every width. The stage list is far taller than
+                    the canvas, so without this the diagram scrolled out of
+                    view around stage 3 and the reader was watching prose
+                    describe something no longer on screen.
+
+                    top-20 clears the route header, which is itself sticky at
+                    top-0 and 56–64px tall. */}
+                <div className="sticky top-20 lg:top-24 self-start">
+                    <div className="shell-bezel">
+                        <div className="core-bezel overflow-hidden p-3">
+                            <canvas
+                                ref={canvasRef}
+                                className="w-full block"
+                                style={{ aspectRatio: `${W} / ${H}` }}
+                                role="img"
+                                aria-label="Diagram of the gait preprocessing pipeline: three CASIA-B silhouettes with measured centroid and bounding box, a 64 by 64 sampling grid, and the per-pixel max and mean computed across the set."
+                            />
+                        </div>
+                    </div>
+
+                    {/* Progress + current stage, so the pinned panel says
+                        what it is showing without the reader having to look
+                        across at the list. */}
+                    <div className="mt-4 flex items-center gap-4">
+                        <span className="mono text-xs text-accent tabular-nums shrink-0">
+                            {String(stage + 1).padStart(2, "0")}
+                        </span>
+                        <p className="text-sm text-primary shrink-0">
+                            {STAGES[stage].title}
+                        </p>
+                        <div className="h-px flex-1 bg-edge overflow-hidden">
+                            <div
+                                ref={barRef}
+                                className="h-full bg-accent origin-left"
+                                style={{ transform: "scaleX(0)" }}
+                            />
+                        </div>
+                        <span className="mono text-xs text-quaternary tabular-nums shrink-0">
+                            {String(STAGES.length).padStart(2, "0")}
+                        </span>
                     </div>
                 </div>
 
