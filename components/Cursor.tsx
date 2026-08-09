@@ -54,6 +54,7 @@ type State =
     | "scrub"
     | "probe"
     | "game"
+    | "caret"
     | "text";
 
 interface StateSpec {
@@ -84,6 +85,10 @@ const STATES: Record<State, StateSpec> = {
     scrub: { r: 18, amp: 0.4, harm: 8, label: "SCRUB", lock: false },
     probe: { r: 15, amp: 0.3, harm: 6, label: "", lock: false },
     game: { r: 34, amp: 1.5, harm: 2, label: "", lock: true },
+    /* r: 0 collapses the ring — the caret is the whole cursor over plain
+       text. Distinct from `text`, which hides this layer entirely and hands
+       real inputs back to the native caret. */
+    caret: { r: 0, amp: 0, harm: 3, label: "", lock: false },
     text: { r: 0, amp: 0, harm: 3, label: "", lock: false },
 };
 
@@ -93,6 +98,24 @@ const STATES: Record<State, StateSpec> = {
 const WAVE_BASE = 1.2; // amplitude at rest
 const WAVE_PER_SPEED = 0.028; // extra amplitude per px/frame of pointer speed
 const CROSS_ARM = 4; // crosshair arm length; the gap is CROSS_ARM / 2
+
+/** Magnetic snap only applies to targets this size or smaller, in px. */
+const SNAP_MAX_SIZE = 120;
+/** Peak pull toward a target's centre. 1 would pin the ring to it. */
+const SNAP_STRENGTH = 0.55;
+/** Ring lag ceiling while snapping — a deliberate pull, not a flick. */
+const SNAP_MAX_LAG = 26;
+/** Stillness before the waveform flatlines. */
+const IDLE_AFTER_MS = 2500;
+/** Click impact ring lifetime. */
+const IMPACT_MS = 450;
+/** Sample the probe canvas every Nth frame. 60/4 = 15Hz, plenty for a readout. */
+const PROBE_EVERY = 4;
+
+/* Plain text. Checked AFTER [data-cursor] and after the clickable test, so a
+   card title inside an anchor keeps `read` rather than becoming a caret. */
+const TEXT_SELECTOR =
+    "p, h1, h2, h3, h4, h5, h6, li, blockquote, figcaption, dd, dt, code, pre, td, th";
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -167,6 +190,22 @@ export default function Cursor() {
         let charge = 0;
         let chargeAt = 0;
 
+        // Click impact ring — one timestamp, so rapid clicks restart it
+        // rather than stacking rings on top of each other.
+        let impactAt = -IMPACT_MS;
+
+        // Idle flatline. `idle` eases 0→1 after IDLE_AFTER_MS of stillness.
+        let lastMoveAt = performance.now();
+        let idle = 0;
+
+        // Live mask value under the crosshair on the gait canvas, 0–255.
+        let probeVal: number | null = null;
+        let frameCount = 0;
+
+        // Previous pointer, so speed measures real pointer travel rather
+        // than the distance to an eased (and possibly snapped) target.
+        const prev = { x: -9999, y: -9999 };
+
         let visible = false;
         let rafId = 0;
         let running = true;
@@ -175,11 +214,14 @@ export default function Cursor() {
         const onMove = (e: PointerEvent) => {
             pointer.x = e.clientX;
             pointer.y = e.clientY;
+            lastMoveAt = performance.now();
             if (!visible) {
                 // First sighting: snap the easing targets so the ring does
                 // not fly in from the top-left corner.
                 eased.x = e.clientX;
                 eased.y = e.clientY;
+                prev.x = e.clientX;
+                prev.y = e.clientY;
                 visible = true;
                 root.style.opacity = "1";
             }
@@ -196,6 +238,8 @@ export default function Cursor() {
                 "a, button, [role='button'], summary",
             );
             if (clickable) return ["link", clickable];
+            // No element returned: plain text gets neither snap nor lock.
+            if (target.closest(TEXT_SELECTOR)) return ["caret", null];
             return ["default", null];
         };
 
@@ -208,6 +252,7 @@ export default function Cursor() {
 
         const onDown = () => {
             pressed = true;
+            impactAt = performance.now();
         };
         const onUp = () => {
             pressed = false;
@@ -247,20 +292,97 @@ export default function Cursor() {
             }
 
             const spec = STATES[state];
+            frameCount++;
+            const now = performance.now();
 
-            const dx = pointer.x - eased.x;
-            const dy = pointer.y - eased.y;
-            eased.x += dx * FOLLOW;
-            eased.y += dy * FOLLOW;
+            /* One rect per frame, shared by the snap and the target lock —
+               both need it and getBoundingClientRect forces layout. */
+            const rect =
+                hovered && state !== "caret"
+                    ? hovered.getBoundingClientRect()
+                    : null;
 
-            /* Velocity still opens the waveform up, but the cap is 30 rather
-               than 60 and the coefficient below is a third of what it was.
-               At full speed the ring used to deviate ~13px, which is what
-               made it restless. */
-            speed = lerp(speed, Math.min(Math.hypot(dx, dy), 30), 0.1);
+            /* ── Magnetic snap ──
+               The ring's target blends toward a small element's centre; the
+               crosshair core below still rides the true pointer, so nothing
+               misrepresents where a click will land. Size-gated: pulling a
+               full-width case-study card toward its centre would feel sticky
+               and wrong, and only small targets benefit from aim assist. */
+            let tx = pointer.x;
+            let ty = pointer.y;
+            let snapping = false;
+            if (
+                rect &&
+                rect.width > 0 &&
+                rect.width <= SNAP_MAX_SIZE &&
+                rect.height <= SNAP_MAX_SIZE
+            ) {
+                const cx = rect.left + rect.width / 2;
+                const cy = rect.top + rect.height / 2;
+                const reach = Math.max(rect.width, rect.height) * 0.75 + 12;
+                const dist = Math.hypot(pointer.x - cx, pointer.y - cy);
+                const k = SNAP_STRENGTH * Math.max(0, 1 - dist / reach);
+                if (k > 0.001) {
+                    tx = lerp(pointer.x, cx, k);
+                    ty = lerp(pointer.y, cy, k);
+                    snapping = true;
+                }
+            }
+
+            eased.x += (tx - eased.x) * FOLLOW;
+            eased.y += (ty - eased.y) * FOLLOW;
+
+            /* Speed is measured from actual pointer travel, not from the
+               distance to the eased target — with snap active that distance
+               includes the pull and would inflate the waveform for standing
+               still next to a button. */
+            const travel = Math.hypot(pointer.x - prev.x, pointer.y - prev.y);
+            prev.x = pointer.x;
+            prev.y = pointer.y;
+            speed = lerp(speed, Math.min(travel, 30), 0.1);
+
+            /* ── Idle flatline ──
+               Slow to settle, fast to wake: an oscilloscope losing signal
+               should drift off, but pick up the instant there is input. */
+            const idleTarget = now - lastMoveAt > IDLE_AFTER_MS ? 1 : 0;
+            idle = lerp(idle, idleTarget, idleTarget ? 0.03 : 0.3);
 
             radius = lerp(radius, spec.r, 0.16);
             ampEase = lerp(ampEase, spec.amp, 0.14);
+
+            /* ── Live pixel probe ──
+               Over the gait canvas, read the real mask value under the
+               crosshair. GaitPipeline writes silhouette intensity into the
+               ALPHA channel, so data[3] is the actual 0–255 value rather
+               than a proxy derived from the tint. */
+            if (state === "probe" && hovered instanceof HTMLCanvasElement) {
+                if (frameCount % PROBE_EVERY === 0 && rect && rect.width > 0) {
+                    const c2 = hovered.getContext("2d");
+                    const px = Math.round(
+                        (pointer.x - rect.left) * (hovered.width / rect.width),
+                    );
+                    const py = Math.round(
+                        (pointer.y - rect.top) * (hovered.height / rect.height),
+                    );
+                    if (
+                        c2 &&
+                        px >= 0 &&
+                        py >= 0 &&
+                        px < hovered.width &&
+                        py < hovered.height
+                    ) {
+                        try {
+                            probeVal = c2.getImageData(px, py, 1, 1).data[3];
+                        } catch {
+                            probeVal = null; // tainted canvas — never fatal
+                        }
+                    } else {
+                        probeVal = null;
+                    }
+                }
+            } else {
+                probeVal = null;
+            }
 
             // Spring integrate. Stiffness/damping tuned for one visible
             // rebound rather than a wobble.
@@ -271,10 +393,15 @@ export default function Cursor() {
 
             phase += 0.042 + speed * 0.0016;
 
-            // The canvas rides the RAW pointer; the ring is drawn at the
-            // easing offset inside it, clamped so it cannot leave the box.
-            const ox = Math.max(-MAX_LAG, Math.min(MAX_LAG, eased.x - pointer.x));
-            const oy = Math.max(-MAX_LAG, Math.min(MAX_LAG, eased.y - pointer.y));
+            /* The canvas rides the RAW pointer; the ring is drawn at the
+               easing offset inside it, clamped so it cannot leave the box.
+
+               Snapping gets a larger ceiling: the base clamp exists to stop a
+               fast flick dragging the ring off-canvas, but a snap offset is
+               deliberate and would otherwise be truncated mid-pull. */
+            const lagCap = snapping ? SNAP_MAX_LAG : MAX_LAG;
+            const ox = Math.max(-lagCap, Math.min(lagCap, eased.x - pointer.x));
+            const oy = Math.max(-lagCap, Math.min(lagCap, eased.y - pointer.y));
 
             canvas.style.transform = `translate3d(${pointer.x - HALF}px, ${
                 pointer.y - HALF
@@ -291,7 +418,10 @@ export default function Cursor() {
             if (R > 0.5) {
                 // Circular waveform. Radius modulated by a harmonic series,
                 // so the ring reads as a waveform rather than a dashed circle.
-                const amp = ampEase * (WAVE_BASE + speed * WAVE_PER_SPEED);
+                // `1 - idle` is the flatline: the trace collapses onto a
+                // true circle when the pointer has been still.
+                const amp =
+                    ampEase * (WAVE_BASE + speed * WAVE_PER_SPEED) * (1 - idle);
                 ctx.beginPath();
                 for (let i = 0; i <= 96; i++) {
                     const t = (i / 96) * Math.PI * 2;
@@ -314,7 +444,14 @@ export default function Cursor() {
                 ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
                 ctx.lineWidth = 2.5;
                 ctx.stroke();
-                ctx.strokeStyle = A(0.62);
+
+                /* Ring brightness carries two readings: it dims as the trace
+                   flatlines, and over the gait canvas it tracks the sampled
+                   mask value — so the ring visibly lifts as the crosshair
+                   crosses a silhouette edge. */
+                const probeLift =
+                    probeVal !== null ? 0.3 * (probeVal / 255) : 0;
+                ctx.strokeStyle = A((0.62 + probeLift) * (1 - idle * 0.45));
                 ctx.lineWidth = 1;
                 ctx.stroke();
 
@@ -337,8 +474,25 @@ export default function Cursor() {
                 }
             }
 
+            /* ── Click impact ──
+               The press spring gives the click a down-feel but no release;
+               this is the note actually sounding. Ease-out so it leaves
+               quickly rather than lingering. Max reach is R + 22, which with
+               the largest ring and the snap lag stays inside the 100px
+               canvas half. */
+            const impactAge = now - impactAt;
+            if (impactAge < IMPACT_MS) {
+                const t = impactAge / IMPACT_MS;
+                const e = 1 - Math.pow(1 - t, 3);
+                ctx.beginPath();
+                ctx.arc(ox, oy, R + 4 + e * 22, 0, Math.PI * 2);
+                ctx.strokeStyle = A(0.5 * (1 - t));
+                ctx.lineWidth = 0.5 + 1.5 * (1 - t);
+                ctx.stroke();
+            }
+
             // Charge arc for the SideNav easter egg.
-            const age = performance.now() - chargeAt;
+            const age = now - chargeAt;
             if (charge > 0 && age < 1100) {
                 const fade = 1 - age / 1100;
                 ctx.beginPath();
@@ -359,29 +513,46 @@ export default function Cursor() {
                ring on the smaller states and read heavy instead of precise.
                Round caps because a 1px butt cap looks unfinished at this
                scale. */
-            const arm = state === "game" ? CROSS_ARM * 2 : CROSS_ARM;
-            const gap = arm / 2;
             ctx.lineCap = "round";
-            ctx.beginPath();
-            ctx.moveTo(-gap - arm, 0);
-            ctx.lineTo(-gap, 0);
-            ctx.moveTo(gap, 0);
-            ctx.lineTo(gap + arm, 0);
-            ctx.moveTo(0, -gap - arm);
-            ctx.lineTo(0, -gap);
-            ctx.moveTo(0, gap);
-            ctx.lineTo(0, gap + arm);
-            ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.lineWidth = 2.5;
-            ctx.stroke();
-            ctx.strokeStyle = A(0.95);
-            ctx.lineWidth = 1;
-            ctx.stroke();
 
-            ctx.fillStyle = A(1);
-            ctx.beginPath();
-            ctx.arc(0, 0, 1.4 * press, 0, Math.PI * 2);
-            ctx.fill();
+            if (state === "caret") {
+                /* Over plain text the crosshair would be the wrong tool, and
+                   a crosshair mid-drag through a paragraph reads as a bug.
+                   The ring is already collapsed (r: 0), so this bar IS the
+                   cursor here. */
+                ctx.beginPath();
+                ctx.moveTo(0, -7);
+                ctx.lineTo(0, 7);
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+                ctx.lineWidth = 3;
+                ctx.stroke();
+                ctx.strokeStyle = A(0.95);
+                ctx.lineWidth = 1.25;
+                ctx.stroke();
+            } else {
+                const arm = state === "game" ? CROSS_ARM * 2 : CROSS_ARM;
+                const gap = arm / 2;
+                ctx.beginPath();
+                ctx.moveTo(-gap - arm, 0);
+                ctx.lineTo(-gap, 0);
+                ctx.moveTo(gap, 0);
+                ctx.lineTo(gap + arm, 0);
+                ctx.moveTo(0, -gap - arm);
+                ctx.lineTo(0, -gap);
+                ctx.moveTo(0, gap);
+                ctx.lineTo(0, gap + arm);
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.strokeStyle = A(0.95);
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
+                ctx.fillStyle = A(1);
+                ctx.beginPath();
+                ctx.arc(0, 0, 1.4 * press, 0, Math.PI * 2);
+                ctx.fill();
+            }
 
             // Scrub gets explicit direction, since the seek bar is a drag.
             if (state === "scrub") {
@@ -403,21 +574,23 @@ export default function Cursor() {
             }
             ctx.lineCap = "butt";
 
-            // ── Target lock ──
-            const rect =
-                spec.lock && hovered ? hovered.getBoundingClientRect() : null;
-            if (rect) {
+            /* ── Target lock ──
+               Reuses the rect measured once at the top of the frame; the
+               snap needs the same box, and getBoundingClientRect forces
+               layout, so measuring it twice per frame would be waste. */
+            const lockRect = spec.lock ? rect : null;
+            if (lockRect) {
                 if (!boxInit) {
-                    box.x = rect.left;
-                    box.y = rect.top;
-                    box.w = rect.width;
-                    box.h = rect.height;
+                    box.x = lockRect.left;
+                    box.y = lockRect.top;
+                    box.w = lockRect.width;
+                    box.h = lockRect.height;
                     boxInit = true;
                 }
-                box.x = lerp(box.x, rect.left, 0.22);
-                box.y = lerp(box.y, rect.top, 0.22);
-                box.w = lerp(box.w, rect.width, 0.22);
-                box.h = lerp(box.h, rect.height, 0.22);
+                box.x = lerp(box.x, lockRect.left, 0.22);
+                box.y = lerp(box.y, lockRect.top, 0.22);
+                box.w = lerp(box.w, lockRect.width, 0.22);
+                box.h = lerp(box.h, lockRect.height, 0.22);
                 box.o = lerp(box.o, 1, 0.2);
             } else {
                 box.o = lerp(box.o, 0, 0.25);
@@ -429,13 +602,19 @@ export default function Cursor() {
             lockEl.style.width = `${box.w}px`;
             lockEl.style.height = `${box.h}px`;
 
-            // ── Label ──
+            /* ── Label ──
+               The probe reads out position and, when the sample landed, the
+               real mask value: `412, 96 · 184`. That number is the alpha
+               channel GaitPipeline wrote the silhouette intensity into, so
+               it is the data itself rather than a restatement of the tint. */
             let text = spec.label;
-            if (state === "probe" && hovered) {
-                const r = hovered.getBoundingClientRect();
-                text = `${Math.round(pointer.x - r.left)}, ${Math.round(
-                    pointer.y - r.top,
-                )}`;
+            if (state === "probe" && rect) {
+                const px = Math.round(pointer.x - rect.left);
+                const py = Math.round(pointer.y - rect.top);
+                text =
+                    probeVal !== null
+                        ? `${px}, ${py} · ${probeVal}`
+                        : `${px}, ${py}`;
             }
             if (label.textContent !== text) label.textContent = text;
             label.style.opacity = text ? "1" : "0";

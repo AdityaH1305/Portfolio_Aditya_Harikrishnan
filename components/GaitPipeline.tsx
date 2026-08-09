@@ -144,7 +144,13 @@ export default function GaitPipeline() {
         const frames = framesRef.current;
         if (!canvas || !frames) return;
 
-        const ctx = canvas.getContext("2d");
+        /* willReadFrequently because the custom cursor samples this canvas:
+           over the silhouettes it reads the mask value under the crosshair
+           and shows it live. Without the hint, each getImageData forces a
+           GPU→CPU readback and Chrome logs a performance warning. This canvas
+           only repaints on scroll scrub, so a CPU-backed surface costs
+           nothing here. */
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
         if (!ctx) return;
 
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
