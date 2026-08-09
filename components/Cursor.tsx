@@ -69,20 +69,30 @@ interface StateSpec {
 }
 
 /* `amp` is peak waveform deviation in px before the velocity term. Kept
-   deliberately small: the ring should shimmer, not pulse. */
+   deliberately small: the ring should shimmer, not pulse. Scaled down ~20%
+   here on top of a reduced amplitude term in the draw block — together those
+   halve the visible wave while keeping it readable as a waveform rather than
+   flattening it into a plain circle. */
 const STATES: Record<State, StateSpec> = {
-    default: { r: 13, amp: 1.0, harm: 3, label: "", lock: false },
-    link: { r: 24, amp: 1.3, harm: 3, label: "", lock: false },
-    read: { r: 30, amp: 1.4, harm: 4, label: "READ CASE STUDY", lock: true },
-    zoom: { r: 27, amp: 1.0, harm: 5, label: "ZOOM", lock: false },
-    play: { r: 30, amp: 1.3, harm: 4, label: "PLAY", lock: true },
-    pause: { r: 30, amp: 1.3, harm: 4, label: "PAUSE", lock: true },
-    expand: { r: 28, amp: 1.2, harm: 4, label: "EXPAND", lock: true },
-    scrub: { r: 18, amp: 0.5, harm: 8, label: "SCRUB", lock: false },
-    probe: { r: 15, amp: 0.4, harm: 6, label: "", lock: false },
-    game: { r: 34, amp: 1.9, harm: 2, label: "", lock: true },
+    default: { r: 13, amp: 0.8, harm: 3, label: "", lock: false },
+    link: { r: 24, amp: 1.05, harm: 3, label: "", lock: false },
+    read: { r: 30, amp: 1.1, harm: 4, label: "READ CASE STUDY", lock: true },
+    zoom: { r: 27, amp: 0.8, harm: 5, label: "ZOOM", lock: false },
+    play: { r: 30, amp: 1.05, harm: 4, label: "PLAY", lock: true },
+    pause: { r: 30, amp: 1.05, harm: 4, label: "PAUSE", lock: true },
+    expand: { r: 28, amp: 1.0, harm: 4, label: "EXPAND", lock: true },
+    scrub: { r: 18, amp: 0.4, harm: 8, label: "SCRUB", lock: false },
+    probe: { r: 15, amp: 0.3, harm: 6, label: "", lock: false },
+    game: { r: 34, amp: 1.5, harm: 2, label: "", lock: true },
     text: { r: 0, amp: 0, harm: 3, label: "", lock: false },
 };
+
+/* ── Tuning knobs ──
+   The three values most likely to need another nudge, kept together and
+   named so they don't have to be hunted for inside the draw block. */
+const WAVE_BASE = 1.2; // amplitude at rest
+const WAVE_PER_SPEED = 0.028; // extra amplitude per px/frame of pointer speed
+const CROSS_ARM = 4; // crosshair arm length; the gap is CROSS_ARM / 2
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
@@ -254,12 +264,12 @@ export default function Cursor() {
 
             // Spring integrate. Stiffness/damping tuned for one visible
             // rebound rather than a wobble.
-            const pressTarget = pressed ? 0.55 : 1;
+            const pressTarget = pressed ? 0.62 : 1;
             pressV += (pressTarget - press) * 0.28;
             pressV *= 0.68;
             press += pressV;
 
-            phase += 0.055 + speed * 0.0025;
+            phase += 0.042 + speed * 0.0016;
 
             // The canvas rides the RAW pointer; the ring is drawn at the
             // easing offset inside it, clamped so it cannot leave the box.
@@ -281,13 +291,13 @@ export default function Cursor() {
             if (R > 0.5) {
                 // Circular waveform. Radius modulated by a harmonic series,
                 // so the ring reads as a waveform rather than a dashed circle.
-                const amp = ampEase * (1.5 + speed * 0.045);
+                const amp = ampEase * (WAVE_BASE + speed * WAVE_PER_SPEED);
                 ctx.beginPath();
                 for (let i = 0; i <= 96; i++) {
                     const t = (i / 96) * Math.PI * 2;
                     const w =
                         Math.sin(t * spec.harm + phase) * amp +
-                        Math.sin(t * spec.harm * 2 + phase * 1.6) * amp * 0.35;
+                        Math.sin(t * spec.harm * 2 + phase * 1.6) * amp * 0.25;
                     const rr = R + w;
                     const x = ox + Math.cos(t) * rr;
                     const y = oy + Math.sin(t) * rr;
@@ -295,21 +305,36 @@ export default function Cursor() {
                     else ctx.lineTo(x, y);
                 }
                 ctx.closePath();
-                ctx.strokeStyle = A(0.55);
+
+                /* Stroked twice from the same path: a dark carrier first,
+                   then the accent on top. A single accent hairline vanishes
+                   over the pale gait silhouettes and light video frames — a
+                   cursor has to stay legible on every background, and this
+                   costs one extra stroke() with no extra geometry. */
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.strokeStyle = A(0.62);
                 ctx.lineWidth = 1;
                 ctx.stroke();
 
-                // Quadrant ticks — the instrument reading.
-                ctx.strokeStyle = A(0.32);
-                ctx.beginPath();
-                for (let q = 0; q < 4; q++) {
-                    const t = (q / 4) * Math.PI * 2 + Math.PI / 4;
-                    const c = Math.cos(t);
-                    const s = Math.sin(t);
-                    ctx.moveTo(ox + c * (R + 5), oy + s * (R + 5));
-                    ctx.lineTo(ox + c * (R + 9), oy + s * (R + 9));
+                /* Quadrant ticks — the instrument reading. Faded in by
+                   radius: on the small states they sat almost on top of the
+                   ring and just read as noise. */
+                const tick = Math.min(1, Math.max(0, (R - 18) / 8));
+                if (tick > 0.01) {
+                    ctx.strokeStyle = A(0.3 * tick);
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    for (let q = 0; q < 4; q++) {
+                        const t = (q / 4) * Math.PI * 2 + Math.PI / 4;
+                        const c = Math.cos(t);
+                        const s = Math.sin(t);
+                        ctx.moveTo(ox + c * (R + 4), oy + s * (R + 4));
+                        ctx.lineTo(ox + c * (R + 7), oy + s * (R + 7));
+                    }
+                    ctx.stroke();
                 }
-                ctx.stroke();
             }
 
             // Charge arc for the SideNav easter egg.
@@ -329,11 +354,14 @@ export default function Cursor() {
                 ctx.stroke();
             }
 
-            // Crosshair core, at the true pointer (0,0 after translate).
-            const arm = state === "game" ? 11 : 6;
-            const gap = state === "game" ? 5 : 2.5;
-            ctx.strokeStyle = A(0.95);
-            ctx.lineWidth = 1;
+            /* Crosshair core, at the true pointer (0,0 after translate).
+               12px across rather than 17 — at the old size it crowded the
+               ring on the smaller states and read heavy instead of precise.
+               Round caps because a 1px butt cap looks unfinished at this
+               scale. */
+            const arm = state === "game" ? CROSS_ARM * 2 : CROSS_ARM;
+            const gap = arm / 2;
+            ctx.lineCap = "round";
             ctx.beginPath();
             ctx.moveTo(-gap - arm, 0);
             ctx.lineTo(-gap, 0);
@@ -343,16 +371,20 @@ export default function Cursor() {
             ctx.lineTo(0, -gap);
             ctx.moveTo(0, gap);
             ctx.lineTo(0, gap + arm);
+            ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+            ctx.lineWidth = 2.5;
+            ctx.stroke();
+            ctx.strokeStyle = A(0.95);
+            ctx.lineWidth = 1;
             ctx.stroke();
 
             ctx.fillStyle = A(1);
             ctx.beginPath();
-            ctx.arc(0, 0, 1.6 * press, 0, Math.PI * 2);
+            ctx.arc(0, 0, 1.4 * press, 0, Math.PI * 2);
             ctx.fill();
 
             // Scrub gets explicit direction, since the seek bar is a drag.
             if (state === "scrub") {
-                ctx.strokeStyle = A(0.9);
                 ctx.beginPath();
                 ctx.moveTo(-22, 0);
                 ctx.lineTo(-17, -4);
@@ -362,8 +394,14 @@ export default function Cursor() {
                 ctx.lineTo(17, -4);
                 ctx.moveTo(22, 0);
                 ctx.lineTo(17, 4);
+                ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+                ctx.lineWidth = 2.5;
+                ctx.stroke();
+                ctx.strokeStyle = A(0.9);
+                ctx.lineWidth = 1;
                 ctx.stroke();
             }
+            ctx.lineCap = "butt";
 
             // ── Target lock ──
             const rect =
@@ -401,9 +439,20 @@ export default function Cursor() {
             }
             if (label.textContent !== text) label.textContent = text;
             label.style.opacity = text ? "1" : "0";
-            label.style.transform = `translate3d(${pointer.x + 20}px, ${
-                pointer.y + 16
-            }px, 0)`;
+
+            /* Follows the EASED position, not the raw one. Pinned to the raw
+               pointer it snapped rigidly while the ring eased behind it, and
+               the two read as unrelated objects.
+
+               Flips to the left near the right edge, or the chip runs off
+               screen — `READ CASE STUDY` is ~150px wide. */
+            if (text) {
+                const w = label.offsetWidth;
+                const flip = eased.x > window.innerWidth - (w + 34);
+                const lx = flip ? eased.x - w - 18 : eased.x + 18;
+                const ly = Math.min(eased.y + 16, window.innerHeight - 34);
+                label.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
+            }
 
             rafId = requestAnimationFrame(frame);
         };
@@ -496,9 +545,15 @@ export default function Cursor() {
                 }}
             />
 
+            {/* Hairline chip, built like the "+N more" badge on the project
+                cards so it belongs to the existing system. Bare accent text
+                was unreadable the moment it crossed a pale figure or a video
+                frame. */}
             <span
                 ref={labelRef}
-                className="absolute top-0 left-0 mono text-[0.625rem] tracking-[0.14em]
+                className="absolute top-0 left-0 px-2 py-1 rounded-full
+                           bg-surface-0/90 backdrop-blur-sm border border-edge-strong
+                           mono text-[0.625rem] leading-none tracking-[0.14em]
                            uppercase text-accent whitespace-nowrap opacity-0
                            transition-opacity duration-200"
                 style={{ willChange: "transform" }}
