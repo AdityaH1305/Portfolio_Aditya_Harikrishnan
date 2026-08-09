@@ -3,6 +3,7 @@ import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import ScrollProvider from "@/components/ScrollProvider";
 import RouteScrollReset from "@/components/RouteScrollReset";
+import Cursor from "@/components/Cursor";
 
 const spaceGrotesk = Space_Grotesk({
   variable: "--font-space-grotesk",
@@ -71,6 +72,11 @@ export default function RootLayout({
       <body className="min-h-full flex flex-col">
         <ScrollProvider>
           <RouteScrollReset />
+          {/* Sibling of {children}, so it sits OUTSIDE app/template.tsx.
+              Inside it, the route-enter opacity tween would fade the cursor
+              out on every navigation. Mounting here also means one instance
+              for the whole site instead of one per page. */}
+          <Cursor />
           {children}
         </ScrollProvider>
       </body>

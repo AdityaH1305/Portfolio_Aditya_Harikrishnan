@@ -434,6 +434,37 @@ body {
    Living Architecture — the one signature effect
    ══════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════
+   Custom cursor
+
+   `cursor-custom` is added by components/Cursor.tsx and only
+   after it confirms a fine pointer and no reduced-motion
+   preference. Never add it from markup: if the class is on
+   but the component is not running, the page has no cursor
+   at all.
+
+   Specificity is deliberate. `html.cursor-custom *` is
+   (0,1,1), which is what it takes to beat the `cursor: pointer`
+   already declared on .btn-primary, .btn-secondary and
+   .side-nav-item at (0,1,0). The input restore below is
+   (0,1,2) and beats both.
+   ══════════════════════════════════════════════════════ */
+
+html.cursor-custom,
+html.cursor-custom * {
+  cursor: none;
+}
+
+/* Text entry keeps the native caret — a crosshair over a text field
+   destroys the affordance, and the caret position matters. */
+html.cursor-custom input,
+html.cursor-custom textarea,
+html.cursor-custom select,
+html.cursor-custom [contenteditable="true"],
+html.cursor-custom [data-cursor="text"] {
+  cursor: auto;
+}
+
 .living-architecture-canvas {
   position: fixed;
   top: 0;

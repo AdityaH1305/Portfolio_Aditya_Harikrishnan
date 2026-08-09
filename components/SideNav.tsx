@@ -97,6 +97,19 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
         );
         clickTimestamps.current.push(now);
 
+        /* Tell the cursor how close the egg is to firing, so it can draw a
+           charge arc. An event rather than lifted state: the count is only
+           meaningful here, and Cursor is mounted in the root layout with no
+           path to these props. */
+        window.dispatchEvent(
+            new CustomEvent("cursor:charge", {
+                detail: {
+                    n: clickTimestamps.current.length,
+                    required: REQUIRED_CLICKS,
+                },
+            }),
+        );
+
         if (clickTimestamps.current.length >= REQUIRED_CLICKS) {
             clickTimestamps.current = [];
             onOpenGame();

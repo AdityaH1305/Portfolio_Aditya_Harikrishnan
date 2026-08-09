@@ -468,6 +468,7 @@ export default function GaitPipeline() {
                         <div className="core-bezel overflow-hidden p-3">
                             <canvas
                                 ref={canvasRef}
+                                data-cursor="probe"
                                 className="w-full block"
                                 style={{ aspectRatio: `${W} / ${H}` }}
                                 role="img"

@@ -11,7 +11,6 @@ import ResearchMindset from "@/components/ResearchMindset";
 import Skills from "@/components/Skills";
 import Journey from "@/components/Journey";
 import Contact from "@/components/Contact";
-import CursorGlow from "@/components/CursorGlow";
 import ScrollProgress from "@/components/ScrollProgress";
 import CommandPalette from "@/components/CommandPalette";
 import BackgroundAtmosphere from "@/components/BackgroundAtmosphere";
@@ -40,7 +39,6 @@ export default function Home() {
             <AtmosphereParallax />
             <LivingArchitecture />
             <ScrollProgress />
-            <CursorGlow />
 
             {/* ── Navigation ── */}
             <SideNav onOpenGame={openGame} />

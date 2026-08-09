@@ -230,6 +230,7 @@ export default function FigureGallery({
                                     type="button"
                                     onClick={() => setZoomed(active)}
                                     aria-label={`Zoom into ${figure.label}`}
+                                    data-cursor="zoom"
                                     className="block w-full cursor-zoom-in group/zoom"
                                 >
                                     <Image

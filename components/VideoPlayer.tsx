@@ -187,6 +187,7 @@ export default function VideoPlayer({
                     onLoadedMetadata={(e) =>
                         setDuration(e.currentTarget.duration)
                     }
+                    data-cursor="play"
                     className="w-full h-auto max-h-[78vh] block bg-black cursor-pointer"
                 />
 
@@ -209,6 +210,7 @@ export default function VideoPlayer({
                             if (e.key === "ArrowLeft") skip(-SKIP);
                             if (e.key === "ArrowRight") skip(SKIP);
                         }}
+                        data-cursor="scrub"
                         className="group/bar relative h-4 flex items-center cursor-pointer"
                     >
                         <div className="h-1 w-full rounded-full bg-surface-3 overflow-hidden">

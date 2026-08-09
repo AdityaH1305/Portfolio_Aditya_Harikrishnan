@@ -117,6 +117,7 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
       role="dialog"
       aria-modal="true"
       aria-label="Space Invaders Easter Egg"
+      data-cursor="game"
     >
       {/* animated starfield background */}
       <Starfield />

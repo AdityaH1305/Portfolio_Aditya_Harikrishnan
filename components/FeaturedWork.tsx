@@ -26,6 +26,7 @@ function CaseStudyCard({ study, index }: { study: CaseStudy; index: number }) {
     return (
         <Link
             href={`/work/${study.slug}`}
+            data-cursor="read"
             className="group/card block relative py-10 md:py-14
                        border-t border-edge
                        transition-colors duration-500 ease-[cubic-bezier(0.32,0.72,0,1)]"

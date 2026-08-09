@@ -256,7 +256,10 @@ export default function LudexShowcase() {
                                 {/* The one framed element in the section */}
                                 <div className="shell-bezel">
                                     <div className="core-bezel overflow-hidden">
-                                        <div className="relative group/media">
+                                        <div
+                                            data-cursor="play"
+                                            className="relative group/media"
+                                        >
                                             {/* Expand control. Overlaid rather
                                                 than placed in the flow so the
                                                 inline layout is unchanged. */}

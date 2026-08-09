@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import dynamic from "next/dynamic";
 import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger } from "@/lib/motion";
-import CursorGlow from "@/components/CursorGlow";
 import { caseStudyByPath, CASE_STUDIES } from "@/lib/caseStudies";
 
 /* ══════════════════════════════════════════════════════
@@ -68,10 +67,6 @@ export default function CaseStudyChrome({
     return (
         <>
             <LivingArchitecture ambient />
-            {/* Home mounts this in page.tsx; the routes need their own so the
-                cursor doesn't lose its state the moment you open a case
-                study. Both are no-ops on touch and under reduced motion. */}
-            <CursorGlow />
 
             {/* Reading progress. Fixed, hairline, above the atlas. */}
             <div

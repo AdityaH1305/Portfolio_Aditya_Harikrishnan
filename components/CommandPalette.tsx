@@ -252,6 +252,7 @@ export default function CommandPalette({
                             </svg>
                             <input
                                 ref={inputRef}
+                                data-cursor="text"
                                 type="text"
                                 value={query}
                                 onChange={(e) => {

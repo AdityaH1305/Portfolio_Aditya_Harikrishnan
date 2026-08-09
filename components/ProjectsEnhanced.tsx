@@ -131,6 +131,7 @@ function ProjectCard({
                 <div className="shell-bezel compact-bezel">
                     <div className="core-bezel overflow-hidden">
                         <div
+                            data-cursor="zoom"
                             className="relative w-full aspect-[16/10] cursor-pointer group/card-img"
                             onClick={() => openLightbox(0)}
                         >
