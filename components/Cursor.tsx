@@ -35,7 +35,13 @@ import { useEffect, useRef } from "react";
 
 const BOX = 200; // canvas CSS size; half of it is the max ring lag + radius
 const HALF = BOX / 2;
-const MAX_LAG = 46; // clamp, so a fast flick can't drag the ring out of the box
+
+/* How far the ring may trail the pointer, and how hard it chases.
+   These were 46px at 0.18 and the ring swung far enough behind a moving
+   pointer to be distracting. The trail should read as weight, not as a
+   second object orbiting the cursor. */
+const MAX_LAG = 18;
+const FOLLOW = 0.34;
 
 type State =
     | "default"
@@ -43,6 +49,8 @@ type State =
     | "read"
     | "zoom"
     | "play"
+    | "pause"
+    | "expand"
     | "scrub"
     | "probe"
     | "game"
@@ -60,15 +68,19 @@ interface StateSpec {
     lock: boolean;
 }
 
+/* `amp` is peak waveform deviation in px before the velocity term. Kept
+   deliberately small: the ring should shimmer, not pulse. */
 const STATES: Record<State, StateSpec> = {
     default: { r: 13, amp: 1.0, harm: 3, label: "", lock: false },
-    link: { r: 24, amp: 1.5, harm: 3, label: "", lock: false },
-    read: { r: 30, amp: 1.7, harm: 4, label: "READ CASE STUDY", lock: true },
-    zoom: { r: 27, amp: 1.1, harm: 5, label: "ZOOM", lock: false },
-    play: { r: 30, amp: 1.6, harm: 4, label: "PLAY", lock: true },
+    link: { r: 24, amp: 1.3, harm: 3, label: "", lock: false },
+    read: { r: 30, amp: 1.4, harm: 4, label: "READ CASE STUDY", lock: true },
+    zoom: { r: 27, amp: 1.0, harm: 5, label: "ZOOM", lock: false },
+    play: { r: 30, amp: 1.3, harm: 4, label: "PLAY", lock: true },
+    pause: { r: 30, amp: 1.3, harm: 4, label: "PAUSE", lock: true },
+    expand: { r: 28, amp: 1.2, harm: 4, label: "EXPAND", lock: true },
     scrub: { r: 18, amp: 0.5, harm: 8, label: "SCRUB", lock: false },
     probe: { r: 15, amp: 0.4, harm: 6, label: "", lock: false },
-    game: { r: 34, amp: 2.4, harm: 2, label: "", lock: true },
+    game: { r: 34, amp: 1.9, harm: 2, label: "", lock: true },
     text: { r: 0, amp: 0, harm: 3, label: "", lock: false },
 };
 
@@ -213,16 +225,29 @@ export default function Cursor() {
         const frame = () => {
             if (!running) return;
 
+            /* Re-read the hovered element's own attribute every frame.
+               `pointerover` only fires when the pointer crosses into a new
+               element, so a state that changes UNDER a stationary pointer —
+               the video flipping play→pause on click — would otherwise never
+               reach the cursor. A dataset read is far cheaper than a
+               MutationObserver and needs no wiring per component. */
+            if (hovered instanceof HTMLElement) {
+                const live = hovered.dataset.cursor as State | undefined;
+                if (live && live in STATES) state = live;
+            }
+
             const spec = STATES[state];
 
             const dx = pointer.x - eased.x;
             const dy = pointer.y - eased.y;
-            eased.x += dx * 0.18;
-            eased.y += dy * 0.18;
+            eased.x += dx * FOLLOW;
+            eased.y += dy * FOLLOW;
 
-            // Velocity drives the waveform amplitude — the ring "sings"
-            // louder the faster the pointer travels.
-            speed = lerp(speed, Math.min(Math.hypot(dx, dy), 60), 0.12);
+            /* Velocity still opens the waveform up, but the cap is 30 rather
+               than 60 and the coefficient below is a third of what it was.
+               At full speed the ring used to deviate ~13px, which is what
+               made it restless. */
+            speed = lerp(speed, Math.min(Math.hypot(dx, dy), 30), 0.1);
 
             radius = lerp(radius, spec.r, 0.16);
             ampEase = lerp(ampEase, spec.amp, 0.14);
@@ -234,7 +259,7 @@ export default function Cursor() {
             pressV *= 0.68;
             press += pressV;
 
-            phase += 0.09 + speed * 0.006;
+            phase += 0.055 + speed * 0.0025;
 
             // The canvas rides the RAW pointer; the ring is drawn at the
             // easing offset inside it, clamped so it cannot leave the box.
@@ -256,7 +281,7 @@ export default function Cursor() {
             if (R > 0.5) {
                 // Circular waveform. Radius modulated by a harmonic series,
                 // so the ring reads as a waveform rather than a dashed circle.
-                const amp = ampEase * (1.1 + speed * 0.09);
+                const amp = ampEase * (1.5 + speed * 0.045);
                 ctx.beginPath();
                 for (let i = 0; i <= 96; i++) {
                     const t = (i / 96) * Math.PI * 2;

@@ -187,7 +187,10 @@ export default function VideoPlayer({
                     onLoadedMetadata={(e) =>
                         setDuration(e.currentTarget.duration)
                     }
-                    data-cursor="play"
+                    /* Reflects what the click will DO, so it flips as the
+                       video plays and pauses. Cursor re-reads this each
+                       frame — no pointer movement required. */
+                    data-cursor={playing ? "pause" : "play"}
                     className="w-full h-auto max-h-[78vh] block bg-black cursor-pointer"
                 />
 

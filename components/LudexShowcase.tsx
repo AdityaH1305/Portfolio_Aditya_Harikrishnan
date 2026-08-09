@@ -256,8 +256,15 @@ export default function LudexShowcase() {
                                 {/* The one framed element in the section */}
                                 <div className="shell-bezel">
                                     <div className="core-bezel overflow-hidden">
+                                        {/* "expand", not "play": these inline
+                                            videos have no click handler at
+                                            all — they autoplay on scroll and
+                                            the only action here is the
+                                            Expand button. Labelling it PLAY
+                                            promised a click that did
+                                            nothing. */}
                                         <div
-                                            data-cursor="play"
+                                            data-cursor="expand"
                                             className="relative group/media"
                                         >
                                             {/* Expand control. Overlaid rather
