@@ -4,6 +4,8 @@ import Image from "next/image";
 import Reveal from "@/components/Reveal";
 import FigureGallery, { type Figure } from "@/components/FigureGallery";
 import GaitPipeline from "@/components/GaitPipeline";
+import CtaRow from "@/components/CtaRow";
+import { CASE_STUDIES } from "@/lib/caseStudies";
 
 /* ══════════════════════════════════════════════════════
    GaitShowcase — Featured Work, project 01
@@ -45,26 +47,11 @@ const verification = [
     { label: "Optimal threshold", value: "0.0077" },
 ];
 
-const narrative = [
-    {
-        title: "The Problem",
-        body: "Surveillance identity checks have to survive things the subject controls and the camera doesn't — a different viewing angle, a dropped frame, a heavy coat. Sequence-based models assume a clean, ordered, fixed-length walk, and degrade as soon as that assumption breaks.",
-    },
-    {
-        title: "The Approach",
-        body: "Treat a walk as an unordered set of silhouettes rather than a time series, so recognition is permutation-invariant and indifferent to sequence length. A second branch adds Gait Energy Images and Gait Energy Motion Images — the latter built specifically to survive coat occlusion by amplifying ankle and wrist motion while suppressing the static torso.",
-    },
-    {
-        title: "The Result",
-        body: "98.00% Rank-1 under normal walking, ahead of the published GaitSet baseline on the same dataset. Occlusion is where it gives ground, and the open-set verification numbers show the embedding ranks identities better than it thresholds them.",
-    },
-];
-
-/* Five figures, in report order, attention map last.
-   `minW` marks the wide ones, which pan horizontally inside the panel on
-   narrow screens. Pipeline is 916×1717 portrait and densely labelled, so it
-   is `tall`: the height cap would have squeezed it to ~336px wide and made
-   every label unreadable. It renders near native width and scrolls instead. */
+/* Three figures, down from five.
+   The Pipeline figure went because the interactive canvas below shows the
+   same thing, live — a static diagram of it was pure duplication. The
+   attention map went as the least load-bearing of the remainder.
+   `minW` marks the wide ones, which pan horizontally on narrow screens. */
 const figures: Figure[] = [
     {
         id: "architecture",
@@ -76,18 +63,6 @@ const figures: Figure[] = [
         w: 912,
         h: 300,
         alt: "Network architecture: silhouette frames enter a per-frame CNN with set pooling, GEI and GEnI templates enter a parallel branch, and both fuse through a horizontal pooling module into a 256-dimensional embedding.",
-    },
-    {
-        id: "pipeline",
-        label: "Pipeline",
-        tall: true,
-        minW: "max-md:min-w-[640px]",
-        caption:
-            "End-to-end flow from raw CASIA-B video through silhouette extraction, alignment and tensor serialisation to embedding.",
-        src: "/gait/pipeline.webp",
-        w: 916,
-        h: 1717,
-        alt: "Vertical pipeline diagram running from raw video capture through background removal, centroid tracking, 64×64 alignment, npy serialisation, model training and finally identity embedding.",
     },
     {
         id: "training",
@@ -111,17 +86,6 @@ const figures: Figure[] = [
         h: 1131,
         alt: "Receiver operating characteristic curve for open-set gait verification, area under curve 0.5876, with the equal error rate marked at 44.94%.",
     },
-    {
-        id: "attention",
-        label: "Attention",
-        minW: "max-md:min-w-[520px]",
-        caption:
-            "Dynamic-branch attention at epochs 10, 50, 100 and 150 — sharp early hot spots settling into an even distribution as the fusion learns.",
-        src: "/gait/attenion_map.webp",
-        w: 1254,
-        h: 1254,
-        alt: "Four heatmaps of dynamic branch attention at epochs 10, 50, 100 and 150, showing concentrated high-activation regions early in training flattening into a more uniform distribution by epoch 150.",
-    },
 ];
 
 /* CASIA-B walking conditions, as the model actually sees them. */
@@ -142,127 +106,89 @@ const techStack = [
 
 /* ══════════════════════════════════════════════════════ */
 
-export default function GaitShowcase() {
+const STUDY = CASE_STUDIES[0];
+
+/* One table instead of two. Identification and verification measure
+   different things, so the task column keeps that distinction — but two
+   separate tables for seven rows was more structure than the data needed. */
+const results = [
+    ...identification.map((r) => ({ ...r, task: "Identification" })),
+    ...verification.map((r) => ({
+        label: r.label,
+        code: "",
+        value: r.value,
+        lead: false,
+        task: "Verification",
+    })),
+];
+
+export default function GaitShowcase({ brief = false }: { brief?: boolean }) {
     return (
         <article>
             {/* Eyebrow, title and affiliation live in CaseStudyHero — this
                 is a route now, so that block owns the page's <h1>. */}
             <div className="section-container">
                 <Reveal y={20}>
-                    <p className="body-lg measure">
-                        A cross-view gait recognition pipeline built on GaitSet,
-                        which treats a walking sequence as an unordered set of
-                        silhouettes rather than a time series — so identity
-                        survives dropped frames and variable walking speed. A
-                        multi-modal fusion branch adds Gait Energy Images and
-                        Gait Energy Motion Images on top of the spatial stream.
-                    </p>
+                    <p className="body-lg measure">{STUDY.intro}</p>
+                    <p className="body-lg measure mt-6">{STUDY.how}</p>
                 </Reveal>
 
                 {/* ═══════════ RESULTS ═══════════
-                    Split by task on purpose: Rank-1 identification ranks
-                    within a known gallery, verification needs a calibrated
-                    global threshold. Reporting one number for both would
-                    misrepresent what the model does well. */}
-                <div className="mt-14 md:mt-20 grid lg:grid-cols-[minmax(0,4fr)_minmax(0,6fr)] gap-12 lg:gap-16 items-start">
-                    {/* The display numeral moved to CaseStudyHero. Two 96px
-                        numerals on one page is one too many; the comparison
-                        against the published baseline is what this column is
-                        actually for. */}
-                    <Reveal y={28} duration={0.8}>
-                        <p className="label-muted">Against the baseline</p>
-                        <p className="body-lg mt-3 measure-tight">
-                            98.00% Rank-1 under normal walking, above the
-                            published GaitSet baseline of 96.1% on the same
-                            dataset.
-                        </p>
-                    </Reveal>
-
-                    <Reveal y={20} duration={0.6} delay={0.1}>
-                        <div className="grid sm:grid-cols-2 gap-10">
-                            {/* Identification */}
-                            <div>
-                                <p className="label-muted pb-3 border-b border-edge-default">
-                                    Identification · Rank-1
-                                </p>
-                                <div className="mt-4 flex flex-col gap-3.5">
-                                    {identification.map((r) => (
-                                        <div
-                                            key={r.label}
-                                            className="flex items-baseline gap-3"
+                    One table, task column intact. Identification ranks within
+                    a known gallery and verification needs a calibrated global
+                    threshold — genuinely different measurements, which is why
+                    the column stays even though the two tables merged. */}
+                <div className="mt-14 md:mt-20 grid lg:grid-cols-[minmax(0,6fr)_minmax(0,5fr)] gap-12 lg:gap-16 items-start">
+                    <Reveal y={20} duration={0.6}>
+                        <table className="w-full text-left border-collapse">
+                            <caption className="label-muted text-left pb-3">
+                                Results · CASIA-B
+                            </caption>
+                            <tbody>
+                                {results.map((r) => (
+                                    <tr
+                                        key={`${r.task}-${r.label}`}
+                                        className="border-b border-edge"
+                                    >
+                                        <td className="py-2.5 mono text-[10px] text-quaternary align-baseline pr-4">
+                                            {r.task}
+                                        </td>
+                                        <td
+                                            className={`py-2.5 text-sm align-baseline ${
+                                                r.lead
+                                                    ? "text-primary"
+                                                    : "text-secondary"
+                                            }`}
                                         >
-                                            <span
-                                                className={`text-sm ${
-                                                    r.lead
-                                                        ? "text-primary"
-                                                        : "text-secondary"
-                                                }`}
-                                            >
-                                                {r.label}
-                                            </span>
+                                            {r.label}
                                             {r.code && (
-                                                <span className="mono text-[10px] text-quaternary">
+                                                <span className="mono text-[10px] text-quaternary ml-2">
                                                     {r.code}
                                                 </span>
                                             )}
-                                            <span
-                                                className={`ml-auto mono text-sm ${
-                                                    r.lead
-                                                        ? "text-accent font-semibold"
-                                                        : "text-secondary"
-                                                }`}
-                                            >
-                                                {r.value}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* Verification */}
-                            <div>
-                                <p className="label-muted pb-3 border-b border-edge-default">
-                                    Verification · Open-set
-                                </p>
-                                <div className="mt-4 flex flex-col gap-3.5">
-                                    {verification.map((r) => (
-                                        <div
-                                            key={r.label}
-                                            className="flex items-baseline gap-3"
+                                        </td>
+                                        <td
+                                            className={`py-2.5 text-right mono text-sm align-baseline ${
+                                                r.lead
+                                                    ? "text-accent font-semibold"
+                                                    : "text-secondary"
+                                            }`}
                                         >
-                                            <span className="text-sm text-secondary">
-                                                {r.label}
-                                            </span>
-                                            <span className="ml-auto mono text-sm text-secondary">
-                                                {r.value}
-                                            </span>
-                                        </div>
-                                    ))}
-                                </div>
-                                <p className="body-sm mt-5 text-tertiary">
-                                    The embedding ranks identities well inside a
-                                    known gallery but isn&apos;t globally
-                                    calibrated, so a single accept/reject
-                                    threshold performs close to chance. Two
-                                    different problems.
-                                </p>
-                            </div>
-                        </div>
+                                            {r.value}
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </Reveal>
+
+                    <Reveal y={28} duration={0.8} delay={0.1}>
+                        <p className="label-muted">What the numbers mean</p>
+                        <p className="body-lg mt-3 measure-tight">
+                            {STUDY.resultNote}
+                        </p>
                     </Reveal>
                 </div>
-
-                {/* ═══════════ NARRATIVE ═══════════ */}
-                <Reveal
-                    stagger={0.1}
-                    className="mt-20 md:mt-28 grid lg:grid-cols-3 gap-12 lg:gap-14"
-                >
-                    {narrative.map((n) => (
-                        <div key={n.title} data-reveal-child>
-                            <h3 className="heading-sm">{n.title}</h3>
-                            <p className="body-sm mt-3">{n.body}</p>
-                        </div>
-                    ))}
-                </Reveal>
             </div>
 
             {/* ═══════════ GALLERY 1 — RESULTS & ANALYSIS ═══════════ */}
@@ -289,6 +215,11 @@ export default function GaitShowcase() {
                 </div>
             </div>
 
+            {/* Gallery 2 and the interactive pipeline are depth, not the
+                headline — they render on the /work route only. The home zone
+                stops at intro / how / results / figures. */}
+            {!brief && (
+            <>
             {/* ═══════════ GALLERY 2 — PREPROCESSED INPUT ═══════════
                 Deliberately not tabbed. These are 64×64 model inputs, not
                 figures — showing all three at once, small and crisp, makes
@@ -360,6 +291,8 @@ export default function GaitShowcase() {
             <div className="mt-24 md:mt-32">
                 <GaitPipeline />
             </div>
+            </>
+            )}
 
             {/* ═══════════ DATASET NOTE + STACK + CTAs ═══════════ */}
             <div className="section-container">
@@ -367,16 +300,19 @@ export default function GaitShowcase() {
                     stagger={0.08}
                     className="mt-20 md:mt-24 flex flex-col items-start gap-8"
                 >
-                    <p
-                        data-reveal-child
-                        className="body-sm max-w-2xl text-tertiary"
-                    >
-                        Gait recognition is a young field with few open
-                        datasets. CASIA-B remains one of the only public
-                        benchmarks offering controlled cross-view and covariate
-                        coverage, which bounds how far occlusion performance can
-                        be pushed without collecting new data.
-                    </p>
+                    {!brief && (
+                        <p
+                            data-reveal-child
+                            className="body-sm max-w-2xl text-tertiary"
+                        >
+                            Gait recognition is a young field with few open
+                            datasets. CASIA-B remains one of the only public
+                            benchmarks offering controlled cross-view and
+                            covariate coverage, which bounds how far occlusion
+                            performance can be pushed without collecting new
+                            data.
+                        </p>
+                    )}
 
                     <p
                         data-reveal-child
@@ -385,44 +321,15 @@ export default function GaitShowcase() {
                         {techStack.join("  ·  ")}
                     </p>
 
-                    {/* No report CTA for this project. GitHub leads, as it does
-                        on the other two case studies; the two reference papers
-                        it builds on follow as secondary credit. */}
-                    <div data-reveal-child className="flex flex-wrap gap-4">
-                        <a
-                            href={REPO}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-primary"
-                        >
-                            View on GitHub
-                            <svg
-                                className="w-3.5 h-3.5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                aria-hidden="true"
-                            >
-                                <path d="M7 17L17 7M17 7H7M17 7v10" />
-                            </svg>
-                        </a>
-                        <a
-                            href={GAITSET_PAPER}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-secondary"
-                        >
-                            GaitSet Paper
-                        </a>
-                        <a
-                            href={FUSION_PAPER}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-secondary"
-                        >
-                            Multimodal Fusion Paper
-                        </a>
+                    <div data-reveal-child>
+                        <CtaRow
+                            ctas={[
+                                { label: "View on GitHub", href: REPO, primary: true, external: true },
+                                { label: "GaitSet Paper", href: GAITSET_PAPER, external: true },
+                                { label: "Fusion Paper", href: FUSION_PAPER, external: true },
+                            ]}
+                            readMoreHref={brief ? "/work/gait-multi-modal-fusion" : undefined}
+                        />
                     </div>
 
                     <p

@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import Reveal from "@/components/Reveal";
+import CtaRow from "@/components/CtaRow";
+import { CASE_STUDIES } from "@/lib/caseStudies";
 import VideoPlayer from "@/components/VideoPlayer";
 import { useTabUnderline } from "@/lib/useTabUnderline";
 
@@ -82,24 +84,20 @@ const stats = [
     { value: "1.2K", label: "users in dataset" },
 ];
 
+const STUDY = CASE_STUDIES[1];
+
+/* Sourced from the registry rather than written here, so the rail and the
+   home-page brief cannot drift. The rail keeps three blocks because the
+   sticky video panel opposite needs its height for travel. */
 const narrative = [
-    {
-        title: "The Problem",
-        body: "Content-based filtering captures item features but misses user taste patterns. Collaborative filtering models user behavior but fails on cold-start. Neither alone delivers reliable personalization at scale.",
-    },
-    {
-        title: "The Approach",
-        body: "Fuse TF-IDF vectorization across game metadata with implicit ALS to model latent user-item interactions. Combine complementary signals into a unified ranking system that compensates for each method’s blind spots.",
-    },
-    {
-        title: "The Result",
-        body: "The hybrid system significantly outperformed both standalone baselines across all evaluation metrics. Findings validated and documented as a technical report on hybrid recommendation systems.",
-    },
+    { title: "What it is", body: STUDY.intro },
+    { title: "How it works", body: STUDY.how },
+    { title: "The result", body: STUDY.resultNote },
 ];
 
 /* ══════════════════════════════════════════════════════ */
 
-export default function LudexShowcase() {
+export default function LudexShowcase({ brief = false }: { brief?: boolean }) {
     const [activeVideo, setActiveVideo] = useState(0);
     const [inView, setInView] = useState(false);
     /* Index of the video open in the expanded player; null = closed. */
@@ -145,21 +143,9 @@ export default function LudexShowcase() {
         <article>
             {/* Eyebrow and title live in CaseStudyHero — this is a route
                 now, so that block owns the page's <h1>. */}
-            <div className="section-container">
-                <Reveal y={20}>
-                    <p className="body-lg measure">
-                        A hybrid recommendation engine that fuses content-based
-                        filtering with implicit ALS (Alternating Least Squares) to
-                        deliver measurably better Steam game discovery — evaluated
-                        against both standalone baselines and documented in full.
-                    </p>
-                </Reveal>
-
-                {/* The +27% hero metric moved to CaseStudyHero when this
-                    became a route. Its supporting stats still live in the
-                    narrative rail below, which needs that height for the
-                    sticky hold to have travel. */}
-            </div>
+            {/* No deck paragraph — the narrative rail's "What it is" block
+                below says the same thing, and the hero above already carries
+                the title and the metric. */}
 
             {/* ═══════════ SPLIT — narrative scrolls, video sticks ═══════════
                 Vertical rhythm goes on the INNER element, never on
@@ -412,48 +398,16 @@ export default function LudexShowcase() {
                     </p>
 
                     <div data-reveal-child>
-                        {/* The report is the strongest artifact on the site for a
-                            research-adjacent internship — it gets primary weight,
-                            with its size stated so nobody is ambushed on mobile. */}
-                        <div className="flex flex-wrap gap-4">
-                            <a
-                                href="/ludex-technical-report.pdf"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-primary"
-                            >
-                                Read the Technical Report
-                                <svg
-                                    className="w-3.5 h-3.5"
-                                    viewBox="0 0 24 24"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    strokeWidth="2"
-                                    aria-hidden="true"
-                                >
-                                    <path d="M7 17L17 7M17 7H7M17 7v10" />
-                                </svg>
-                            </a>
-                            <a
-                                href="https://ludexsite.onrender.com/"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-secondary"
-                            >
-                                Visit Site
-                            </a>
-                            <a
-                                href="https://github.com/AdityaH1305/Ludex"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-secondary"
-                            >
-                                View on GitHub
-                            </a>
-                        </div>
-                        <p className="label-muted mt-4 normal-case tracking-normal">
-                            PDF · 2.1 MB
-                        </p>
+                        {/* The report is the strongest artifact here, so it
+                            takes primary weight. */}
+                        <CtaRow
+                            ctas={[
+                                { label: "Technical Report", href: "/ludex-technical-report.pdf", primary: true, external: true },
+                                { label: "Visit Site", href: "https://ludexsite.onrender.com/", external: true },
+                                { label: "View on GitHub", href: "https://github.com/AdityaH1305/Ludex", external: true },
+                            ]}
+                            readMoreHref={brief ? "/work/ludex" : undefined}
+                        />
                     </div>
                 </Reveal>
             </div>

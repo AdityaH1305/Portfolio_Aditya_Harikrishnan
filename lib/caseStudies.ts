@@ -24,6 +24,25 @@ export interface CaseStudy {
     context?: string;
     /** One sentence: what it is and why it is interesting. */
     thesis: string;
+
+    /* ── The three-part read ──
+       Everything a visitor needs, in plain language. Written for someone
+       who does not know the field: no unexplained jargon, no acronym
+       without its meaning. These replaced a Problem/Approach/Result
+       narrative that said the same things at twice the length in terms
+       only a specialist could parse.
+
+       Every number here already appeared on the site and was checked
+       against the source reports in earlier passes. Nothing new is
+       claimed — this is a rewrite, not a re-derivation. */
+
+    /** ~2 sentences: what it is, and why the problem is hard. */
+    intro: string;
+    /** ~3 sentences: how it works, no jargon. */
+    how: string;
+    /** ~2 sentences: what the number means, including where it fails. */
+    resultNote: string;
+
     metric: string;
     metricLabel: string;
     cover: { src: string; w: number; h: number; alt: string };
@@ -38,6 +57,12 @@ export const CASE_STUDIES: CaseStudy[] = [
         context: "ISRO · Liquid Propulsion Systems Centre",
         thesis:
             "Cross-view gait recognition that treats a walk as an unordered set of silhouettes, extended with a multi-modal fusion branch so identity survives dropped frames, changed angles and occlusion.",
+        intro:
+            "Identifying someone from the way they walk, using a camera that never needs a clear view of their face. The difficulty is that the same person looks completely different from a new angle, in a heavy coat, or when the video drops frames.",
+        how:
+            "Rather than treating a walk as a video that has to play in order, the model treats it as a loose collection of silhouettes. Frame order stops mattering, so a dropped frame or an uneven walking speed no longer breaks it. A second branch tracks where the body moves most — motion that still shows through when a coat hides the outline.",
+        resultNote:
+            "98.00% correct identification for normal walking, ahead of the 96.1% published for the method it builds on, on the same dataset. A coat is where it gives ground: accuracy drops to 45.36%. It is also better at ranking a known list of people than at judging whether a stranger belongs to that list at all.",
         metric: "98.00%",
         metricLabel: "Rank-1 · normal walking",
         cover: {
@@ -56,6 +81,12 @@ export const CASE_STUDIES: CaseStudy[] = [
         title: "Ludex",
         thesis:
             "A hybrid recommendation engine fusing content-based and collaborative signals into one ranking, measured honestly against the baseline it replaces.",
+        intro:
+            "A recommendation engine for Steam games, built over 57,000 titles and 1,200 players. Most systems either match games by their tags or copy what similar players enjoyed — and each of those fails in exactly the place the other one works.",
+        how:
+            "Matching by tags can recommend a game released yesterday that nobody has played, but it cannot tell that two very different-looking games appeal to the same person. Learning from play history captures real taste, but it has nothing to say about a game with no players yet. Ludex runs both and blends their rankings into one list.",
+        resultNote:
+            "27% better than recommending by tags alone, measured on how many of the top 20 suggestions a user actually wanted. Both standalone approaches were evaluated on the same data and the same split, so the comparison is like for like.",
         metric: "+27%",
         metricLabel: "Precision@20 over baseline",
         cover: {
@@ -72,6 +103,12 @@ export const CASE_STUDIES: CaseStudy[] = [
         title: "Modified Double U-Net",
         thesis:
             "An implementation of the Deb & Jha Xception-VGG Double U-Net, extended to ternary segmentation that separates benign from malignant lesions rather than just foreground from background.",
+        intro:
+            "Outlining tumours automatically in breast ultrasound scans. Existing models can mark where a lesion is, but not what kind it is — so a clinician still has to make that judgement separately.",
+        how:
+            "Two networks in sequence: the first draws a rough outline, the second corrects it rather than starting over. Its encoder is pretrained on millions of ordinary photographs, which is what makes it possible to learn from a medical dataset far too small to train from scratch. The output was extended from two labels to three, so benign and malignant are separated in the same pass.",
+        resultNote:
+            "95.94% overlap with the outline a specialist drew — 1.58 points better than the model it extends, with fewer parameters. The three-way version holds up on ultrasound and measurably degrades on mammography, which is a real limit worth stating rather than a rounding error.",
         metric: "95.94%",
         metricLabel: "Mean IoU · 1.58 pts over baseline",
         cover: {

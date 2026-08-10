@@ -46,23 +46,23 @@ const OUT_Y = 218;
 const STAGES = [
     {
         title: "The set",
-        body: "A walk arrives as an unordered set of silhouettes. No frame ordering is assumed, so dropped frames and variable walking speed cost nothing.",
+        body: "A walk arrives as a loose set of silhouettes, not an ordered clip.",
     },
     {
         title: "Centroid alignment",
-        body: "The centroid of the foreground mask is measured and the crop is centred on it, so the subject sits in the same place regardless of where they were in frame.",
+        body: "The centre of the shape is measured and the crop is centred on it.",
     },
     {
         title: "64 × 64 normalisation",
-        body: "Every silhouette is scaled to a uniform 64×64 grid. This is the model's real input resolution — the pixelation below is the data, not the rendering.",
+        body: "Every silhouette is scaled to the same small grid — the model's real input.",
     },
     {
         title: "Symmetric set pooling",
-        body: "A per-pixel max across the set. Because max is order-independent, the same output falls out for any permutation of the input — that is what makes the representation permutation-invariant.",
+        body: "A per-pixel max across the set, so frame order cannot change the output.",
     },
     {
         title: "Aggregate template",
-        body: "A per-pixel mean over the set. In the full pipeline this operation runs across one subject's walk sequence to build the Gait Energy Image; here it runs over the three published condition samples.",
+        body: "A per-pixel mean, the operation that builds the Gait Energy Image.",
     },
 ];
 
@@ -444,10 +444,8 @@ export default function GaitPipeline() {
                 <p className="label">Interactive</p>
                 <h2 className="heading-md mt-3">Preprocessing, step by step</h2>
                 <p className="body-sm mt-4 measure">
-                    Scroll to advance. Every derived image is computed in your
-                    browser from the three published CASIA-B silhouettes —
-                    the centroid and bounding box are measured from the actual
-                    mask, and the pooled outputs are real per-pixel operations.
+                    Scroll to advance. Every image is computed live in your
+                    browser from the three published CASIA-B silhouettes.
                 </p>
             </div>
 

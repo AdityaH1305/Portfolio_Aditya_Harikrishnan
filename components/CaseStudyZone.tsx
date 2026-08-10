@@ -137,7 +137,11 @@ export default function CaseStudyZone() {
                         </div>
                     </div>
 
-                    <Showcase />
+                    {/* brief: intro, how, results, figures, CTAs — and a link
+                        to the route for anyone who wants the depth. The
+                        second gallery, the interactive pipeline and the
+                        limitations blocks render on /work/* only. */}
+                    <Showcase brief />
                 </div>
             ))}
         </div>

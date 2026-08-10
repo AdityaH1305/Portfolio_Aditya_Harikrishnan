@@ -23,28 +23,28 @@ const capabilities = [
         number: "01",
         title: "Biometric Recognition",
         description:
-            "Set-based sequence models that stay accurate when the input degrades — changed viewpoint, dropped frames, occlusion.",
+            "Recognition that holds up when the camera angle changes or frames go missing.",
         evidence: "Gait Fusion · ISRO / LPSC · 98.00% Rank-1 on CASIA-B",
     },
     {
         number: "02",
         title: "Medical Image Segmentation",
         description:
-            "Encoder–decoder architectures extended past the published baseline, and evaluated where the extension holds and where it doesn't.",
+            "Medical scans outlined automatically, extended past the published baseline.",
         evidence: "Modified Double U-Net · 95.94% mean IoU · ternary extension",
     },
     {
         number: "03",
         title: "Recommendation Systems",
         description:
-            "Hybrid models that fuse collaborative and content-based signals into a single ranking.",
+            "Two recommendation methods blended so each covers the other's blind spot.",
         evidence: "Ludex · TF-IDF + implicit ALS · +27% Precision@20",
     },
     {
         number: "04",
         title: "Data-Driven Platforms",
         description:
-            "Applications built on real-time APIs, analytics pipelines, custom scoring, and vision in the loop.",
+            "Live APIs, analytics pipelines and custom scoring, with vision in the loop.",
         evidence: "PlayNexus · multi-region pipeline  ·  SynthRescue · YOLO triage",
     },
 ];

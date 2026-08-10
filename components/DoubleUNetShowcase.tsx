@@ -2,6 +2,8 @@
 
 import Reveal from "@/components/Reveal";
 import FigureGallery, { type Figure } from "@/components/FigureGallery";
+import CtaRow from "@/components/CtaRow";
+import { CASE_STUDIES } from "@/lib/caseStudies";
 
 /* ══════════════════════════════════════════════════════
    DoubleUNetShowcase — Featured Work, project 02
@@ -52,21 +54,6 @@ const ternary = [
     },
 ];
 
-const narrative = [
-    {
-        title: "The Problem",
-        body: "A binary lesion mask tells a clinician where tissue is abnormal, but not what kind. Separating benign from malignant in the same pass is materially harder — the classes are visually similar, irregularly shaped, and heavily outnumbered by background.",
-    },
-    {
-        title: "The Approach",
-        body: "Two U-Nets stacked, where the second refines the first's mask rather than starting over. The first encoder is an ensemble of ImageNet-pretrained VGG-19, Xception and DenseNet, so the model reads rich features from a small medical dataset. The output head was extended from two classes to three.",
-    },
-    {
-        title: "The Result",
-        body: "Higher IoU than both baselines on binary segmentation, with fewer parameters than Double U-Net. The ternary extension holds up on ultrasound and degrades measurably on mammography — a gap worth naming rather than hiding.",
-    },
-];
-
 /* One figure per tab, so the gallery's prev/next reaches every image.
    `minW` marks the wide ones, which pan horizontally on small screens.
    `maxVh` caps a figure's height as a fraction of the viewport. */
@@ -97,28 +84,6 @@ const figures: Figure[] = [
         alt: "Architecture diagram of the modified Double U-Net: an ensemble encoder feeding a first U-Net, whose output mask is refined by a second stacked U-Net.",
     },
     {
-        id: "benign",
-        label: "Benign",
-        minW: "max-md:min-w-[620px]",
-        caption:
-            "Benign lesion — input ultrasound, ground-truth mask and model prediction side by side.",
-        src: "/mod-dun/BenignLesionSegmentation_Jaccard-0.avif",
-        w: 1320,
-        h: 256,
-        alt: "Benign lesion segmentation: input ultrasound, ground-truth mask and model prediction shown side by side.",
-    },
-    {
-        id: "malignant",
-        label: "Malignant",
-        minW: "max-md:min-w-[620px]",
-        caption:
-            "Malignant lesion — the harder class, where irregular boundaries cost the most accuracy.",
-        src: "/mod-dun/MalignantLesionSegmentation_Jaccard-0.avif",
-        w: 1320,
-        h: 256,
-        alt: "Malignant lesion segmentation: input ultrasound, ground-truth mask and model prediction shown side by side.",
-    },
-    {
         id: "training",
         label: "Training",
         minW: "max-md:min-w-[700px]",
@@ -143,27 +108,32 @@ const techStack = [
 
 /* ══════════════════════════════════════════════════════ */
 
-export default function DoubleUNetShowcase() {
+const STUDY = CASE_STUDIES[2];
+
+export default function DoubleUNetShowcase({
+    brief = false,
+}: {
+    brief?: boolean;
+}) {
     return (
         <article>
             {/* Eyebrow and title live in CaseStudyHero — this is a route
                 now, so that block owns the page's <h1>. */}
             <div className="section-container">
                 <Reveal y={20}>
-                    <p className="body-lg measure">
-                        An implementation of the modified Double U-Net{" "}
+                    <p className="body-lg measure">{STUDY.intro}</p>
+                    <p className="body-lg measure mt-6">{STUDY.how}</p>
+                    <p className="body-sm measure mt-5 text-tertiary">
+                        Built on the architecture in{" "}
                         <a
                             href={PAPER_DOI}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="link-accent text-primary"
+                            className="link-accent text-secondary"
                         >
-                            (Deb &amp; Jha, IEEE TRPMS 2023)
+                            Deb &amp; Jha, IEEE TRPMS 2023
                         </a>
-                        , extended past the paper&apos;s binary task to ternary
-                        segmentation — separating background, benign and
-                        malignant lesions across breast ultrasound and
-                        mammography.
+                        .
                     </p>
                 </Reveal>
 
@@ -175,11 +145,9 @@ export default function DoubleUNetShowcase() {
                         the table it rests on still sit together, which was
                         always the point of this pairing. */}
                     <Reveal y={28} duration={0.8}>
-                        <p className="label-muted">Against the baseline</p>
+                        <p className="label-muted">What the numbers mean</p>
                         <p className="body-lg mt-3 measure-tight">
-                            95.94% mean IoU on binary segmentation — 1.58
-                            points above the Double U-Net baseline, with fewer
-                            parameters.
+                            {STUDY.resultNote}
                         </p>
                     </Reveal>
 
@@ -247,18 +215,6 @@ export default function DoubleUNetShowcase() {
                     </Reveal>
                 </div>
 
-                {/* ═══════════ NARRATIVE ═══════════ */}
-                <Reveal
-                    stagger={0.1}
-                    className="mt-20 md:mt-28 grid lg:grid-cols-3 gap-12 lg:gap-14"
-                >
-                    {narrative.map((n) => (
-                        <div key={n.title} data-reveal-child>
-                            <h3 className="heading-sm">{n.title}</h3>
-                            <p className="body-sm mt-3">{n.body}</p>
-                        </div>
-                    ))}
-                </Reveal>
             </div>
 
             {/* ═══════════ MEDIA — full measure ═══════════ */}
@@ -273,62 +229,67 @@ export default function DoubleUNetShowcase() {
             </div>
 
             {/* ═══════════ TERNARY EXTENSION + LIMITS ═══════════ */}
-            <div className="section-container">
-                <div className="mt-20 md:mt-28 grid lg:grid-cols-2 gap-14 lg:gap-16 items-start">
-                    <Reveal y={20}>
-                        <h3 className="heading-sm">
-                            Extending it to three classes
-                        </h3>
-                        <p className="body-sm mt-3 max-w-lg">
-                            The source paper evaluates on binary tasks only.
-                            Extending the output head to background, benign and
-                            malignant produced these results across two
-                            modalities:
-                        </p>
+            {/* The ternary extension and its limitations are depth —
+                /work route only. The home zone stops at the headline
+                result and its comparison table. */}
+            {!brief && (
+                <div className="section-container">
+                    <div className="mt-20 md:mt-28 grid lg:grid-cols-2 gap-14 lg:gap-16 items-start">
+                        <Reveal y={20}>
+                            <h3 className="heading-sm">
+                                Extending it to three classes
+                            </h3>
+                            <p className="body-sm mt-3 max-w-lg">
+                                The source paper evaluates on binary tasks only.
+                                Extending the output head to background, benign and
+                                malignant produced these results across two
+                                modalities:
+                            </p>
 
-                        <div className="mt-8 flex flex-col gap-6">
-                            {ternary.map((t) => (
-                                <div
-                                    key={t.dataset}
-                                    className="flex flex-wrap items-baseline gap-x-5 gap-y-1 pb-4 border-b border-edge"
-                                >
-                                    <span className="text-sm font-semibold text-primary min-w-[7.5rem]">
-                                        {t.dataset}
-                                    </span>
-                                    <span className="label-muted">
-                                        {t.modality}
-                                    </span>
-                                    <span className="ml-auto mono text-sm text-secondary">
-                                        IoU {t.iou}
-                                    </span>
-                                    <span className="mono text-sm text-secondary">
-                                        Dice {t.dice}
-                                    </span>
-                                </div>
-                            ))}
-                        </div>
-                    </Reveal>
+                            <div className="mt-8 flex flex-col gap-6">
+                                {ternary.map((t) => (
+                                    <div
+                                        key={t.dataset}
+                                        className="flex flex-wrap items-baseline gap-x-5 gap-y-1 pb-4 border-b border-edge"
+                                    >
+                                        <span className="text-sm font-semibold text-primary min-w-[7.5rem]">
+                                            {t.dataset}
+                                        </span>
+                                        <span className="label-muted">
+                                            {t.modality}
+                                        </span>
+                                        <span className="ml-auto mono text-sm text-secondary">
+                                            IoU {t.iou}
+                                        </span>
+                                        <span className="mono text-sm text-secondary">
+                                            Dice {t.dice}
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </Reveal>
 
-                    {/* Naming the weakness is the point — it is the honest
-                        reading of the per-class numbers in the report. */}
-                    <Reveal y={20} delay={0.1}>
-                        <h3 className="heading-sm">Where it falls short</h3>
-                        <p className="body-sm mt-3 max-w-lg">
-                            Malignant lesions are the hardest class — Dice 0.46,
-                            IoU 0.39 — because their boundaries are irregular
-                            and infiltrative and the class is heavily
-                            outnumbered. The high mean scores are partly carried
-                            by the dominant background class, which reaches Dice
-                            0.98 on its own.
-                        </p>
-                        <p className="body-sm mt-4 max-w-lg">
-                            The next step is class balancing: weighted loss
-                            functions and targeted oversampling, so the metric
-                            reflects lesion quality rather than background area.
-                        </p>
-                    </Reveal>
+                        {/* Naming the weakness is the point — it is the honest
+                            reading of the per-class numbers in the report. */}
+                        <Reveal y={20} delay={0.1}>
+                            <h3 className="heading-sm">Where it falls short</h3>
+                            <p className="body-sm mt-3 max-w-lg">
+                                Malignant lesions are the hardest class — Dice 0.46,
+                                IoU 0.39 — because their boundaries are irregular
+                                and infiltrative and the class is heavily
+                                outnumbered. The high mean scores are partly carried
+                                by the dominant background class, which reaches Dice
+                                0.98 on its own.
+                            </p>
+                            <p className="body-sm mt-4 max-w-lg">
+                                The next step is class balancing: weighted loss
+                                functions and targeted oversampling, so the metric
+                                reflects lesion quality rather than background area.
+                            </p>
+                        </Reveal>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* ═══════════ STACK + CTAs ═══════════ */}
             <div className="section-container">
@@ -345,33 +306,14 @@ export default function DoubleUNetShowcase() {
 
                     {/* The report CTA is deliberately absent for now. GitHub
                         takes primary weight so the row still has an anchor. */}
-                    <div data-reveal-child className="flex flex-wrap gap-4">
-                        <a
-                            href={REPO}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-primary"
-                        >
-                            View on GitHub
-                            <svg
-                                className="w-3.5 h-3.5"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                aria-hidden="true"
-                            >
-                                <path d="M7 17L17 7M17 7H7M17 7v10" />
-                            </svg>
-                        </a>
-                        <a
-                            href={PAPER_DOI}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="btn-secondary"
-                        >
-                            Source Paper
-                        </a>
+                    <div data-reveal-child>
+                        <CtaRow
+                            ctas={[
+                                { label: "View on GitHub", href: REPO, primary: true, external: true },
+                                { label: "Source Paper", href: PAPER_DOI, external: true },
+                            ]}
+                            readMoreHref={brief ? "/work/modified-double-unet" : undefined}
+                        />
                     </div>
                 </Reveal>
             </div>

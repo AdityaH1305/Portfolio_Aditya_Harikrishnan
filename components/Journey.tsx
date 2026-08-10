@@ -20,37 +20,37 @@ const timelineEntries = [
         year: "2023",
         title: "Joined IIIT Pune",
         description:
-            "Started B.Tech Computer Science. Built the foundation — data structures, algorithms, and how large systems are designed and maintained.",
+            "Started B.Tech Computer Science — data structures, algorithms, and how large systems hold together.",
     },
     {
         year: "2024",
         title: "First platform shipped",
         description:
-            "PlayNexus took me from coursework to production concerns: real-time APIs, data pipelines, and decisions that had to survive contact with real usage.",
+            "PlayNexus took me from coursework to production: real APIs, real pipelines, real usage.",
     },
     {
         year: "2025",
         title: "Moved into ML systems",
         description:
-            "Ludex was the turn toward research — building a recommender, then evaluating it honestly against baselines and writing up the result.",
+            "Ludex was the turn toward research — build a recommender, then measure it honestly.",
     },
     {
         year: "2025",
         title: "Applied AI, end to end",
         description:
-            "SynthRescue put computer vision into a full response pipeline, from upload to generated report.",
+            "SynthRescue put computer vision into a full pipeline, from upload to report.",
     },
     {
         year: "2025",
         title: "Research internship at ISRO",
         description:
-            "Cross-view gait recognition at the Liquid Propulsion Systems Centre — treating a walk as an unordered set of silhouettes, then adding a multi-modal fusion branch. 98.00% Rank-1 on CASIA-B under normal walking, and an honest account of where occlusion breaks it.",
+            "Cross-view gait recognition at the Liquid Propulsion Systems Centre — 98.00% Rank-1 on CASIA-B, with an honest account of where occlusion breaks it.",
     },
     {
         year: "2026",
         title: "What's next",
         description:
-            "Exploring RAG, embedding-based search, and graph-powered code intelligence — tools that make large systems legible.",
+            "Exploring RAG, embedding search and code intelligence — tools that make big systems legible.",
     },
 ];
 
@@ -65,22 +65,12 @@ export default function Journey() {
                 </Reveal>
 
                 {/* ── About text (preserved from original About component) ── */}
-                <Reveal y={14} delay={0.08} className="mt-12 max-w-2xl">
-                    <p className="body-lg">
-                        I&apos;m a Computer Science undergrad at IIIT Pune who builds at
-                        the intersection of software engineering and machine learning — from
-                        recommendation systems that outperform baselines to full-stack data
-                        platforms serving real-time analytics.
-                    </p>
-                    <p className="body-lg mt-5">
-                        My approach: take a complex, messy problem, architect a clean
-                        solution, then ship it. I care about scalable backends,
-                        well-designed APIs, and ML systems that actually work in production
-                        — not just in a notebook.
-                    </p>
-                    <p className="mt-6 text-primary font-semibold text-lg">
-                        I&apos;m drawn to tools that decode complexity — making large
-                        systems legible, navigable, and interactive.
+                <Reveal y={14} delay={0.08} className="mt-12">
+                    <p className="body-lg measure">
+                        A Computer Science undergrad at IIIT Pune, building at
+                        the intersection of software engineering and machine
+                        learning. I like problems where the answer has to be
+                        measured rather than asserted.
                     </p>
                 </Reveal>
 

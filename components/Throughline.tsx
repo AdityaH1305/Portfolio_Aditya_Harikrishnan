@@ -43,10 +43,9 @@ export default function Throughline() {
                 <Reveal y={20} delay={0.16}>
                     <p className="body-lg mt-10 measure">
                         A number with nothing to compare it to is not a result.
-                        Each of the three systems below was evaluated against a
-                        published benchmark or the approach it replaced, on the
-                        same data and the same split — and each one names the
-                        case where it falls down rather than leaving it out.
+                        Each of these was measured against a published
+                        benchmark or the approach it replaced, and each one
+                        names where it falls down.
                     </p>
                 </Reveal>
 
@@ -83,7 +82,7 @@ export default function Throughline() {
 
                 <Reveal y={14} delay={0.3}>
                     <p className="label-muted mt-10 normal-case tracking-normal">
-                        Scroll on — the next three screens belong to them.
+                        Scroll on — the next three belong to them.
                     </p>
                 </Reveal>
             </div>
