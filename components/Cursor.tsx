@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import { gsap } from "@/lib/motion";
 
 /* ══════════════════════════════════════════════════════
    Cursor — reticle core, oscilloscope ring, target lock
@@ -185,6 +186,9 @@ export default function Cursor() {
         // Corner-bracket target box, eased toward the hovered element.
         const box = { x: 0, y: 0, w: 0, h: 0, o: 0 };
         let boxInit = false;
+        // Last written size, so a settled lock stops touching layout.
+        let lastBoxW = -1;
+        let lastBoxH = -1;
 
         // Easter-egg charge arc.
         let charge = 0;
@@ -206,9 +210,17 @@ export default function Cursor() {
         // than the distance to an eased (and possibly snapped) target.
         const prev = { x: -9999, y: -9999 };
 
+        /* Cached bounding box of the hovered element.
+           getBoundingClientRect forces a synchronous layout, and calling it
+           once per frame interleaved this flush with Lenis's scroll writes
+           on every single frame. The lock box lerps at 0.22 and the snap
+           blend is smoothed, so a rect up to two frames stale is invisible —
+           but the layout flush was not. */
+        let rectCache: DOMRect | null = null;
+        let rectFor: Element | null = null;
+        let rectAt = -99;
+
         let visible = false;
-        let rafId = 0;
-        let running = true;
 
         // ── Input ───────────────────────────────────────
         const onMove = (e: PointerEvent) => {
@@ -278,8 +290,6 @@ export default function Cursor() {
 
         // ── Frame ───────────────────────────────────────
         const frame = () => {
-            if (!running) return;
-
             /* Re-read the hovered element's own attribute every frame.
                `pointerover` only fires when the pointer crosses into a new
                element, so a state that changes UNDER a stationary pointer —
@@ -295,12 +305,19 @@ export default function Cursor() {
             frameCount++;
             const now = performance.now();
 
-            /* One rect per frame, shared by the snap and the target lock —
-               both need it and getBoundingClientRect forces layout. */
-            const rect =
-                hovered && state !== "caret"
-                    ? hovered.getBoundingClientRect()
-                    : null;
+            /* Measured at most every 3rd frame, and only when something
+               actually consumes it — a lock, a probe readout, or a
+               snap-eligible target. Shared by all three. */
+            const wantsRect = !!hovered && state !== "caret";
+            if (!wantsRect) {
+                rectCache = null;
+                rectFor = null;
+            } else if (hovered !== rectFor || frameCount - rectAt >= 3) {
+                rectCache = hovered!.getBoundingClientRect();
+                rectFor = hovered;
+                rectAt = frameCount;
+            }
+            const rect = rectCache;
 
             /* ── Magnetic snap ──
                The ring's target blends toward a small element's centre; the
@@ -597,10 +614,23 @@ export default function Cursor() {
                 if (box.o < 0.02) boxInit = false;
             }
 
-            lockEl.style.opacity = String(box.o);
-            lockEl.style.transform = `translate3d(${box.x}px, ${box.y}px, 0)`;
-            lockEl.style.width = `${box.w}px`;
-            lockEl.style.height = `${box.h}px`;
+            /* Skip the whole write once the box is invisible, and only write
+               width/height when they actually moved. Those two ARE layout
+               properties — cheap here because the element is out of flow with
+               nothing depending on it, but there is no reason to dirty layout
+               every frame once the lock has settled on its target. */
+            if (box.o > 0.001 || lockEl.style.opacity !== "0") {
+                lockEl.style.opacity = box.o > 0.001 ? String(box.o) : "0";
+                lockEl.style.transform = `translate3d(${box.x}px, ${box.y}px, 0)`;
+                if (Math.abs(box.w - lastBoxW) > 0.5) {
+                    lockEl.style.width = `${box.w}px`;
+                    lastBoxW = box.w;
+                }
+                if (Math.abs(box.h - lastBoxH) > 0.5) {
+                    lockEl.style.height = `${box.h}px`;
+                    lastBoxH = box.h;
+                }
+            }
 
             /* ── Label ──
                The probe reads out position and, when the sample landed, the
@@ -633,7 +663,6 @@ export default function Cursor() {
                 label.style.transform = `translate3d(${lx}px, ${ly}px, 0)`;
             }
 
-            rafId = requestAnimationFrame(frame);
         };
 
         // ── Bind ────────────────────────────────────────
@@ -645,22 +674,18 @@ export default function Cursor() {
         document.addEventListener("mouseenter", onEnter);
         window.addEventListener("cursor:charge", onCharge);
 
-        const onVisibility = () => {
-            if (document.hidden) {
-                running = false;
-                cancelAnimationFrame(rafId);
-            } else if (!running) {
-                running = true;
-                rafId = requestAnimationFrame(frame);
-            }
-        };
-        document.addEventListener("visibilitychange", onVisibility);
+        /* Driven by gsap.ticker rather than its own requestAnimationFrame.
+           This revises the earlier "plain rAF, never GSAP" note above: the
+           concern there was coupling the cursor to SCROLL, and gsap.ticker is
+           only a rAF multiplexer. Two loops racing each other — the ticker
+           stepping Lenis and this one reading layout — was the worse outcome.
 
-        rafId = requestAnimationFrame(frame);
+           The old visibilitychange handler is gone with it: the ticker is
+           already rAF-backed, so a hidden tab stops calling it. */
+        gsap.ticker.add(frame);
 
         return () => {
-            running = false;
-            cancelAnimationFrame(rafId);
+            gsap.ticker.remove(frame);
             html.classList.remove("cursor-custom");
             window.removeEventListener("pointermove", onMove);
             document.removeEventListener("pointerover", onOver);
@@ -669,7 +694,6 @@ export default function Cursor() {
             document.removeEventListener("mouseleave", onLeave);
             document.removeEventListener("mouseenter", onEnter);
             window.removeEventListener("cursor:charge", onCharge);
-            document.removeEventListener("visibilitychange", onVisibility);
         };
     }, []);
 

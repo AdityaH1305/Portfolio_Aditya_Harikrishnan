@@ -217,6 +217,38 @@ export class LivingArchitectureEngine {
   private viewportWidth = 0;
   private viewportHeight = 0;
 
+  /* ── Adaptive quality governor ──────────────────────
+     Rather than guessing at device classes, measure the real frame time and
+     degrade only when the machine cannot keep up. Level 0 is full quality and
+     is where any capable device stays, so nothing changes for them.
+
+       0  full quality
+       1  render at ~30fps (update still receives full elapsed time, so
+          motion runs at the same speed — it is drawn half as often)
+       2  also cut the live signal budget
+       3  also drop the backing-store scale
+
+     Thresholds sit either side of a 60Hz frame (16.7ms) with a wide gap, and
+     each change holds for a couple of seconds, so the level cannot oscillate. */
+  private perfLevel = 0;
+  private signalBudget = 1;
+  private dprScale = 1;
+  private frameAccumMs = 0;
+  private frameSamples = 0;
+  private levelHoldUntil = 0;
+  /** Elapsed time not yet drawn, so a skipped frame is not lost motion. */
+  private renderAccum = 0;
+
+  /* Core halo/glow gradients, built once and reused.
+     These were allocated with createRadialGradient on EVERY frame — two
+     gradient objects per tick, rasterised full-size. They are now built at a
+     reference radius with alpha-1 stops, then positioned by translating and
+     scaling the context and modulated with globalAlpha, which reproduces the
+     original output exactly while allocating nothing per frame. */
+  private haloGrad: CanvasGradient | null = null;
+  private glowGrad: CanvasGradient | null = null;
+  private gradMode: BreakpointMode | null = null;
+
   // Breakpoint
   private mode: BreakpointMode = "desktop";
 
@@ -278,7 +310,6 @@ export class LivingArchitectureEngine {
 
   // RAF
   private lastTimestamp = 0;
-  private rafId = 0;
 
   // Interpolation speed (frame-rate independent).
   // 0.03 at 60 fps ≈ 2.2 s to 95 % convergence.
@@ -347,36 +378,31 @@ export class LivingArchitectureEngine {
     }
   }
 
+  /* These now only flip flags — the caller registers `step` on gsap.ticker.
+     lastTimestamp is reset on every resume so the first frame back does not
+     see a delta covering the whole pause. */
   start(): void {
     if (this.running) return;
     this.running = true;
     this.paused = false;
     this.lastTimestamp = 0;
-    this.rafId = requestAnimationFrame(this.tick);
+    this.renderAccum = 0;
   }
 
   stop(): void {
     this.running = false;
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = 0;
-    }
   }
 
   pause(): void {
     if (!this.running || this.paused) return;
     this.paused = true;
-    if (this.rafId) {
-      cancelAnimationFrame(this.rafId);
-      this.rafId = 0;
-    }
   }
 
   resume(): void {
     if (!this.running || !this.paused) return;
     this.paused = false;
     this.lastTimestamp = 0;
-    this.rafId = requestAnimationFrame(this.tick);
+    this.renderAccum = 0;
   }
 
   /** Render the complete composition for the current stage statically.
@@ -788,23 +814,93 @@ export class LivingArchitectureEngine {
 
   // ── Animation loop ─────────────────────────────────
 
-  private tick = (timestamp: number): void => {
+  /**
+   * Advance one frame. Driven externally by gsap.ticker — the engine no
+   * longer owns a requestAnimationFrame.
+   *
+   * Three rAF loops used to run during a scroll (gsap.ticker for Lenis, this
+   * engine, and the cursor), each scheduling independently, so the order of
+   * "Lenis writes scroll position" versus "canvas reads layout and draws" was
+   * undefined from frame to frame. One shared ticker makes it deterministic.
+   *
+   * @param timestamp milliseconds, as passed by gsap.ticker
+   */
+  step = (timestamp: number): void => {
     if (!this.running || this.paused) return;
 
     if (this.lastTimestamp === 0) {
       this.lastTimestamp = timestamp;
-      this.rafId = requestAnimationFrame(this.tick);
       return;
     }
 
-    const dt = Math.min((timestamp - this.lastTimestamp) / 1000, 0.05);
+    const rawMs = timestamp - this.lastTimestamp;
     this.lastTimestamp = timestamp;
+
+    this.updateGovernor(rawMs, timestamp);
+
+    // Clamped so a background tab or a long stall cannot teleport the
+    // animation forward when it resumes.
+    this.renderAccum += Math.min(rawMs / 1000, 0.05);
+
+    // Level 1+: draw at ~30fps. update() still receives the full accumulated
+    // time, so the atlas moves at the same speed — just in bigger steps.
+    if (this.perfLevel >= 1 && this.renderAccum < 1 / 32) return;
+
+    const dt = Math.min(this.renderAccum, 0.05);
+    this.renderAccum = 0;
 
     this.update(dt);
     this.draw();
-
-    this.rafId = requestAnimationFrame(this.tick);
   };
+
+  /** Frame-time thresholds, either side of a 60Hz frame with a wide gap. */
+  private updateGovernor(rawMs: number, now: number): void {
+    this.frameAccumMs += rawMs;
+    this.frameSamples++;
+    if (this.frameSamples < 60) return;
+
+    const avg = this.frameAccumMs / this.frameSamples;
+    this.frameAccumMs = 0;
+    this.frameSamples = 0;
+
+    if (now < this.levelHoldUntil) return;
+
+    if (avg > 24 && this.perfLevel < 3) {
+      this.setPerfLevel(this.perfLevel + 1);
+      this.levelHoldUntil = now + 2000;
+    } else if (avg < 18 && this.perfLevel > 0) {
+      // Slower to recover than to degrade, so a single good stretch does not
+      // bounce a struggling device straight back into dropping frames.
+      this.setPerfLevel(this.perfLevel - 1);
+      this.levelHoldUntil = now + 4000;
+    }
+  }
+
+  private setPerfLevel(level: number): void {
+    this.perfLevel = level;
+    this.signalBudget = level >= 2 ? 0.45 : 1;
+
+    const scale = level >= 3 ? 0.7 : 1;
+    if (scale !== this.dprScale) {
+      this.dprScale = scale;
+      this.applyBackingScale();
+    }
+  }
+
+  /** Resize the backing store only. All geometry is in CSS px and the context
+   *  transform absorbs the change, so nothing needs rebuilding. */
+  private applyBackingScale(): void {
+    if (this.viewportWidth < 1 || this.viewportHeight < 1) return;
+    const dpr =
+      Math.min(window.devicePixelRatio || 1, DPR_CAP) * this.dprScale;
+    if (Math.abs(dpr - this.dpr) < 0.01) return;
+    this.dpr = dpr;
+    this.canvas.width = Math.round(this.viewportWidth * dpr);
+    this.canvas.height = Math.round(this.viewportHeight * dpr);
+    this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    // Gradients are bound to the context state they were made in.
+    this.gradMode = null;
+  }
 
   private update(dt: number): void {
     this.time += dt;
@@ -917,6 +1013,17 @@ export class LivingArchitectureEngine {
   }
 
   private spawnSignal(): void {
+    /* signalBudget is 1 until the governor reaches level 2, so this is a
+       no-op on any device keeping frame rate. Capping the live count is what
+       actually reduces work — gating the spawn call alone would not, since
+       the pool refills to maxSignals either way. */
+    if (this.signalBudget < 1) {
+      let alive = 0;
+      for (const s of this.signals) if (s.alive) alive++;
+      if (alive >= Math.max(1, Math.floor(this.maxSignals * this.signalBudget)))
+        return;
+    }
+
     const slot = this.signals.find((s) => !s.alive);
     if (!slot) return;
 
@@ -1026,54 +1133,65 @@ export class LivingArchitectureEngine {
     ctx.restore();
   }
 
+  /** Build the two core gradients once per breakpoint, centred on the origin
+   *  at their reference radius. Callers translate/scale into place. */
+  private ensureCoreGradients(): void {
+    if (this.gradMode === this.mode && this.haloGrad && this.glowGrad) return;
+    const cfg = CORE_CONFIGS[this.mode];
+
+    const halo = this.ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(1, cfg.haloRadius));
+    halo.addColorStop(0, accent(1));
+    halo.addColorStop(0.45, accent(0.3));
+    halo.addColorStop(1, accent(0));
+    this.haloGrad = halo;
+
+    const glow = this.ctx.createRadialGradient(0, 0, 0, 0, 0, Math.max(1, cfg.glowRadius));
+    glow.addColorStop(0, accent(1));
+    glow.addColorStop(0.6, accent(0.4));
+    glow.addColorStop(1, accent(0));
+    this.glowGrad = glow;
+
+    this.gradMode = this.mode;
+  }
+
   private drawCoreHalo(): void {
     const cfg = CORE_CONFIGS[this.mode];
     if (cfg.haloRadius <= 0) return;
 
-    const r = cfg.haloRadius * this.coreGlowScale.current;
-    const opacity = cfg.haloOpacity * this.coreGlowScale.current;
-    if (opacity < 0.001) return;
+    const scale = this.coreGlowScale.current;
+    const opacity = cfg.haloOpacity * scale;
+    if (opacity < 0.001 || scale < 0.001) return;
 
-    const grad = this.ctx.createRadialGradient(
-      this.core.x,
-      this.core.y,
-      0,
-      this.core.x,
-      this.core.y,
-      r,
-    );
-    grad.addColorStop(0, accent(opacity));
-    grad.addColorStop(0.45, accent(opacity * 0.3));
-    grad.addColorStop(1, accent(0));
-
-    this.ctx.fillStyle = grad;
-    this.ctx.beginPath();
-    this.ctx.arc(this.core.x, this.core.y, r, 0, TAU);
-    this.ctx.fill();
+    this.ensureCoreGradients();
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha *= opacity;
+    ctx.translate(this.core.x, this.core.y);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = this.haloGrad!;
+    ctx.beginPath();
+    ctx.arc(0, 0, cfg.haloRadius, 0, TAU);
+    ctx.fill();
+    ctx.restore();
   }
 
   private drawCoreGlow(): void {
     const cfg = CORE_CONFIGS[this.mode];
-    const r = cfg.glowRadius * this.coreGlowScale.current;
-    const opacity = cfg.glowOpacity * this.coreGlowScale.current;
-    if (opacity < 0.001) return;
+    const scale = this.coreGlowScale.current;
+    const opacity = cfg.glowOpacity * scale;
+    if (opacity < 0.001 || scale < 0.001) return;
 
-    const grad = this.ctx.createRadialGradient(
-      this.core.x,
-      this.core.y,
-      0,
-      this.core.x,
-      this.core.y,
-      r,
-    );
-    grad.addColorStop(0, accent(opacity));
-    grad.addColorStop(0.6, accent(opacity * 0.4));
-    grad.addColorStop(1, accent(0));
-
-    this.ctx.fillStyle = grad;
-    this.ctx.beginPath();
-    this.ctx.arc(this.core.x, this.core.y, r, 0, TAU);
-    this.ctx.fill();
+    this.ensureCoreGradients();
+    const ctx = this.ctx;
+    ctx.save();
+    ctx.globalAlpha *= opacity;
+    ctx.translate(this.core.x, this.core.y);
+    ctx.scale(scale, scale);
+    ctx.fillStyle = this.glowGrad!;
+    ctx.beginPath();
+    ctx.arc(0, 0, cfg.glowRadius, 0, TAU);
+    ctx.fill();
+    ctx.restore();
   }
 
   private drawCoreSegments(): void {

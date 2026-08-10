@@ -146,10 +146,19 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
 
             {/* Mobile: Fluid Island Nav */}
             <nav
+                /* blur-md, not blur-xl: this is fixed over a scrolling page,
+                   so the backdrop is re-blurred every frame the page moves,
+                   and blur cost scales with radius. Mobile GPUs feel it most.
+                   The fill goes 70% → 85% to hold the same legibility with
+                   less blur behind it.
+
+                   transition-all also went: it makes the browser watch every
+                   animatable property, and only opacity and transform are
+                   ever animated here. */
                 className={`md:hidden fixed top-4 left-1/2 -translate-x-[50%] max-w-[calc(100%-2rem)] w-auto z-50
-                           bg-surface-1/70 backdrop-blur-xl
+                           bg-surface-1/85 backdrop-blur-md
                            border border-edge-default rounded-full shadow-2xl
-                           transition-all duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]
+                           transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]
                            ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
             >
                 {/* gap-6, not just justify-between: the pill is w-auto, so it

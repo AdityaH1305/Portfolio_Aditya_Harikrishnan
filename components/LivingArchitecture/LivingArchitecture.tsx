@@ -165,16 +165,31 @@ export default function LivingArchitecture({
       engine.setReducedMotion(false);
       engine.start();
 
+      /* Driven by gsap.ticker, not its own requestAnimationFrame.
+         Three rAF loops used to run during a scroll — the ticker (which
+         steps Lenis), this engine, and the cursor — each scheduling
+         independently, so whether the canvas drew before or after Lenis
+         had written the new scroll position varied frame to frame.
+
+         gsap.ticker reports SECONDS; the engine works in milliseconds,
+         the same conversion ScrollProvider does for lenis.raf(). */
+      const tick = (time: number) => engine.step(time * 1000);
+      gsap.ticker.add(tick);
+
       /* Ambient: no scrub. setStage moves the targets once and the
          engine's lerp walks it in, so the atlas grows on mount and
          then holds. */
       if (ambient) {
         engine.setStage(stage);
-        return () => engine.stop();
+        return () => {
+          gsap.ticker.remove(tick);
+          engine.stop();
+        };
       }
 
       const detach = attachScrub(engine);
       return () => {
+        gsap.ticker.remove(tick);
         detach();
         engine.stop();
       };

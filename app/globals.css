@@ -299,7 +299,10 @@ body {
   align-items: center;
   gap: 0.75rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  /* Nothing on this element itself transitions — the label, number and dot
+     each animate their own properties. `all` here just made the browser
+     watch every animatable property on a permanently-mounted fixed element. */
+  transition: color 0.3s ease;
   text-decoration: none;
 }
 
@@ -320,7 +323,10 @@ body {
   color: var(--text-tertiary);
   opacity: 0;
   transform: translateX(-4px);
-  transition: all 0.3s ease;
+  transition:
+    opacity 0.3s ease,
+    transform 0.3s ease,
+    color 0.3s ease;
   white-space: nowrap;
 }
 
@@ -348,7 +354,9 @@ body {
   height: 3px;
   border-radius: 50%;
   background: var(--text-tertiary);
-  transition: all 0.3s ease;
+  transition:
+    background 0.3s ease,
+    box-shadow 0.3s ease;
 }
 
 .side-nav-item.active .side-nav-dot {
@@ -540,18 +548,14 @@ html.cursor-custom [data-cursor="text"] {
   overflow: hidden;
 }
 
-@keyframes driftNoise {
-  0% {
-    background-position: 0 0;
-  }
-  50% {
-    background-position: 256px 128px;
-  }
-  100% {
-    background-position: 0 0;
-  }
-}
-
+/* The grain is static.
+   This used to run `driftNoise 25s linear infinite`, animating
+   background-position across a full-viewport tiled turbulence image.
+   background-position is a PAINT property, so that repainted the entire
+   viewport every frame, forever — while idle, while reading, on every page.
+   At 2% opacity over a 25-second cycle nobody could see the motion, so it
+   was a permanent full-screen repaint buying nothing. The texture itself is
+   unchanged. */
 .atmosphere-noise {
   position: absolute;
   inset: 0;
@@ -559,16 +563,20 @@ html.cursor-custom [data-cursor="text"] {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
   background-repeat: repeat;
   background-size: 256px 256px;
-  animation: driftNoise 25s linear infinite;
 }
 
+/* Bled by exactly one 64px tile top and bottom so the parallax can translate
+   it instead of animating background-position. A -40px travel can no longer
+   expose an edge, and because the bleed is a whole tile the visible grid
+   lines land in exactly the same place as before. */
 .atmosphere-grid {
   position: absolute;
-  inset: 0;
+  inset: -64px 0;
   background-image:
     linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
     linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
   background-size: 64px 64px;
+  will-change: transform;
 }
 
 .atmosphere-vignette {
@@ -581,9 +589,13 @@ html.cursor-custom [data-cursor="text"] {
   );
 }
 
+/* These are large radial gradients translated on every scroll frame. Without
+   a compositor hint each move repaints the gradient; with one they are
+   promoted once and thereafter only composited. */
 .atmosphere-glow {
   position: absolute;
   pointer-events: none;
+  will-change: transform;
 }
 
 .atmosphere-glow--hero {
@@ -668,7 +680,13 @@ html.cursor-custom [data-cursor="text"] {
   border: none;
   border-radius: 9999px;
   cursor: pointer;
-  transition: all 0.35s var(--ease);
+  /* Named properties, not `all`: `all` makes the browser watch every
+     animatable property on the element, including layout ones. */
+  transition:
+    background 0.35s var(--ease),
+    border-color 0.35s var(--ease),
+    color 0.35s var(--ease),
+    transform 0.35s var(--ease);
 }
 
 .btn-primary:hover {
@@ -694,7 +712,13 @@ html.cursor-custom [data-cursor="text"] {
   border: 1px solid var(--border-default);
   border-radius: 9999px;
   cursor: pointer;
-  transition: all 0.35s var(--ease);
+  /* Named properties, not `all`: `all` makes the browser watch every
+     animatable property on the element, including layout ones. */
+  transition:
+    background 0.35s var(--ease),
+    border-color 0.35s var(--ease),
+    color 0.35s var(--ease),
+    transform 0.35s var(--ease);
 }
 
 .btn-secondary:hover {

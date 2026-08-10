@@ -14,6 +14,13 @@ import { gsap, ScrollTrigger } from "@/lib/motion";
  * gsap.matchMedia also fixes a bug in the previous version: it returned
  * early when reduced motion was set, *before* installing the change
  * listener, so turning the preference back off never restored the bar.
+ *
+ * PERF: this writes `transform: scaleX()`, never `width`. Width is a layout
+ * property — the old version forced layout → paint → composite on every
+ * scroll frame for the whole document, which is about as expensive as a
+ * progress bar can possibly get. `will-change: width` did not help either;
+ * a layout property cannot be promoted. The case-study rail in
+ * CaseStudyChrome already used scaleX; this brings the home bar in line.
  */
 export default function ScrollProgress() {
     const barRef = useRef<HTMLDivElement>(null);
@@ -30,7 +37,7 @@ export default function ScrollProgress() {
                 start: 0,
                 end: "max",
                 onUpdate: (self) => {
-                    bar.style.width = `${self.progress * 100}%`;
+                    bar.style.transform = `scaleX(${self.progress})`;
                 },
             });
             return () => st.kill();
@@ -49,12 +56,12 @@ export default function ScrollProgress() {
     return (
         <div
             ref={barRef}
-            className="fixed top-0 left-0 h-[2px] z-[60]"
+            className="fixed top-0 left-0 h-[2px] w-full z-[60] origin-left"
             style={{
-                width: "0%",
+                transform: "scaleX(0)",
                 background:
                     "linear-gradient(90deg, rgb(var(--accent-rgb) / 0.4), rgb(var(--accent-rgb) / 0.7))",
-                willChange: "width",
+                willChange: "transform",
             }}
         />
     );

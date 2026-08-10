@@ -38,46 +38,37 @@ export default function AtmosphereParallax() {
         const mm = gsap.matchMedia();
 
         mm.add("(prefers-reduced-motion: no-preference)", () => {
-            const scrollTrigger = {
-                trigger: document.body,
-                start: 0,
-                end: "max",
-                scrub: true,
-            } as const;
+            /* ONE ScrollTrigger, not four.
+               Each of these tweens previously carried its own identical
+               scrollTrigger config, so the page ran four separate scrubbed
+               triggers that measured and updated independently. A single
+               timeline does the same work once. */
+            const tl = gsap.timeline({
+                scrollTrigger: {
+                    trigger: document.body,
+                    start: 0,
+                    end: "max",
+                    scrub: true,
+                },
+            });
 
             // ease "none" is required: an eased parallax decouples from
             // scroll position and drifts out of sync on fast scrolls.
-            const tweens = [
-                gsap.to(".atmosphere-glow--hero", {
-                    y: TRAVEL.glowHero,
-                    ease: "none",
-                    scrollTrigger,
-                }),
-                gsap.to(".atmosphere-glow--mid", {
-                    y: TRAVEL.glowMid,
-                    ease: "none",
-                    scrollTrigger,
-                }),
-                gsap.to(".atmosphere-glow--lower", {
-                    y: TRAVEL.glowLower,
-                    ease: "none",
-                    scrollTrigger,
-                }),
-                // The grid is a repeating 64px tile, so shift the background
-                // rather than the element — translating it would expose a gap
-                // at the bottom edge.
-                gsap.to(".atmosphere-grid", {
-                    backgroundPositionY: `${TRAVEL.grid}px`,
-                    ease: "none",
-                    scrollTrigger,
-                }),
-            ];
+            tl.to(".atmosphere-glow--hero", { y: TRAVEL.glowHero, ease: "none" }, 0)
+                .to(".atmosphere-glow--mid", { y: TRAVEL.glowMid, ease: "none" }, 0)
+                .to(".atmosphere-glow--lower", { y: TRAVEL.glowLower, ease: "none" }, 0)
+                /* The grid moves by TRANSFORM now, not backgroundPositionY.
+                   background-position is a paint property, so the old version
+                   repainted a full-viewport grid overlay on every scroll
+                   frame. The element is bled by one whole 64px tile in
+                   globals.css, so translating it can no longer expose an edge
+                   — which was the original reason for using background
+                   position here. */
+                .to(".atmosphere-grid", { y: TRAVEL.grid, ease: "none" }, 0);
 
             return () => {
-                tweens.forEach((t) => {
-                    t.scrollTrigger?.kill();
-                    t.kill();
-                });
+                tl.scrollTrigger?.kill();
+                tl.kill();
                 ScrollTrigger.refresh();
             };
         });
