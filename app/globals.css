@@ -499,33 +499,47 @@ html.zone-immersive {
   --surface-1: #0a0e14;
 }
 
-/* Which of the two zone renderings is live.
-   One media query owns this decision so the CSS and the gsap.matchMedia
-   query in CaseStudyZone cannot drift apart — they must stay identical. */
-.zone-pinned {
-  display: none;
-}
+/* Chapter title-card pinning.
 
-.zone-stacked {
-  display: block;
+   Inert by default: on a phone, and under reduced motion, the card is just a
+   block that scrolls past like any other header. The media query below is
+   the ONLY place the breakpoint lives — CaseStudyZone's gsap.matchMedia uses
+   the identical condition, and the two must stay in step or the JS will
+   animate a card that was never pinned. */
+.zone-pin {
+  padding-block: 4rem;
 }
 
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-  .zone-pinned {
-    display: block;
+  .zone-pin {
+    /* 150vh gives 50vh of travel against a 100vh stage. Zero travel is how
+       sticky silently does nothing, which this repo has shipped before. */
+    height: 150vh;
+    padding-block: 0;
   }
 
-  .zone-stacked {
-    display: none;
+  .zone-pin-stage {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    display: flex;
+    align-items: center;
   }
 }
 
 /* Chrome recedes so nothing competes with the work. Pointer events stay on:
    the nav must remain usable, just quiet. */
 html.zone-immersive .side-nav,
-html.zone-immersive .atmosphere-grid,
-html.zone-immersive .atmosphere-noise {
+html.zone-immersive .atmosphere-grid {
   opacity: 0.25;
+}
+
+/* The noise gets its own value and must NOT join the group above.
+   Its base opacity is 0.02, so `opacity: 0.25` was not dimming it — it was
+   12.5× MORE grain, applied at exactly the moment the background darkens and
+   makes grain more visible. That was the "too grainy" report. */
+html.zone-immersive .atmosphere-noise {
+  opacity: 0.012;
 }
 
 .side-nav,
@@ -546,18 +560,33 @@ html.zone-immersive .atmosphere-noise {
   transition: opacity 700ms var(--ease);
 }
 
+/* Six stops on a quadratic falloff rather than two linear ones.
+   `transparent → rgba(0,0,0,0.72)` across a near-black background is
+   textbook 8-bit banding: the renderer has to cover a long distance in very
+   few available steps, and the visible steps read as blotchy grain. Extra
+   stops shorten each interpolation run so the dither has somewhere to hide,
+   and the lower ceiling keeps the darkest corner off pure black.
+
+   Starts at 52% so the centre stays genuinely clear — content has to remain
+   readable through this for the length of three case studies. */
 .zone-vignette {
   top: 0;
   bottom: 0;
   background: radial-gradient(
-    ellipse 78% 68% at 50% 50%,
-    transparent 45%,
-    rgba(0, 0, 0, 0.72) 100%
+    ellipse 82% 74% at 50% 50%,
+    rgba(0, 0, 0, 0) 52%,
+    rgba(0, 0, 0, 0.04) 64%,
+    rgba(0, 0, 0, 0.11) 74%,
+    rgba(0, 0, 0, 0.22) 83%,
+    rgba(0, 0, 0, 0.36) 91%,
+    rgba(0, 0, 0, 0.52) 100%
   );
 }
 
+/* Thinner than the original 18–40px: the zone is now several case studies
+   long, and a 40px bar crowds content over that distance. */
 .zone-bar {
-  height: clamp(18px, 3.5vh, 40px);
+  height: clamp(14px, 2.5vh, 26px);
   background: var(--surface-0);
 }
 

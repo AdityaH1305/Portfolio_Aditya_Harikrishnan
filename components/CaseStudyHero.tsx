@@ -25,7 +25,21 @@ import { CASE_STUDIES } from "@/lib/caseStudies";
    supporting detail, which is the order that matters.
    ══════════════════════════════════════════════════════ */
 
-export default function CaseStudyHero({ slug }: { slug: string }) {
+export default function CaseStudyHero({
+    slug,
+    /**
+     * Heading level for the title.
+     *
+     * `h1` on a /work/* route, where the case study IS the page. `h2` inside
+     * the home-page zone, where the page's h1 is already the site owner's
+     * name — three more h1s there gave the page four, which is wrong both
+     * semantically and for anyone navigating by headings.
+     */
+    as: Heading = "h1",
+}: {
+    slug: string;
+    as?: "h1" | "h2";
+}) {
     const study = CASE_STUDIES.find((c) => c.slug === slug);
     if (!study) return null;
 
@@ -41,9 +55,9 @@ export default function CaseStudyHero({ slug }: { slug: string }) {
                         own font-size, so 68ch on a 68px heading is ~3000px —
                         the utility silently does nothing. The container's
                         944px is the real cap for display type. */}
-                    <h1 data-reveal-child className="heading-xl mt-5">
+                    <Heading data-reveal-child className="heading-xl mt-5">
                         {study.title}
-                    </h1>
+                    </Heading>
 
                     {study.context && (
                         <p data-reveal-child className="label mt-6">
