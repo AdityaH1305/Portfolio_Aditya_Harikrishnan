@@ -5,6 +5,7 @@ import dynamic from "next/dynamic";
 import SideNav from "@/components/SideNav";
 import Hero from "@/components/Hero";
 import CredibilityBand from "@/components/CredibilityBand";
+import Throughline from "@/components/Throughline";
 import FeaturedWork from "@/components/FeaturedWork";
 import ProjectsEnhanced from "@/components/ProjectsEnhanced";
 import ResearchMindset from "@/components/ResearchMindset";
@@ -50,6 +51,7 @@ export default function Home() {
                 which index the atlas growth stage and the nav rail. */}
             <Hero />
             <CredibilityBand />
+            <Throughline />
             <FeaturedWork />
             <ProjectsEnhanced />
             <ResearchMindset />

@@ -60,7 +60,7 @@ export default function Journey() {
             <div className="section-container">
                 {/* ── Header ── */}
                 <Reveal y={16}>
-                    <p className="label">06 / The Path</p>
+                    <p className="label">07 / The Path</p>
                     <h2 className="heading-lg mt-3">Journey</h2>
                 </Reveal>
 

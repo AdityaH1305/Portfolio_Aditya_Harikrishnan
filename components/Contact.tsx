@@ -20,7 +20,7 @@ export default function Contact() {
                 <div className="flex flex-col items-center text-center">
                     {/* ── Heading — personal, distinctive ── */}
                     <Reveal y={20} duration={0.6}>
-                        <p className="label">07 / Contact</p>
+                        <p className="label">08 / Contact</p>
                         <h2 className="heading-lg mt-3">
                             Interested in building
                             <br />

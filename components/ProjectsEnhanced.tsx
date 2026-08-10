@@ -236,7 +236,7 @@ export default function ProjectsEnhanced() {
             {/* Section heading */}
             <div className="section-container">
                 <Reveal y={16}>
-                    <p className="label">03 / Projects</p>
+                    <p className="label">04 / Projects</p>
                     <h2 className="heading-lg mt-3">More Work</h2>
                     <p className="body-lg mt-4 max-w-lg">
                         Data platforms, applied AI, and full-stack engineering.

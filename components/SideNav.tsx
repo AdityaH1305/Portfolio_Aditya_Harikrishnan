@@ -11,12 +11,13 @@ const RESUME_URL =
    growth stage per entry, in this order. */
 const sections = [
     { id: "intro", label: "Intro", number: "01" },
-    { id: "work", label: "Work", number: "02" },
-    { id: "projects", label: "Projects", number: "03" },
-    { id: "research", label: "Approach", number: "04" },
-    { id: "stack", label: "Stack", number: "05" },
-    { id: "journey", label: "Journey", number: "06" },
-    { id: "contact", label: "Contact", number: "07" },
+    { id: "throughline", label: "Through-Line", number: "02" },
+    { id: "work", label: "Work", number: "03" },
+    { id: "projects", label: "Projects", number: "04" },
+    { id: "research", label: "Approach", number: "05" },
+    { id: "stack", label: "Stack", number: "06" },
+    { id: "journey", label: "Journey", number: "07" },
+    { id: "contact", label: "Contact", number: "08" },
 ];
 
 /* ── Easter-egg config ── */

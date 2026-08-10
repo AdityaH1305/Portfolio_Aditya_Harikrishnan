@@ -9,6 +9,35 @@
    a raw hex, rgba, or one-off font-size.
    ══════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════
+   Animatable surface tokens
+
+   A plain custom property is not animatable — a class swap
+   changes it instantly. Registering it with @property gives
+   it a type, which is what lets the transition below
+   interpolate instead of snap.
+
+   Only the two surfaces that the immersive case-study zone
+   deepens are registered. `--accent-rgb` is deliberately NOT
+   animated: LivingArchitecture reads it once at runtime via
+   syncAccentFromCSS(), so animating it would drift the
+   canvas out of sync with the DOM.
+
+   Where @property is unsupported the zone simply snaps to
+   the deeper palette instead of easing into it.
+   ══════════════════════════════════════════════════════ */
+@property --surface-0 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #0b0f14;
+}
+
+@property --surface-1 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #10151c;
+}
+
 :root {
   /* ── Surfaces — one ramp, replacing five ad-hoc near-blacks ── */
   --surface-0: #0B0F14; /* canvas */
@@ -441,6 +470,124 @@ body {
 /* ══════════════════════════════════════════════════════
    Living Architecture — the one signature effect
    ══════════════════════════════════════════════════════ */
+
+/* ══════════════════════════════════════════════════════
+   Immersive case-study zone
+
+   `zone-immersive` is put on <html> by CaseStudyZone when the
+   sticky sequence is on screen and taken off on the way out,
+   in both scroll directions.
+
+   Everything here is a state change on a class — no per-frame
+   JavaScript, no repaint loop. The palette retints because
+   every colour on the site already derives from these two
+   tokens, and the overlays only ever transition opacity.
+   ══════════════════════════════════════════════════════ */
+
+/* Longhands, not the `transition` shorthand. A custom-property name inside
+   the shorthand (`transition: --surface-0 700ms ...`) is dropped by the CSS
+   pipeline, and it takes the surrounding rules with it — the entire zone
+   block silently vanished from the emitted stylesheet. */
+:root {
+  transition-property: --surface-0, --surface-1;
+  transition-duration: 700ms;
+  transition-timing-function: var(--ease);
+}
+
+html.zone-immersive {
+  --surface-0: #05080b;
+  --surface-1: #0a0e14;
+}
+
+/* Which of the two zone renderings is live.
+   One media query owns this decision so the CSS and the gsap.matchMedia
+   query in CaseStudyZone cannot drift apart — they must stay identical. */
+.zone-pinned {
+  display: none;
+}
+
+.zone-stacked {
+  display: block;
+}
+
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
+  .zone-pinned {
+    display: block;
+  }
+
+  .zone-stacked {
+    display: none;
+  }
+}
+
+/* Chrome recedes so nothing competes with the work. Pointer events stay on:
+   the nav must remain usable, just quiet. */
+html.zone-immersive .side-nav,
+html.zone-immersive .atmosphere-grid,
+html.zone-immersive .atmosphere-noise {
+  opacity: 0.25;
+}
+
+.side-nav,
+.atmosphere-grid {
+  transition: opacity 700ms var(--ease);
+}
+
+/* Cinematic framing. Both are fixed, pointer-events:none, and only their
+   opacity ever changes — so they are composited once and then left alone. */
+.zone-vignette,
+.zone-bar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  z-index: 45;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 700ms var(--ease);
+}
+
+.zone-vignette {
+  top: 0;
+  bottom: 0;
+  background: radial-gradient(
+    ellipse 78% 68% at 50% 50%,
+    transparent 45%,
+    rgba(0, 0, 0, 0.72) 100%
+  );
+}
+
+.zone-bar {
+  height: clamp(18px, 3.5vh, 40px);
+  background: var(--surface-0);
+}
+
+.zone-bar--top {
+  top: 0;
+  border-bottom: 1px solid var(--border-subtle);
+}
+
+.zone-bar--bottom {
+  bottom: 0;
+  border-top: 1px solid var(--border-subtle);
+}
+
+html.zone-immersive .zone-vignette {
+  opacity: 1;
+}
+
+html.zone-immersive .zone-bar {
+  opacity: 1;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root,
+  .side-nav,
+  .atmosphere-grid,
+  .zone-vignette,
+  .zone-bar {
+    transition: none;
+  }
+}
 
 /* ══════════════════════════════════════════════════════
    Custom cursor
