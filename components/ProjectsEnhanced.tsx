@@ -155,7 +155,10 @@ function ProjectCard({
 
             {/* Content */}
             <Reveal y={14} delay={0.16 + baseDelay} className="mt-7">
-                <span className="compact-tag">{project.tag}</span>
+                {/* label-muted, not a bespoke `compact-tag`: the design system
+                    declares exactly two micro-label classes, and this is the
+                    same semantic slot CaseStudyHero fills with label-muted. */}
+                <span className="label-muted block">{project.tag}</span>
                 <h3 className="heading-sm mt-2.5">{project.title}</h3>
                 <p className="body-sm mt-3">{project.description}</p>
 

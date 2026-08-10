@@ -80,7 +80,7 @@ function attachScrub(engine: LivingArchitectureEngine): () => void {
 
 export interface LivingArchitectureProps {
   /**
-   * Ambient mode: hold one stage instead of scrubbing through all seven.
+   * Ambient mode: hold one stage instead of scrubbing through all eight.
    *
    * The scrub anchors against SECTION_IDS, which only exist on the home
    * page — on a case-study route every anchor would resolve to 0 and the

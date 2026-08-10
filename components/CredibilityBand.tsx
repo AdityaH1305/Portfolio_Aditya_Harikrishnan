@@ -16,9 +16,9 @@ import { CASE_STUDIES } from "@/lib/caseStudies";
    so the band can never disagree with the case study it
    links to.
 
-   Deliberately not a section id: the seven-id contract that
+   Deliberately not a section id: the id contract that
    SECTION_IDS, SideNav and the palette index against stays
-   exactly seven. This belongs to the intro.
+   exactly eight. This belongs to the intro.
    ══════════════════════════════════════════════════════ */
 
 export default function CredibilityBand() {
