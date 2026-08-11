@@ -20,7 +20,7 @@ import { LivingArchitectureEngine } from "./engine";
 import { SECTION_IDS } from "./stages";
 import { getBreakpointMode, syncAccentFromCSS } from "./config";
 import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
-import { ZONE_EVENT, ZONE_FADE_MS } from "@/lib/zone";
+import { ZONE_EVENT, ZONE_FADE_MS, ATLAS_QUIET_EVENT } from "@/lib/zone";
 
 /**
  * Map scroll position to a continuous stage index.
@@ -146,7 +146,7 @@ export default function LivingArchitecture({
     resizeObserver.observe(canvas);
 
     /* ── Pause arbitration ──────────────────────────────
-       TWO independent reasons to stop drawing, and they must be tracked
+       THREE independent reasons to stop drawing, and they must be tracked
        separately. A single boolean means returning to the tab while the
        reader is inside the case-study zone resumes a canvas that is faded to
        0.08 and supposed to be asleep — the atlas would quietly start burning
@@ -154,13 +154,20 @@ export default function LivingArchitecture({
 
        The zone reason is the load-shedding half of the fade in globals.css:
        the canvas is the most expensive continuous thing on the page, and #work
-       is the longest region of it. */
+       is the longest region of it.
+
+       The third is any other section asking for quiet — currently the Stack
+       field, which runs a canvas of its own. That one is a SET keyed by
+       source, not a boolean: with a boolean, two sections whose viewports
+       briefly overlap would have the one leaving clear the flag for the one
+       arriving, and the atlas would wake up underneath it. */
     let hiddenTab = document.hidden;
     let inZone = document.documentElement.classList.contains("zone-immersive");
+    const quiet = new Set<string>();
 
     const arbitrate = () => {
       if (reducedMotion) return;
-      if (hiddenTab || inZone) engine.pause();
+      if (hiddenTab || inZone || quiet.size > 0) engine.pause();
       else engine.resume();
     };
 
@@ -191,6 +198,19 @@ export default function LivingArchitecture({
       }, ZONE_FADE_MS);
     };
     window.addEventListener(ZONE_EVENT, handleZone);
+
+    /* No fade deferral here: the sections that ask for this own a bounded
+       panel rather than retinting the page, so there is no chrome transition
+       to land behind. */
+    const handleQuiet = (e: Event) => {
+      const { source, quiet: wants } = (
+        e as CustomEvent<{ source: string; quiet: boolean }>
+      ).detail;
+      if (wants) quiet.add(source);
+      else quiet.delete(source);
+      arbitrate();
+    };
+    window.addEventListener(ATLAS_QUIET_EVENT, handleQuiet);
 
     /* ── Driver selection ──────────────────────────────
        gsap.matchMedia handles the runtime preference change and reverts
@@ -279,6 +299,7 @@ export default function LivingArchitecture({
       window.clearTimeout(zoneTimer);
       document.removeEventListener("visibilitychange", handleVisibility);
       window.removeEventListener(ZONE_EVENT, handleZone);
+      window.removeEventListener(ATLAS_QUIET_EVENT, handleQuiet);
       engineRef.current = null;
     };
   }, [ambient, stage]);

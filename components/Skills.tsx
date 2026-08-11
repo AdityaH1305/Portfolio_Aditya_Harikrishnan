@@ -1,6 +1,15 @@
 "use client";
 
 import Reveal from "@/components/Reveal";
+import SkillOrbit from "@/components/SkillOrbit/SkillOrbit";
+import { CATEGORIES, SKILLS } from "@/components/SkillOrbit/data";
+
+/* Imported directly, NOT through `dynamic({ ssr: false })` like the atlas and
+   the game modal. Those render nothing until the client catches up, which is
+   fine for a background canvas — but this one WRAPS the skills list, so
+   deferring it would take all 27 entries out of the server-rendered HTML
+   along with it. The canvas work all happens inside effects, so the component
+   server-renders perfectly well; only the drawing is client-side. */
 
 /* ══════════════════════════════════════════════════════
    Stack — evidence-linked
@@ -18,80 +27,18 @@ import Reveal from "@/components/Reveal";
    Anything used but not yet shipped in a case study is left
    out — an unbacked entry undoes the point of the section.
 
+   ── The list is no longer the whole section ──
+   It reads as a wall of 27 name/where pairs, and nobody got
+   far enough down it to notice the evidence was there. The
+   canvas in components/SkillOrbit/ makes that evidence the
+   payoff of an interaction instead — but this list stays,
+   server-rendered, as the accessible and keyboard interface
+   and as the List view. The data moved to
+   SkillOrbit/data.ts so the two cannot disagree.
+
    id="stack" is required: SideNav and the atlas both index
    against it.
    ══════════════════════════════════════════════════════ */
-
-interface Entry {
-    name: string;
-    where: string;
-}
-
-const groups: { category: string; note: string; entries: Entry[] }[] = [
-    {
-        category: "Machine Learning",
-        note: "Two vision systems and a recommender, each measured against a baseline.",
-        entries: [
-            { name: "PyTorch", where: "Gait Fusion" },
-            { name: "Transfer Learning", where: "Modified Double U-Net" },
-            { name: "Triplet Loss", where: "Gait Fusion" },
-            { name: "Xception · VGG-19", where: "Modified Double U-Net" },
-            { name: "Collaborative Filtering", where: "Ludex" },
-            { name: "Content-Based Filtering", where: "Ludex" },
-            { name: "Implicit ALS · TF-IDF", where: "Ludex" },
-            { name: "Scikit-learn", where: "Ludex" },
-        ],
-    },
-    {
-        category: "Computer Vision",
-        note: "Silhouette preprocessing, lesion segmentation, damage detection.",
-        entries: [
-            { name: "OpenCV", where: "Gait Fusion" },
-            { name: "NumPy", where: "Gait Fusion" },
-            { name: "Semantic Segmentation", where: "Modified Double U-Net" },
-            { name: "YOLO Detection", where: "SynthRescue" },
-        ],
-    },
-    {
-        category: "Systems & Backend",
-        note: "The parts that had to survive real usage.",
-        entries: [
-            { name: "Python", where: "Every project" },
-            { name: "Flask · Node.js", where: "Ludex · PlayNexus" },
-            { name: "Real-time APIs", where: "PlayNexus" },
-            { name: "Java · C · C++", where: "Coursework" },
-        ],
-    },
-    {
-        category: "Frontend",
-        note: "Interfaces for the systems above, including this site.",
-        entries: [
-            { name: "TypeScript", where: "This portfolio" },
-            { name: "React · Next.js", where: "PlayNexus · SynthRescue" },
-            { name: "GSAP · Lenis", where: "This portfolio" },
-            { name: "Tailwind CSS", where: "This portfolio" },
-        ],
-    },
-    {
-        category: "Data",
-        note: "Storage and the datasets the models were trained on.",
-        entries: [
-            { name: "MySQL · MongoDB", where: "PlayNexus · Ludex" },
-            { name: "CASIA-B", where: "Gait Fusion" },
-            { name: "BUSI", where: "Modified Double U-Net" },
-        ],
-    },
-    {
-        category: "Fundamentals",
-        note: "Coursework at IIIT Pune.",
-        entries: [
-            { name: "Data Structures · Algorithms", where: "" },
-            { name: "Operating Systems", where: "" },
-            { name: "DBMS · Computer Networks", where: "" },
-            { name: "Cryptography", where: "" },
-        ],
-    },
-];
 
 export default function Skills() {
     return (
@@ -106,38 +53,44 @@ export default function Skills() {
                     </p>
                 </Reveal>
 
-                <Reveal
-                    stagger={0.06}
-                    className="mt-14 grid sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-12"
-                >
-                    {groups.map((group) => (
-                        <div key={group.category} data-reveal-child>
-                            <h3 className="label">{group.category}</h3>
-                            <p className="body-sm text-tertiary mt-2 mb-5">
-                                {group.note}
-                            </p>
+                {/* Vertical rhythm on an inner element — .section-container
+                    sets `margin: 0 auto` and is declared after Tailwind's
+                    utilities, so an mt-* on it computes to 0px. */}
+                <div className="mt-14">
+                    <SkillOrbit>
+                        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-12 gap-y-12">
+                            {CATEGORIES.map((group) => (
+                                <div key={group.id}>
+                                    <h3 className="label">{group.label}</h3>
+                                    <p className="body-sm text-tertiary mt-2 mb-5">
+                                        {group.note}
+                                    </p>
 
-                            <dl className="border-t border-edge">
-                                {group.entries.map((entry) => (
-                                    <div
-                                        key={entry.name}
-                                        className="flex items-baseline justify-between gap-4
-                                                   py-2.5 border-b border-edge"
-                                    >
-                                        <dt className="text-sm text-secondary">
-                                            {entry.name}
-                                        </dt>
-                                        {entry.where && (
-                                            <dd className="mono text-[0.6875rem] text-quaternary text-right shrink-0">
-                                                {entry.where}
-                                            </dd>
-                                        )}
-                                    </div>
-                                ))}
-                            </dl>
+                                    <dl className="border-t border-edge">
+                                        {SKILLS.filter(
+                                            (s) => s.category === group.id,
+                                        ).map((entry) => (
+                                            <div
+                                                key={entry.name}
+                                                className="flex items-baseline justify-between gap-4
+                                                           py-2.5 border-b border-edge"
+                                            >
+                                                <dt className="text-sm text-secondary">
+                                                    {entry.name}
+                                                </dt>
+                                                {entry.where && (
+                                                    <dd className="mono text-[0.6875rem] text-quaternary text-right shrink-0">
+                                                        {entry.where}
+                                                    </dd>
+                                                )}
+                                            </div>
+                                        ))}
+                                    </dl>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </Reveal>
+                    </SkillOrbit>
+                </div>
             </div>
         </section>
     );

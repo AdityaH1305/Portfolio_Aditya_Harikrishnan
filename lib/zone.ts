@@ -22,6 +22,21 @@
 export const ZONE_EVENT = "zone:immersive";
 
 /**
+ * "Stand down, something else owns the screen."
+ *
+ * `detail: { source: string; quiet: boolean }`. Separate from ZONE_EVENT
+ * because that one also drives the case-study room's CSS — a section that
+ * wants the atlas quiet without repainting the whole page in indigo needs
+ * its own signal.
+ *
+ * The `source` is load-bearing. Listeners must track reasons as a SET and
+ * resume only when the last one clears; a bare boolean means whichever
+ * section reports last wins, and the atlas comes back to life underneath a
+ * section that is still asking for quiet.
+ */
+export const ATLAS_QUIET_EVENT = "atlas:quiet";
+
+/**
  * Length of the chrome fade in globals.css.
  *
  * Consumers that stop work entirely — the atlas pauses its draw loop — defer
