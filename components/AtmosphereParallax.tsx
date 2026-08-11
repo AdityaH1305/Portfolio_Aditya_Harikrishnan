@@ -2,6 +2,7 @@
 
 import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
+import { ZONE_EVENT } from "@/lib/zone";
 
 /* ══════════════════════════════════════════════════════
    AtmosphereParallax
@@ -66,7 +67,26 @@ export default function AtmosphereParallax() {
                    position here. */
                 .to(".atmosphere-grid", { y: TRAVEL.grid, ease: "none" }, 0);
 
+            /* Stand down inside the case-study zone. Four promoted layers move
+               every frame here, and in there the grid is at opacity 0.25
+               behind a vignette — almost none of it is visible, and it is the
+               longest region of the page.
+
+               disable(false) leaves the current transforms in place; passing
+               true would revert them, so the layers would jump back to their
+               untranslated positions the moment the zone was entered. */
+            const st = tl.scrollTrigger;
+
+            const onZone = (e: Event) => {
+                const { active } = (e as CustomEvent<{ active: boolean }>)
+                    .detail;
+                if (active) st?.disable(false);
+                else st?.enable();
+            };
+            window.addEventListener(ZONE_EVENT, onZone);
+
             return () => {
+                window.removeEventListener(ZONE_EVENT, onZone);
                 tl.scrollTrigger?.kill();
                 tl.kill();
                 ScrollTrigger.refresh();

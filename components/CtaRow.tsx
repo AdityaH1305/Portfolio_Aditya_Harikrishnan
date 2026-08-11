@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import type { Cta } from "@/lib/caseStudies";
 
 /* ══════════════════════════════════════════════════════
    CtaRow — one button layout for every case study
@@ -13,16 +14,14 @@ import Link from "next/link";
    read as designed rather than as leftovers. The links
    themselves are unchanged — the primary keeps its arrow,
    the rest sit beside it as secondaries.
+
+   The `Cta` type and the link data both live in
+   lib/caseStudies.ts now: the choreographed stage and the
+   /work route render the same row, so the data has to sit
+   where both can reach it without one importing the other.
    ══════════════════════════════════════════════════════ */
 
-export interface Cta {
-    label: string;
-    href: string;
-    /** Filled treatment. Exactly one per row. */
-    primary?: boolean;
-    /** Opens in a new tab. PDFs and GitHub, not internal routes. */
-    external?: boolean;
-}
+export type { Cta };
 
 export default function CtaRow({
     ctas,

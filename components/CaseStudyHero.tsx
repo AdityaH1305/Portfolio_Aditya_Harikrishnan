@@ -25,21 +25,11 @@ import { CASE_STUDIES } from "@/lib/caseStudies";
    supporting detail, which is the order that matters.
    ══════════════════════════════════════════════════════ */
 
-export default function CaseStudyHero({
-    slug,
-    /**
-     * Heading level for the title.
-     *
-     * `h1` on a /work/* route, where the case study IS the page. `h2` inside
-     * the home-page zone, where the page's h1 is already the site owner's
-     * name — three more h1s there gave the page four, which is wrong both
-     * semantically and for anyone navigating by headings.
-     */
-    as: Heading = "h1",
-}: {
-    slug: string;
-    as?: "h1" | "h2";
-}) {
+/* The heading is always an h1: this renders only on /work/* routes now, where
+   the case study IS the page. The home page composes its own head inside
+   CaseStudyStage, under FeaturedWork's h2 — which is why the `as` prop that
+   used to switch this to an h2 is gone. */
+export default function CaseStudyHero({ slug }: { slug: string }) {
     const study = CASE_STUDIES.find((c) => c.slug === slug);
     if (!study) return null;
 
@@ -55,9 +45,9 @@ export default function CaseStudyHero({
                         own font-size, so 68ch on a 68px heading is ~3000px —
                         the utility silently does nothing. The container's
                         944px is the real cap for display type. */}
-                    <Heading data-reveal-child className="heading-xl mt-5">
+                    <h1 data-reveal-child className="heading-xl mt-5">
                         {study.title}
-                    </Heading>
+                    </h1>
 
                     {study.context && (
                         <p data-reveal-child className="label mt-6">

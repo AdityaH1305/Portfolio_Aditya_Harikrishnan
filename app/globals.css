@@ -499,32 +499,195 @@ html.zone-immersive {
   --surface-1: #0a0e14;
 }
 
-/* Chapter title-card pinning.
+/* ── The choreographed stage ──────────────────────────
+   Three case studies share ONE sticky 100vh box. Each act is absolutely
+   stacked in it, so "previous fades out, next fades in" is a genuine swap in
+   the same space rather than a seam between two sections.
 
-   Inert by default: on a phone, and under reduced motion, the card is just a
-   block that scrolls past like any other header. The media query below is
-   the ONLY place the breakpoint lives — CaseStudyZone's gsap.matchMedia uses
-   the identical condition, and the two must stay in step or the JS will
-   animate a card that was never pinned. */
-.zone-pin {
-  padding-block: 4rem;
+   THE STACKED LAYOUT IS THE DEFAULT, and the choreography is additive inside
+   the media query. That ordering is load-bearing: the server-rendered HTML
+   has to be the readable, everything-visible version, or a phone, a reduced-
+   motion reader and a scripting:none client all get an empty box.
+
+   The media query below is the ONLY place the breakpoint lives —
+   CaseStudyZone's gsap.matchMedia uses the identical condition, and the two
+   must stay in step or the JS animates elements that were never staged.
+   ─────────────────────────────────────────────────── */
+
+/* The gap goes on the stage, not the scroller: the scroller has exactly one
+   child (the stage), so a gap there would have nothing to distribute. */
+.zone-stage {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-section);
 }
 
-@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) {
-  .zone-pin {
-    /* 150vh gives 50vh of travel against a 100vh stage. Zero travel is how
-       sticky silently does nothing, which this repo has shipped before. */
-    height: 150vh;
-    padding-block: 0;
+.zone-act-media {
+  position: relative;
+  margin-block: 2.5rem;
+}
+
+/* Stacked: each slide is its own figure in flow, so a phone reader gets all
+   three rather than the first one with two hidden behind it. Only the
+   desktop branch collapses them into one crossfading panel. */
+.zone-act-slide {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.zone-act-slide + .zone-act-slide {
+  margin-top: 1.75rem;
+}
+
+/* The positioned, definite-height box `fill` images resolve against. */
+.zone-act-slide-frame {
+  position: relative;
+  aspect-ratio: 16 / 10;
+}
+
+/* On every beat, not just adjacent ones: the first now follows the head
+   directly and the rest follow the figures. */
+.zone-act-beat {
+  margin-top: 2rem;
+}
+
+.zone-act-ctas {
+  margin-top: 2.5rem;
+}
+
+/* `scripting: enabled` is part of the condition, not decoration. Without JS
+   the stage would still go sticky and all three acts would sit absolutely
+   stacked on top of each other, unreadable and permanent — the choreography
+   is the only thing that ever separates them. Browsers too old to understand
+   the feature simply fail the query and get the stacked layout, which is the
+   safe direction to fail in. CaseStudyZone's gsap.matchMedia uses this exact
+   string. */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) and
+  (scripting: enabled) {
+  /* 300vh of TRAVEL per act, plus the 100vh the stage itself occupies.
+
+     Sticky travel is (scroller height − stage height), so without the extra
+     100vh each act would get 300 − 100/n vh and the choreography would run
+     short of its own score. Zero travel is how sticky silently does nothing,
+     which this repo has shipped before. */
+  .zone-scroll {
+    height: calc(var(--zone-acts) * 300vh + 100vh);
   }
 
-  .zone-pin-stage {
+  .zone-stage {
     position: sticky;
     top: 0;
     height: 100vh;
-    display: flex;
-    align-items: center;
+    overflow: hidden;
+    display: block;
+    gap: 0;
   }
+
+  .zone-act {
+    position: absolute;
+    inset: 0;
+  }
+
+  /* The frame carries .section-container's rhythm; the slots box inside it is
+     the bare content rectangle. Absolute children resolve against their
+     nearest positioned ancestor's PADDING box, so positioning them against
+     the frame would bake in its asymmetric 8rem/5rem padding and pull the
+     whole composition off-centre. */
+  .zone-act-frame {
+    height: 100%;
+  }
+
+  .zone-act-slots {
+    position: relative;
+    height: 100%;
+  }
+
+  /* The head spans the full measure across the TOP band and the media never
+     enters that band. Sharing a band was the first thing tried and it does not
+     survive a 720px-tall laptop: a stacked title-plus-metric block is ~350px,
+     the panel is another ~320px, and the two collided in every slot no matter
+     how the offsets were tuned. Title left, metric right, everything else
+     below. */
+  .zone-act-head {
+    position: absolute;
+    top: 8%;
+    left: 0;
+    right: 0;
+  }
+
+  /* A FIXED panel box, with the figure contained inside it.
+
+     These images run from 6.8:1 (the architecture strip) to 1.12:1 (the ROC
+     curve). Sizing the panel to each one would make the composition lurch
+     every time a slide changed, and the tall one would collide with both the
+     head above and the CTAs below. One box, object-fit: contain, and the
+     choreography is stable for every study. */
+  .zone-act-media {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: min(40vw, 560px);
+    height: min(44vh, 360px);
+    margin-block: 0;
+  }
+
+  /* Collapsed into the one panel box and crossfaded. The frame gives up its
+     aspect ratio and takes whatever height is left after the caption. */
+  .zone-act-slide {
+    position: absolute;
+    inset: 0;
+  }
+
+  .zone-act-slide + .zone-act-slide {
+    margin-top: 0;
+  }
+
+  .zone-act-slide-frame {
+    aspect-ratio: auto;
+    flex: 1;
+    min-height: 0;
+  }
+
+  .zone-act-beat {
+    position: absolute;
+    top: 42%;
+    width: min(30vw, 380px);
+    margin-top: 0;
+  }
+
+  .zone-act-beat[data-slot="left"] {
+    left: 0;
+  }
+
+  .zone-act-beat[data-slot="right"] {
+    right: 0;
+  }
+
+  .zone-act-ctas {
+    position: absolute;
+    bottom: 8%;
+    left: 0;
+    margin-top: 0;
+  }
+}
+
+/* Promote only while the zone is on screen. Held permanently these would be
+   a dozen extra composited layers for the whole session; the atmosphere
+   layers already carry four. */
+html.zone-immersive .zone-act,
+html.zone-immersive .zone-act-head,
+html.zone-immersive .zone-act-media,
+html.zone-immersive .zone-act-beat,
+html.zone-immersive .zone-act-ctas {
+  will-change: transform, opacity;
+}
+
+/* The media panel's poster layer — crossfaded over a paused video while the
+   panel is travelling, so a decode never overlaps a scrubbed transform on the
+   same layer. */
+.zone-act-poster {
+  transition: opacity 300ms var(--ease);
 }
 
 /* Chrome recedes so nothing competes with the work. Pointer events stay on:
@@ -542,8 +705,23 @@ html.zone-immersive .atmosphere-noise {
   opacity: 0.012;
 }
 
+/* The atlas recedes furthest, and its draw loop is PAUSED behind this fade
+   (see LivingArchitecture.tsx). It was the one piece of chrome the original
+   zone never dimmed, which left the most expensive continuous thing on the
+   page — a full-viewport canvas redrawing every frame — running at full
+   strength through the longest region of it, competing with the figures it
+   was supposed to be sitting behind.
+
+   0.08 rather than 0: a frozen canvas at zero is just a dead element, and the
+   faint remaining structure is what keeps the zone feeling like part of the
+   same site. */
+html.zone-immersive .living-architecture-canvas {
+  opacity: 0.08;
+}
+
 .side-nav,
-.atmosphere-grid {
+.atmosphere-grid,
+.living-architecture-canvas {
   transition: opacity 700ms var(--ease);
 }
 
@@ -612,6 +790,7 @@ html.zone-immersive .zone-bar {
   :root,
   .side-nav,
   .atmosphere-grid,
+  .living-architecture-canvas,
   .zone-vignette,
   .zone-bar {
     transition: none;

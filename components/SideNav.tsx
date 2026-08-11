@@ -38,10 +38,17 @@ function MagneticResumeLink() {
             href={RESUME_URL}
             target="_blank"
             rel="noopener noreferrer"
+            /* blur-md, not blur-xl, and an 85% fill rather than 60%: this is
+               fixed over a scrolling page, so its backdrop is re-blurred every
+               frame the page moves, and blur cost scales with radius. The
+               mobile island below was fixed for exactly this and this one was
+               missed — it is desktop, which is also where the case-study
+               choreography runs. The heavier fill holds the same legibility
+               with less blur behind it. */
             className="fixed top-6 right-6 z-50 hidden md:inline-block
                        px-5 py-2 label-muted
                        border border-edge-default rounded-full
-                       bg-surface-1/60 backdrop-blur-xl
+                       bg-surface-1/85 backdrop-blur-md
                        hover:border-accent hover:text-accent
                        transition-colors duration-300"
         >

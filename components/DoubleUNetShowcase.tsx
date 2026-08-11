@@ -22,8 +22,9 @@ import { CASE_STUDIES } from "@/lib/caseStudies";
    the paper is trivially findable by title.
    ══════════════════════════════════════════════════════ */
 
+/* Still here because the deck links to the source paper inline. The repo and
+   paper CTAs moved to the registry, where the home-page stage reads them too. */
 const PAPER_DOI = "https://doi.org/10.1109/TRPMS.2022.3221471";
-const REPO = "https://github.com/AdityaH1305/Modified_DoubleUNet_Implementation";
 
 /** Binary segmentation, all three trained and evaluated on the same data. */
 const baseline = [
@@ -110,11 +111,7 @@ const techStack = [
 
 const STUDY = CASE_STUDIES[2];
 
-export default function DoubleUNetShowcase({
-    brief = false,
-}: {
-    brief?: boolean;
-}) {
+export default function DoubleUNetShowcase() {
     return (
         <article>
             {/* Eyebrow and title live in CaseStudyHero — this is a route
@@ -229,12 +226,8 @@ export default function DoubleUNetShowcase({
             </div>
 
             {/* ═══════════ TERNARY EXTENSION + LIMITS ═══════════ */}
-            {/* The ternary extension and its limitations are depth —
-                /work route only. The home zone stops at the headline
-                result and its comparison table. */}
-            {!brief && (
-                <div className="section-container">
-                    <div className="mt-20 md:mt-28 grid lg:grid-cols-2 gap-14 lg:gap-16 items-start">
+            <div className="section-container">
+                <div className="mt-20 md:mt-28 grid lg:grid-cols-2 gap-14 lg:gap-16 items-start">
                         <Reveal y={20}>
                             <h3 className="heading-sm">
                                 Extending it to three classes
@@ -286,10 +279,9 @@ export default function DoubleUNetShowcase({
                                 functions and targeted oversampling, so the metric
                                 reflects lesion quality rather than background area.
                             </p>
-                        </Reveal>
-                    </div>
+                    </Reveal>
                 </div>
-            )}
+            </div>
 
             {/* ═══════════ STACK + CTAs ═══════════ */}
             <div className="section-container">
@@ -304,16 +296,10 @@ export default function DoubleUNetShowcase({
                         {techStack.join("  ·  ")}
                     </p>
 
-                    {/* The report CTA is deliberately absent for now. GitHub
-                        takes primary weight so the row still has an anchor. */}
+                    {/* Links come from the registry — the stage on the home
+                        page renders this same row from the same data. */}
                     <div data-reveal-child>
-                        <CtaRow
-                            ctas={[
-                                { label: "View on GitHub", href: REPO, primary: true, external: true },
-                                { label: "Source Paper", href: PAPER_DOI, external: true },
-                            ]}
-                            readMoreHref={brief ? "/work/modified-double-unet" : undefined}
-                        />
+                        <CtaRow ctas={STUDY.ctas} />
                     </div>
                 </Reveal>
             </div>

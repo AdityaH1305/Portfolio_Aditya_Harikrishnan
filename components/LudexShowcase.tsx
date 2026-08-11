@@ -86,8 +86,8 @@ const stats = [
 
 const STUDY = CASE_STUDIES[1];
 
-/* Sourced from the registry rather than written here, so the rail and the
-   home-page brief cannot drift. The rail keeps three blocks because the
+/* Sourced from the registry rather than written here, so this rail and the
+   home-page stage cannot drift. The rail keeps three blocks because the
    sticky video panel opposite needs its height for travel. */
 const narrative = [
     { title: "What it is", body: STUDY.intro },
@@ -97,7 +97,7 @@ const narrative = [
 
 /* ══════════════════════════════════════════════════════ */
 
-export default function LudexShowcase({ brief = false }: { brief?: boolean }) {
+export default function LudexShowcase() {
     const [activeVideo, setActiveVideo] = useState(0);
     const [inView, setInView] = useState(false);
     /* Index of the video open in the expanded player; null = closed. */
@@ -398,16 +398,10 @@ export default function LudexShowcase({ brief = false }: { brief?: boolean }) {
                     </p>
 
                     <div data-reveal-child>
-                        {/* The report is the strongest artifact here, so it
-                            takes primary weight. */}
-                        <CtaRow
-                            ctas={[
-                                { label: "Technical Report", href: "/ludex-technical-report.pdf", primary: true, external: true },
-                                { label: "Visit Site", href: "https://ludexsite.onrender.com/", external: true },
-                                { label: "View on GitHub", href: "https://github.com/AdityaH1305/Ludex", external: true },
-                            ]}
-                            readMoreHref={brief ? "/work/ludex" : undefined}
-                        />
+                        {/* Links come from the registry — the stage on the
+                            home page renders this same row from the same
+                            data. */}
+                        <CtaRow ctas={STUDY.ctas} />
                     </div>
                 </Reveal>
             </div>

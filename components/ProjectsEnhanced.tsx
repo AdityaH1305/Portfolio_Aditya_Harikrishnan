@@ -141,7 +141,10 @@ function ProjectCard({
                                 fill
                                 className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/card-img:scale-[1.02]"
                                 sizes="(max-width: 768px) 100vw, 50vw"
-                                priority={staggerIndex === 0}
+                                /* `priority` is deprecated as of Next 16 in
+                                   favour of `preload`, which says what it
+                                   actually does. */
+                                preload={staggerIndex === 0}
                             />
                             {project.images.length > 1 && (
                                 <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-surface-0/85 border border-edge-default text-[10px] mono text-tertiary">

@@ -20,6 +20,7 @@ import { LivingArchitectureEngine } from "./engine";
 import { SECTION_IDS } from "./stages";
 import { getBreakpointMode, syncAccentFromCSS } from "./config";
 import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
+import { ZONE_EVENT, ZONE_FADE_MS } from "@/lib/zone";
 
 /**
  * Map scroll position to a continuous stage index.
@@ -144,15 +145,52 @@ export default function LivingArchitecture({
     });
     resizeObserver.observe(canvas);
 
-    // ── Document visibility (pause when tab hidden) ────
+    /* ── Pause arbitration ──────────────────────────────
+       TWO independent reasons to stop drawing, and they must be tracked
+       separately. A single boolean means returning to the tab while the
+       reader is inside the case-study zone resumes a canvas that is faded to
+       0.08 and supposed to be asleep — the atlas would quietly start burning
+       frames again, in the one region of the page that could least afford it.
+
+       The zone reason is the load-shedding half of the fade in globals.css:
+       the canvas is the most expensive continuous thing on the page, and #work
+       is the longest region of it. */
+    let hiddenTab = document.hidden;
+    let inZone = document.documentElement.classList.contains("zone-immersive");
+
+    const arbitrate = () => {
+      if (reducedMotion) return;
+      if (hiddenTab || inZone) engine.pause();
+      else engine.resume();
+    };
+
     const handleVisibility = () => {
-      if (document.hidden) {
-        engine.pause();
-      } else if (!reducedMotion) {
-        engine.resume();
-      }
+      hiddenTab = document.hidden;
+      arbitrate();
     };
     document.addEventListener("visibilitychange", handleVisibility);
+
+    /* Pausing is deferred by the length of the CSS fade so the freeze lands
+       once the canvas is already down at 0.08 — stopping mid-fade leaves a
+       visibly half-lit still frame. Resuming is immediate: the atlas has to be
+       moving again before it is visible on the way out. */
+    let zoneTimer: number | undefined;
+
+    const handleZone = (e: Event) => {
+      const active = (e as CustomEvent<{ active: boolean }>).detail.active;
+      window.clearTimeout(zoneTimer);
+
+      if (!active) {
+        inZone = false;
+        arbitrate();
+        return;
+      }
+      zoneTimer = window.setTimeout(() => {
+        inZone = true;
+        arbitrate();
+      }, ZONE_FADE_MS);
+    };
+    window.addEventListener(ZONE_EVENT, handleZone);
 
     /* ── Driver selection ──────────────────────────────
        gsap.matchMedia handles the runtime preference change and reverts
@@ -164,6 +202,9 @@ export default function LivingArchitecture({
       reducedMotion = false;
       engine.setReducedMotion(false);
       engine.start();
+      /* Deep-linking to /#work mounts this inside the zone, so honour the
+         current state rather than assuming we started outside it. */
+      arbitrate();
 
       /* Driven by gsap.ticker, not its own requestAnimationFrame.
          Three rAF loops used to run during a scroll — the ticker (which
@@ -235,7 +276,9 @@ export default function LivingArchitecture({
       mm.revert();
       engine.stop();
       resizeObserver.disconnect();
+      window.clearTimeout(zoneTimer);
       document.removeEventListener("visibilitychange", handleVisibility);
+      window.removeEventListener(ZONE_EVENT, handleZone);
       engineRef.current = null;
     };
   }, [ambient, stage]);

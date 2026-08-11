@@ -28,10 +28,6 @@ import { CASE_STUDIES } from "@/lib/caseStudies";
    matches neither reference paper — deliberately not used.
    ══════════════════════════════════════════════════════ */
 
-const REPO = "https://github.com/AdityaH1305/Gait-Multi-Modal-Fusion";
-const GAITSET_PAPER = "/gaitset-cross-view-gait-recognition.pdf";
-const FUSION_PAPER = "/gaitset-multimodal-fusion.pdf";
-
 /** Rank-1 identification against a closed gallery. */
 const identification = [
     { label: "Normal walking", code: "NM", value: "98.00%", lead: true },
@@ -122,7 +118,7 @@ const results = [
     })),
 ];
 
-export default function GaitShowcase({ brief = false }: { brief?: boolean }) {
+export default function GaitShowcase() {
     return (
         <article>
             {/* Eyebrow, title and affiliation live in CaseStudyHero — this
@@ -215,11 +211,6 @@ export default function GaitShowcase({ brief = false }: { brief?: boolean }) {
                 </div>
             </div>
 
-            {/* Gallery 2 and the interactive pipeline are depth, not the
-                headline — they render on the /work route only. The home zone
-                stops at intro / how / results / figures. */}
-            {!brief && (
-            <>
             {/* ═══════════ GALLERY 2 — PREPROCESSED INPUT ═══════════
                 Deliberately not tabbed. These are 64×64 model inputs, not
                 figures — showing all three at once, small and crisp, makes
@@ -291,8 +282,6 @@ export default function GaitShowcase({ brief = false }: { brief?: boolean }) {
             <div className="mt-24 md:mt-32">
                 <GaitPipeline />
             </div>
-            </>
-            )}
 
             {/* ═══════════ DATASET NOTE + STACK + CTAs ═══════════ */}
             <div className="section-container">
@@ -300,19 +289,16 @@ export default function GaitShowcase({ brief = false }: { brief?: boolean }) {
                     stagger={0.08}
                     className="mt-20 md:mt-24 flex flex-col items-start gap-8"
                 >
-                    {!brief && (
-                        <p
-                            data-reveal-child
-                            className="body-sm max-w-2xl text-tertiary"
-                        >
-                            Gait recognition is a young field with few open
-                            datasets. CASIA-B remains one of the only public
-                            benchmarks offering controlled cross-view and
-                            covariate coverage, which bounds how far occlusion
-                            performance can be pushed without collecting new
-                            data.
-                        </p>
-                    )}
+                    <p
+                        data-reveal-child
+                        className="body-sm max-w-2xl text-tertiary"
+                    >
+                        Gait recognition is a young field with few open
+                        datasets. CASIA-B remains one of the only public
+                        benchmarks offering controlled cross-view and covariate
+                        coverage, which bounds how far occlusion performance
+                        can be pushed without collecting new data.
+                    </p>
 
                     <p
                         data-reveal-child
@@ -322,14 +308,10 @@ export default function GaitShowcase({ brief = false }: { brief?: boolean }) {
                     </p>
 
                     <div data-reveal-child>
-                        <CtaRow
-                            ctas={[
-                                { label: "View on GitHub", href: REPO, primary: true, external: true },
-                                { label: "GaitSet Paper", href: GAITSET_PAPER, external: true },
-                                { label: "Fusion Paper", href: FUSION_PAPER, external: true },
-                            ]}
-                            readMoreHref={brief ? "/work/gait-multi-modal-fusion" : undefined}
-                        />
+                        {/* Links come from the registry — the stage on the
+                            home page renders this same row from the same
+                            data. */}
+                        <CtaRow ctas={STUDY.ctas} />
                     </div>
 
                     <p
