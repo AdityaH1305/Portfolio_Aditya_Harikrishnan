@@ -67,23 +67,31 @@ const BEAT_SLOTS = ["left", "right", "left"] as const;
    between the rest windows.
 
    THE GAPS ARE THE POINT, and the first version got their size badly wrong.
-   An act is 300vh of scroll — ~2160px on a 720px-tall viewport — so a hop
-   window of 0.05 gave the entire relocation about 108px, which is one notch
-   of a mouse wheel. The panel appeared to teleport between two resting
-   positions; there was no motion to see. At 0.15 a hop takes ~324px, roughly
-   three notches, and reads as travel.
+   A hop window of 0.05 gave the entire relocation about 108px of scroll — one
+   notch of a mouse wheel. The panel appeared to teleport between two resting
+   positions; there was no motion to see.
 
-   Rest windows shrank to pay for it (0.25 → ~0.18), because the fix is the
-   ratio, not the act length: holding a beat for 540px was never the problem.
+   Two passes since. The windows widened to 0.15, which fixed the teleport but
+   still read as hurried, and then the act itself went 300vh → 400vh (in
+   globals.css) with the score rebalanced toward the gaps: hops 0.15 → 0.18,
+   rests trimmed to pay for part of it. A relocation is now ~518px, about five
+   notches.
+
+   Why the split. The two levers are not equivalent — widening a window slows
+   the movement for free, while lengthening the act costs the reader scroll
+   everywhere. So the ratio was pushed as far as it sensibly goes first (hops
+   are 36% of an act against 49% of actual reading time) and only the
+   remainder came from length. Pushing the ratio further would start eating
+   the pauses the copy needs to be read in.
 
    `REST` are the windows where the media panel is stationary. Ludex's video
    plays only inside these — see CaseStudyZone. */
 export const ACT = {
-    entry: [0, 0.1],
+    entry: [0, 0.09],
     beats: [
-        [0.1, 0.3],
-        [0.45, 0.62],
-        [0.77, 0.94],
+        [0.09, 0.27],
+        [0.45, 0.61],
+        [0.79, 0.94],
     ],
     exit: [0.94, 1],
 } as const;
@@ -100,6 +108,18 @@ export const REST = ACT.beats;
  * at half opacity on top of each other is mud, not a crossfade.
  */
 const ACT_OVERLAP = 0.05;
+
+/**
+ * Span of the two slow drifts that run the length of an act — the head's and
+ * the one inside the media panel.
+ *
+ * Derived from the score rather than written as a literal. Both were
+ * hardcoded (`0.82`, `0.84`, starting at `0.1`) and the score has since moved
+ * twice; a drift that runs past `exit` fights the fade, and one that starts
+ * before `entry` ends fights the entrance. Neither throws — they just look
+ * slightly wrong.
+ */
+const DRIFT_SPAN = ACT.exit[0] - ACT.entry[1];
 
 const BEAT_LABELS = ["What it is", "How it works", "The result"] as const;
 
@@ -343,7 +363,11 @@ export function buildAct(
         { y: ei(28, 0), opacity: ei(0, 1) },
         { y: 0, opacity: 1, duration: entry, ease: EASE },
         entryAt,
-    ).to(head, { y: -26, duration: span * 0.82, ease: "none" }, p(0.1));
+    ).to(
+        head,
+        { y: -26, duration: span * DRIFT_SPAN, ease: "none" },
+        p(ACT.entry[1]),
+    );
 
     /* Media panel: the element that actually relocates. Centre-anchored, so
        the slot offsets are measured from the middle of the box. */
@@ -410,8 +434,8 @@ export function buildAct(
     tl.fromTo(
         frames,
         { y: 10 },
-        { y: -10, duration: span * 0.84, ease: "none" },
-        p(0.1),
+        { y: -10, duration: span * DRIFT_SPAN, ease: "none" },
+        p(ACT.entry[1]),
     );
 
     /* Which slide each beat shows. Clamped, so a two-slide study (Ludex) holds

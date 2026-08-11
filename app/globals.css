@@ -603,14 +603,21 @@ html.zone-immersive {
    string. */
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) and
   (scripting: enabled) {
-  /* 300vh of TRAVEL per act, plus the 100vh the stage itself occupies.
+  /* TRAVEL per act, plus the 100vh the stage itself occupies.
 
      Sticky travel is (scroller height − stage height), so without the extra
-     100vh each act would get 300 − 100/n vh and the choreography would run
+     100vh each act would get travel − 100/n vh and the choreography would run
      short of its own score. Zero travel is how sticky silently does nothing,
-     which this repo has shipped before. */
+     which this repo has shipped before.
+
+     400, not 300. This is the ONLY knob that changes how far you must scroll
+     to move the composition — the score in CaseStudyStage is expressed in
+     fractions of an act, so every window scales with this number. At 300 a
+     relocation took ~324px, about three wheel notches, and still read as
+     hurried; at 400 it is ~518px. Raising it further is a straight trade
+     against total zone length, which is already ~13 screens here. */
   .zone-scroll {
-    height: calc(var(--zone-acts) * 300vh + 100vh);
+    height: calc(var(--zone-acts) * 400vh + 100vh);
   }
 
   .zone-stage {
