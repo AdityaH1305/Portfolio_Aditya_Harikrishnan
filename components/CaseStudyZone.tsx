@@ -76,9 +76,22 @@ export default function CaseStudyZone() {
                 );
             };
 
+            /* Starts BEFORE the zone arrives — `top 85%` is roughly 15vh of
+               lead — so the 1200ms palette transition is already under way as
+               the reader approaches and has settled by the time the stage
+               fills the viewport. Fired at the boundary itself it read as a
+               switch being flipped.
+
+               `end` stays at the true boundary: that is where the sticky
+               travel actually ends, and the fade out plays as you leave.
+
+               Only THIS trigger moves. The choreography timeline's trigger
+               must stay top-top/bottom-bottom because that range IS the
+               sticky range — they are separate triggers precisely so this
+               one can be tuned without touching that. */
             const boundary = ScrollTrigger.create({
                 trigger: root,
-                start: "top top",
+                start: "top 85%",
                 end: "bottom bottom",
                 onToggle: (self) => setImmersive(self.isActive),
             });
@@ -152,16 +165,41 @@ export default function CaseStudyZone() {
                         trigger: root,
                         start: "top top",
                         end: "bottom bottom",
-                        scrub: true,
+                        /* A NUMBER, not `true`. `scrub: true` locks the
+                           timeline to the scroll position 1:1, which is what
+                           made the relocations feel mechanical however wide
+                           their windows got — every wheel delta landed on the
+                           composition instantly and undamped. One second of
+                           catch-up gives the panel the same trailing weight
+                           Lenis gives the page.
+
+                           LivingArchitecture deliberately does NOT do this,
+                           and its comment explains why: the atlas engine
+                           already lerps its own targets, so smoothing there
+                           would be a third stage and read as lag. This
+                           timeline has no second stage — here it is the
+                           second, not the third. */
+                        scrub: 1,
                         /* Slot offsets are fractions of the measured slots
                            box, resolved through function-based values. Without
                            this they would stay baked at the width the page
                            first loaded at. */
                         invalidateOnRefresh: true,
-                        onUpdate: (self) =>
-                            syncClips(self.progress * acts.length),
                     },
                 });
+
+                /* Attached after construction, not passed in the vars object:
+                   a callback in the literal would close over `tl` before its
+                   own initialiser completes, which is a temporal-dead-zone
+                   throw the moment GSAP calls it early.
+
+                   On the TIMELINE, not the trigger. With a numeric scrub the
+                   trigger's progress runs ahead of the timeline, so
+                   `self.progress` is no longer what is on screen and the video
+                   would start playing while the panel was still travelling.
+                   `tl.time()` IS the rendered state, and with one unit per act
+                   it already reads as actIndex + localProgress. */
+                tl.eventCallback("onUpdate", () => syncClips(tl.time()));
 
                 acts.forEach((act, i) => buildAct(tl, act, i, 1));
 
@@ -188,6 +226,10 @@ export default function CaseStudyZone() {
 
     return (
         <div ref={rootRef}>
+            {/* The room: one composited layer carrying the violet field and
+                the finer violet grid, crossfaded over the cyan atmosphere. */}
+            <div className="zone-backdrop" aria-hidden="true" />
+
             {/* Cinematic framing. Fixed, inert, always mounted; only their
                 opacity changes, driven by the `zone-immersive` class. */}
             <div className="zone-vignette" aria-hidden="true" />

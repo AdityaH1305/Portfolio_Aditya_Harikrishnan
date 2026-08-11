@@ -63,24 +63,43 @@ const MEDIA_SLOTS = [
 const BEAT_SLOTS = ["left", "right", "left"] as const;
 
 /* ── The score ─────────────────────────────────────────
-   Positions on a 0…1 timeline covering one act. The relocations are the
-   gaps between the rest windows: a beat holds still long enough to be read,
-   then everything travels at once.
+   Positions on a 0…1 timeline covering one act. The relocations are the gaps
+   between the rest windows.
+
+   THE GAPS ARE THE POINT, and the first version got their size badly wrong.
+   An act is 300vh of scroll — ~2160px on a 720px-tall viewport — so a hop
+   window of 0.05 gave the entire relocation about 108px, which is one notch
+   of a mouse wheel. The panel appeared to teleport between two resting
+   positions; there was no motion to see. At 0.15 a hop takes ~324px, roughly
+   three notches, and reads as travel.
+
+   Rest windows shrank to pay for it (0.25 → ~0.18), because the fix is the
+   ratio, not the act length: holding a beat for 540px was never the problem.
 
    `REST` are the windows where the media panel is stationary. Ludex's video
    plays only inside these — see CaseStudyZone. */
 export const ACT = {
     entry: [0, 0.1],
     beats: [
-        [0.1, 0.35],
-        [0.4, 0.65],
-        [0.7, 0.92],
+        [0.1, 0.3],
+        [0.45, 0.62],
+        [0.77, 0.94],
     ],
-    exit: [0.92, 1],
+    exit: [0.94, 1],
 } as const;
 
 /** Rest windows, in act-local progress. Derived so they cannot drift. */
 export const REST = ACT.beats;
+
+/**
+ * How far a later act's entry starts BEFORE its own act boundary.
+ *
+ * Without it the outgoing act reaches zero opacity at exactly the position
+ * the incoming one starts from zero, so there is an instant of empty stage
+ * between two case studies. Deliberately small: two full text compositions
+ * at half opacity on top of each other is mud, not a crossfade.
+ */
+const ACT_OVERLAP = 0.05;
 
 const BEAT_LABELS = ["What it is", "How it works", "The result"] as const;
 
@@ -294,7 +313,11 @@ export function buildAct(
        function-based values when invalidateOnRefresh fires. */
     const ei = <T,>(hidden: T, resting: T): T => (isFirst ? resting : hidden);
 
-    const entry = span * ACT.entry[1];
+    /* Later acts start entering before their own boundary, so the outgoing
+       act is still dissolving as they arrive. The first act's entry is an
+       identity transition, so its position is irrelevant. */
+    const entryAt = isFirst ? p(0) : p(-ACT_OVERLAP);
+    const entry = span * (ACT.entry[1] + (isFirst ? 0 : ACT_OVERLAP));
 
     /* The act layer: present for its own span, absent otherwise. Both edges
        are explicit so arriving from either direction lands on one state. */
@@ -302,7 +325,7 @@ export function buildAct(
         act,
         { autoAlpha: ei(0, 1) },
         { autoAlpha: 1, duration: entry, ease: EASE },
-        p(0),
+        entryAt,
     ).to(
         act,
         {
@@ -319,7 +342,7 @@ export function buildAct(
         head,
         { y: ei(28, 0), opacity: ei(0, 1) },
         { y: 0, opacity: 1, duration: entry, ease: EASE },
-        p(0),
+        entryAt,
     ).to(head, { y: -26, duration: span * 0.82, ease: "none" }, p(0.1));
 
     /* Media panel: the element that actually relocates. Centre-anchored, so
@@ -342,7 +365,7 @@ export function buildAct(
             duration: entry,
             ease: EASE,
         },
-        p(0),
+        entryAt,
     );
 
     /* One hop per gap between rest windows. MEDIA_SLOTS is indexed by beat,
@@ -366,6 +389,30 @@ export function buildAct(
             p(from),
         );
     }
+
+    /* ── Nothing is ever completely still ──────────────
+       A slow drift inside the panel, so a beat being read is a composition
+       settling rather than a composition frozen.
+
+       It goes on the slide FRAME, not the panel: the panel owns x/y/scale
+       through the hops, and layering a drift on top of those absolute targets
+       is how two tweens start fighting over one property. The frame is
+       animated by nothing else.
+
+       ONE continuous tween across the whole act, not one per rest window.
+       Per-window `fromTo`s were tried first and each started from +8 while the
+       previous had ended at -8, so the image snapped 16px at the top of every
+       beat — the exact opposite of the intent. A single monotonic drift cannot
+       discontinue, and `ease: "none"` keeps it below the threshold of reading
+       as an event rather than as the image simply being alive. */
+    const frames = q("[data-act-slide] .zone-act-slide-frame");
+
+    tl.fromTo(
+        frames,
+        { y: 10 },
+        { y: -10, duration: span * 0.84, ease: "none" },
+        p(0.1),
+    );
 
     /* Which slide each beat shows. Clamped, so a two-slide study (Ludex) holds
        its second slide through the closing beat instead of repeating one to
@@ -410,7 +457,10 @@ export function buildAct(
     beatEls.forEach((el, i) => {
         const [start, end] = ACT.beats[i];
         const dir = BEAT_SLOTS[i] === "left" ? -1 : 1;
-        const lead = span * 0.05;
+        /* Kept in proportion to the widened hops. Leave this at 0.05 and the
+           panel glides while the text still snaps, which is worse than both
+           being fast — the two stop looking like one composition. */
+        const lead = span * 0.1;
 
         /* Beat one of act one is part of the already-composed opening; every
            other beat arrives from its own side. */
@@ -431,7 +481,7 @@ export function buildAct(
                 autoAlpha: 0,
                 x: 26 * dir,
                 y: -12,
-                duration: span * 0.05,
+                duration: span * 0.08,
                 ease: EASE,
             },
             p(end),
@@ -442,11 +492,11 @@ export function buildAct(
     tl.fromTo(
         ctas,
         { autoAlpha: 0, y: 18 },
-        { autoAlpha: 1, y: 0, duration: span * 0.06, ease: EASE },
+        { autoAlpha: 1, y: 0, duration: span * 0.1, ease: EASE },
         p(ACT.beats[2][0]),
     ).to(
         ctas,
-        { autoAlpha: 0, duration: span * 0.04, ease: EASE },
+        { autoAlpha: 0, duration: span * 0.06, ease: EASE },
         p(ACT.exit[0]),
     );
 }

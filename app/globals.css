@@ -17,11 +17,19 @@
    it a type, which is what lets the transition below
    interpolate instead of snap.
 
-   Only the two surfaces that the immersive case-study zone
-   deepens are registered. `--accent-rgb` is deliberately NOT
-   animated: LivingArchitecture reads it once at runtime via
+   All FOUR surfaces are registered, not just the canvas and
+   the raised layer. The zone shifts the whole ramp to indigo,
+   and leaving 2 and 3 behind meant the command palette and
+   every hover state stayed neutral near-black against an
+   indigo page — visible as a grey card floating in a blue
+   room.
+
+   `--accent-rgb` is deliberately NOT animated:
+   LivingArchitecture reads it once at runtime via
    syncAccentFromCSS(), so animating it would drift the
-   canvas out of sync with the DOM.
+   canvas out of sync with the DOM. The zone leaves the accent
+   alone entirely — cyan is the site's identity and it is what
+   carries through into the room.
 
    Where @property is unsupported the zone simply snaps to
    the deeper palette instead of easing into it.
@@ -36,6 +44,18 @@
   syntax: "<color>";
   inherits: true;
   initial-value: #10151c;
+}
+
+@property --surface-2 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #161d26;
+}
+
+@property --surface-3 {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #1d2630;
 }
 
 :root {
@@ -487,16 +507,34 @@ body {
 /* Longhands, not the `transition` shorthand. A custom-property name inside
    the shorthand (`transition: --surface-0 700ms ...`) is dropped by the CSS
    pipeline, and it takes the surrounding rules with it — the entire zone
-   block silently vanished from the emitted stylesheet. */
+   block silently vanished from the emitted stylesheet.
+
+   1200ms, and the class is applied while the zone is still approaching (see
+   the boundary trigger's `top 85%` start). 700ms fired at the boundary itself
+   read as a switch being flipped; this reads as walking into a different
+   room. */
 :root {
-  transition-property: --surface-0, --surface-1;
-  transition-duration: 700ms;
+  transition-property: --surface-0, --surface-1, --surface-2, --surface-3;
+  transition-duration: 1200ms;
   transition-timing-function: var(--ease);
 }
 
+/* The indigo room.
+
+   The first version only DARKENED — #0B0F14 → #05080b, same hue — and every
+   other zone rule was subtractive: nav, grid, noise and atlas all just faded
+   down. Nothing new ever arrived, so it read as the lights dimming rather
+   than as a different space.
+
+   These carry a real blue-violet cast while staying dark enough for the
+   figures to sit on. The accent is untouched, so cyan metrics and labels read
+   as the same site — which is what stops the shift looking like a theme swap
+   and makes it look like a room. */
 html.zone-immersive {
-  --surface-0: #05080b;
-  --surface-1: #0a0e14;
+  --surface-0: #080a18;
+  --surface-1: #0e1226;
+  --surface-2: #141a32;
+  --surface-3: #1b2340;
 }
 
 /* ── The choreographed stage ──────────────────────────
@@ -692,9 +730,22 @@ html.zone-immersive .zone-act-ctas {
 
 /* Chrome recedes so nothing competes with the work. Pointer events stay on:
    the nav must remain usable, just quiet. */
-html.zone-immersive .side-nav,
-html.zone-immersive .atmosphere-grid {
+html.zone-immersive .side-nav {
   opacity: 0.25;
+}
+
+/* Further than the nav: the backdrop brings its own finer violet grid, and
+   two grids at different cell sizes on top of each other is moiré, not
+   texture. */
+html.zone-immersive .atmosphere-grid {
+  opacity: 0.12;
+}
+
+/* The cyan pools go out entirely — the backdrop's violet ones replace them.
+   Leaving both on is what would make the room read as muddy rather than
+   changed. */
+html.zone-immersive .atmosphere-glow {
+  opacity: 0;
 }
 
 /* The noise gets its own value and must NOT join the group above.
@@ -721,8 +772,63 @@ html.zone-immersive .living-architecture-canvas {
 
 .side-nav,
 .atmosphere-grid,
+.atmosphere-glow,
 .living-architecture-canvas {
-  transition: opacity 700ms var(--ease);
+  transition: opacity 1200ms var(--ease);
+}
+
+/* ── The room itself ──────────────────────────────────
+   ONE fixed layer carrying both the violet field and the finer violet grid,
+   crossfading in over the cyan atmosphere on nothing but opacity.
+
+   Deliberately additive rather than re-tinting what is already there. The
+   existing glows and the 64px slate grid are painted gradients: interpolating
+   their colours means repainting them, and animating `background-size` on
+   `.atmosphere-grid` would also fight the one-whole-tile bleed that its
+   `inset: -64px 0` exists to provide. Fading one new composited layer in over
+   the old ones costs nothing per frame and cannot break the parallax
+   geometry.
+
+   z-index 0 with the atmosphere, below all content. */
+.zone-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 1200ms var(--ease);
+  background-image:
+    /* the fine grid — 40px against the atmosphere's 64px, and violet
+       rather than slate, so it still reads as instrumentation but
+       unmistakably not the same instrument */
+    linear-gradient(rgba(139, 120, 221, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(139, 120, 221, 0.05) 1px, transparent 1px),
+    /* the field: two offset violet pools, replacing the cyan glows */
+    radial-gradient(
+      ellipse 60% 50% at 78% 18%,
+      rgba(129, 108, 220, 0.16) 0%,
+      rgba(129, 108, 220, 0) 100%
+    ),
+    radial-gradient(
+      ellipse 70% 60% at 12% 72%,
+      rgba(96, 92, 200, 0.13) 0%,
+      rgba(96, 92, 200, 0) 100%
+    ),
+    radial-gradient(
+      ellipse 120% 90% at 50% 50%,
+      rgba(14, 12, 38, 0.55) 0%,
+      rgba(6, 6, 20, 0.8) 100%
+    );
+  background-size:
+    40px 40px,
+    40px 40px,
+    auto,
+    auto,
+    auto;
+}
+
+html.zone-immersive .zone-backdrop {
+  opacity: 1;
 }
 
 /* Cinematic framing. Both are fixed, pointer-events:none, and only their
@@ -735,7 +841,7 @@ html.zone-immersive .living-architecture-canvas {
   z-index: 45;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 700ms var(--ease);
+  transition: opacity 1200ms var(--ease);
 }
 
 /* Six stops on a quadratic falloff rather than two linear ones.
@@ -746,18 +852,22 @@ html.zone-immersive .living-architecture-canvas {
    and the lower ceiling keeps the darkest corner off pure black.
 
    Starts at 52% so the centre stays genuinely clear — content has to remain
-   readable through this for the length of three case studies. */
+   readable through this for the length of three case studies.
+
+   Tinted indigo rather than pure black now, so the corners fall off toward
+   the room's own colour instead of draining to neutral and undoing the shift
+   exactly where the frame is heaviest. */
 .zone-vignette {
   top: 0;
   bottom: 0;
   background: radial-gradient(
     ellipse 82% 74% at 50% 50%,
-    rgba(0, 0, 0, 0) 52%,
-    rgba(0, 0, 0, 0.04) 64%,
-    rgba(0, 0, 0, 0.11) 74%,
-    rgba(0, 0, 0, 0.22) 83%,
-    rgba(0, 0, 0, 0.36) 91%,
-    rgba(0, 0, 0, 0.52) 100%
+    rgba(4, 6, 20, 0) 52%,
+    rgba(4, 6, 20, 0.05) 64%,
+    rgba(4, 6, 20, 0.13) 74%,
+    rgba(4, 6, 20, 0.25) 83%,
+    rgba(4, 6, 20, 0.4) 91%,
+    rgba(4, 6, 20, 0.58) 100%
   );
 }
 
@@ -790,7 +900,9 @@ html.zone-immersive .zone-bar {
   :root,
   .side-nav,
   .atmosphere-grid,
+  .atmosphere-glow,
   .living-architecture-canvas,
+  .zone-backdrop,
   .zone-vignette,
   .zone-bar {
     transition: none;
