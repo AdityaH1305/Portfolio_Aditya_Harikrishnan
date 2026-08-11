@@ -191,11 +191,17 @@ export default function SkillOrbit({ children }: { children: React.ReactNode }) 
     const onPointerDown = useCallback((e: React.PointerEvent) => {
         const engine = engineRef.current;
         if (!engine) return;
-        /* Last line of defence. A pointer is on the canvas, so layout has
-           unambiguously happened — if the engine somehow still has no box,
-           this is the moment it can be fixed, and a hit test against
-           un-positioned bodies is otherwise silently unresponsive. */
-        if (!engine.isSized()) sizeRef.current?.();
+        /* Last line of defence, and unconditional. A pointer is on the canvas,
+           so layout has unambiguously happened.
+
+           Checking `isSized()` first was not enough: that only catches an
+           engine with NO box, while the failure that actually survives is a
+           STALE one — the viewport changed, the ResizeObserver never fired,
+           and hit testing then runs against bodies laid out for the old box,
+           so clicks land on nothing. `resize` early-returns when the size is
+           unchanged, and `local()` reads the same rect on this event anyway,
+           so the common path costs nothing. */
+        sizeRef.current?.();
         const { x, y } = local(e);
 
         // A star: regroup straight from the field.
@@ -262,73 +268,105 @@ export default function SkillOrbit({ children }: { children: React.ReactNode }) 
         <div className="skill-orbit" data-list={listView ? "" : undefined}>
             {/* ── The viewport ── */}
             <div className="skill-orbit-frame" aria-hidden={listView}>
-                <div ref={wrapRef} className="skill-orbit-stage">
-                    <canvas
-                        ref={canvasRef}
-                        className="skill-orbit-canvas"
-                        aria-hidden="true"
-                        data-cursor="probe"
-                        onPointerDown={onPointerDown}
-                        onPointerMove={onPointerMove}
-                        onPointerUp={onPointerUp}
-                        onPointerCancel={onPointerUp}
-                        onPointerLeave={onPointerLeave}
-                    />
+                <div className="skill-orbit-stage">
+                    {/* The field. This element — NOT the whole stage — is what
+                        the engine measures, so the solver's box stops at the
+                        readout strip below and a body can never be positioned
+                        underneath it.
 
-                    {/* Readout. Fixed corner rather than following the body:
-                        a panel chasing an orbiting dot is unreadable, and it
-                        would cover the field it is describing. */}
-                    <div className="skill-orbit-readout" data-open={skill ? "" : undefined}>
-                        {skill ? (
-                            <>
-                                <p className="label-muted">Selected</p>
-                                <p className="skill-orbit-readout-name">{skill.name}</p>
-                                <p className="body-sm mt-1">
-                                    {skill.projects.length === 0
-                                        ? "Coursework — no shipped project behind this one."
-                                        : "Proven in"}
-                                </p>
-                                {skill.projects.length > 0 && (
-                                    <div className="skill-orbit-chips">
-                                        {projectsFor(selected).map((p) => (
-                                            <button
-                                                key={p.id}
-                                                type="button"
-                                                onClick={() => regroup(p.id)}
-                                                className="skill-orbit-chip"
-                                            >
-                                                {p.label}
-                                            </button>
-                                        ))}
-                                    </div>
-                                )}
-                            </>
-                        ) : (
-                            <>
-                                <p className="label-muted">
-                                    {active ? "Regrouped by" : "Stack field"}
-                                </p>
-                                <p className="skill-orbit-readout-name">
-                                    {active ? active.label : "Six systems"}
-                                </p>
-                                <p className="body-sm mt-1">
-                                    {active
-                                        ? "Everything this project actually took, pulled into one orbit."
-                                        : "Tap a body to see where it was used."}
-                                </p>
-                            </>
+                        The readout used to float in the bottom-left corner and
+                        covered the Frontend system outright. No floating
+                        position fixes that: the grid is 3×2, so all four
+                        corners, the top centre and the bottom centre are each
+                        occupied by a system. Taking the space out of the
+                        field's geometry is the only arrangement where overlap
+                        is impossible rather than merely unlikely. */}
+                    <div ref={wrapRef} className="skill-orbit-field">
+                        <canvas
+                            ref={canvasRef}
+                            className="skill-orbit-canvas"
+                            aria-hidden="true"
+                            data-cursor="probe"
+                            onPointerDown={onPointerDown}
+                            onPointerMove={onPointerMove}
+                            onPointerUp={onPointerUp}
+                            onPointerCancel={onPointerUp}
+                            onPointerLeave={onPointerLeave}
+                        />
+
+                        {active && (
+                            <button
+                                type="button"
+                                onClick={() => regroup(null)}
+                                className="skill-orbit-reset"
+                            >
+                                ← Back to categories
+                            </button>
                         )}
                     </div>
 
-                    {active && (
-                        <button
-                            type="button"
-                            onClick={() => regroup(null)}
-                            className="skill-orbit-reset"
-                        >
-                            ← Back to categories
-                        </button>
-                    )}
+                    {/* Readout strip. Fixed height whatever it holds, so
+                        selecting a body never reflows the page under the
+                        reader's cursor. */}
+                    <div className="skill-orbit-readout">
+                        {skill ? (
+                            <>
+                                <div className="skill-orbit-readout-head">
+                                    <p className="label-muted">Selected</p>
+                                    <p className="skill-orbit-readout-name">
+                                        {skill.name}
+                                    </p>
+                                </div>
+                                <div className="skill-orbit-readout-body">
+                                    <p className="body-sm">
+                                        {skill.projects.length === 0
+                                            ? "Coursework — no shipped project behind this one."
+                                            : "Proven in"}
+                                    </p>
+                                    {skill.projects.length > 0 && (
+                                        /* Scrolls horizontally on narrow
+                                           screens, so it has to opt out of
+                                           Lenis or the page glides instead of
+                                           the row — same rule as the command
+                                           palette's results list. */
+                                        <div
+                                            className="skill-orbit-chips"
+                                            data-lenis-prevent=""
+                                        >
+                                            {projectsFor(selected).map((p) => (
+                                                <button
+                                                    key={p.id}
+                                                    type="button"
+                                                    onClick={() => regroup(p.id)}
+                                                    className="skill-orbit-chip"
+                                                >
+                                                    {p.label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                <div className="skill-orbit-readout-head">
+                                    <p className="label-muted">
+                                        {active ? "Regrouped by" : "Stack field"}
+                                    </p>
+                                    <p className="skill-orbit-readout-name">
+                                        {active ? active.label : "Six systems"}
+                                    </p>
+                                </div>
+                                <div className="skill-orbit-readout-body">
+                                    <p className="body-sm">
+                                        {active
+                                            ? "Everything this project actually took, pulled into one orbit."
+                                            : "Tap a body to see where it was used."}
+                                    </p>
+                                </div>
+                            </>
+                        )}
+                    </div>
                 </div>
             </div>
 

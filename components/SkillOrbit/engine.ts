@@ -114,11 +114,6 @@ export class SkillOrbitEngine {
         return `rgba(${r},${g},${b},${a})`;
     }
 
-    /** True once the engine has a real box and bodies are on their orbits. */
-    isSized(): boolean {
-        return this.seeded;
-    }
-
     resize(w: number, h: number): void {
         if (w < 1 || h < 1) return;
         // Idempotent, so callers can offer a size as often as they like —

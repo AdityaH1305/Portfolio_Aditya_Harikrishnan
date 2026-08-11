@@ -942,10 +942,25 @@ html.zone-immersive .zone-bar {
   position: relative;
   overflow: hidden;
   border-radius: calc(1.5rem - 0.375rem);
+  display: flex;
+  flex-direction: column;
+
   /* 72vh, up from 62vh. The vertical gap between grid rows is what caps every
      orbit radius — the solver fits systems to the space between anchors — so
-     panel height is the single lever that buys the whole field more room. */
-  height: clamp(520px, 72vh, 720px);
+     field height is the single lever that buys the whole field more room.
+
+     The readout's height is ADDED rather than taken out of it. Carving the
+     strip out of the tuned height would have shrunk the field to 408px and
+     dropped Machine Learning's spacing from 142px back to 108 — undoing the
+     declutter to fix the overlap. */
+  --orbit-field-h: clamp(520px, 72vh, 720px);
+  /* 7rem, not 5.75. The strip has a fixed height and `overflow: hidden`, so
+     the size is set by the WORST case, which is Python: it is the one skill
+     that belongs to every project, so its readout carries six chips, they
+     wrap to two rows, and 5.75rem clipped them by 7px. The headroom above
+     that also covers the wider fallback metrics before the webfonts swap. */
+  --orbit-readout-h: 7rem;
+  height: calc(var(--orbit-field-h) + var(--orbit-readout-h));
   /* Deep space, mixed here rather than derived from --surface-*: this panel
      is a window into somewhere else, so it should NOT follow the page into
      the case-study room's indigo if a reader scrolls oddly. */
@@ -960,11 +975,25 @@ html.zone-immersive .zone-bar {
   box-shadow: inset 0 1px 1px rgba(148, 163, 184, 0.08);
 }
 
-/* Two columns need more height for the same body count. */
+/* Two columns need more height for the same body count, and the readout
+   stacks instead of running as a row. */
 @media (max-width: 640px) {
   .skill-orbit-stage {
-    height: clamp(540px, 78vh, 650px);
+    --orbit-field-h: clamp(540px, 78vh, 650px);
+    /* Stacked head, and the chips scroll on one line rather than wrapping. */
+    --orbit-readout-h: 9rem;
   }
+}
+
+/* The measured box. `min-height: 0` because a flex child's default
+   `min-height: auto` refuses to shrink below its content, and the canvas
+   inside is 100% of it — without this the field would win the height fight
+   and push the readout out of the frame. */
+.skill-orbit-field {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: var(--orbit-field-h);
 }
 
 .skill-orbit-canvas {
@@ -978,20 +1007,36 @@ html.zone-immersive .zone-bar {
   touch-action: manipulation;
 }
 
-/* Deliberately NOT backdrop-blur, unlike every other overlay panel on the
-   site. Those sit over static content; this one sits over a canvas that
-   repaints every frame, so a blur would be recomputed every frame with it. */
+/* An instrument readout along the bottom of the frame, not a panel floating
+   over the field. Its height is fixed by --orbit-readout-h whatever it holds,
+   so selecting a body cannot reflow the page under the reader's cursor.
+
+   Deliberately no backdrop-blur, unlike every other overlay panel on the
+   site — those sit over static content, and this one borders a canvas that
+   repaints every frame. */
 .skill-orbit-readout {
-  position: absolute;
-  left: 1rem;
-  bottom: 1rem;
-  right: 1rem;
-  max-width: 22rem;
-  padding: 0.875rem 1rem 1rem;
-  border: 1px solid var(--border-default);
-  border-radius: 0.875rem;
-  background: rgba(3, 6, 15, 0.88);
-  pointer-events: auto;
+  flex: 0 0 var(--orbit-readout-h);
+  height: var(--orbit-readout-h);
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding: 0 1.25rem;
+  border-top: 1px solid var(--border-default);
+  background: rgba(3, 6, 15, 0.72);
+  overflow: hidden;
+}
+
+/* The name column is given a floor so the description beside it does not
+   shift left and right as skill names change length. */
+.skill-orbit-readout-head {
+  flex: 0 0 auto;
+  min-width: 14rem;
+  max-width: 20rem;
+}
+
+.skill-orbit-readout-body {
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .skill-orbit-readout-name {
@@ -999,14 +1044,54 @@ html.zone-immersive .zone-bar {
   font-weight: 600;
   letter-spacing: -0.01em;
   color: var(--text-primary);
-  margin-top: 0.35rem;
+  margin-top: 0.3rem;
+  line-height: 1.2;
 }
 
 .skill-orbit-chips {
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
-  margin-top: 0.75rem;
+  margin-top: 0.6rem;
+}
+
+@media (max-width: 640px) {
+  .skill-orbit-readout {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.5rem;
+    padding: 0 1rem;
+  }
+
+  .skill-orbit-readout-head {
+    min-width: 0;
+  }
+
+  /* One scrolling line instead of wrapping. Python carries six chips, and on
+     a ~315px panel they wrap to four rows — 218px of content against a strip
+     that would have to eat a third of the field to contain it. Scrolling caps
+     the height at one row on any width.
+
+     `overflow-x` only, so a vertical swipe still scrolls the page. The
+     element carries `data-lenis-prevent`, or Lenis swallows the horizontal
+     drag the same way it does in the command palette's results list. */
+  .skill-orbit-chips {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    width: 100%;
+    padding-bottom: 2px;
+  }
+
+  .skill-orbit-chips::-webkit-scrollbar {
+    display: none;
+  }
+
+  .skill-orbit-chip {
+    flex: 0 0 auto;
+  }
 }
 
 .skill-orbit-chip {
@@ -1085,8 +1170,8 @@ html.zone-immersive .zone-bar {
   margin-top: 2rem;
 }
 
-.skill-orbit[data-list] .skill-orbit-frame,
-.skill-orbit[data-list] .skill-orbit-readout {
+/* The readout lives inside the frame now, so hiding the frame takes it too. */
+.skill-orbit[data-list] .skill-orbit-frame {
   display: none;
 }
 
