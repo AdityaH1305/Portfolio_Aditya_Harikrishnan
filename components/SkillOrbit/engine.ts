@@ -7,6 +7,13 @@ import {
     type Orbit,
     type ViewMode,
 } from "./layout";
+import {
+    MAX_FLING,
+    DRAG_DECAY,
+    RETURN_S,
+    flightPhase,
+    easeReturn,
+} from "./flight";
 
 /* ══════════════════════════════════════════════════════
    SkillOrbit engine
@@ -34,10 +41,6 @@ export interface Palette {
 
 /** How fast a body closes on its target. Frame-rate compensated below. */
 const FOLLOW = 0.075;
-/** Velocity below which a flung body is recaptured, px/s. */
-const RECAPTURE_BELOW = 40;
-/** Free-flight decay per second. */
-const DRAG_DECAY = 0.86;
 /** Seconds the wormhole flourish lasts. Purely cosmetic; the walk is what moves bodies. */
 const WORMHOLE_S = 0.9;
 /** Label fades in within this distance of the pointer, px. */
@@ -48,7 +51,7 @@ export const HIT_RADIUS = 22;
 const DPR_CAP = 1.5;
 const STAR_COUNT = 140;
 
-type BodyState = "orbit" | "drag" | "free";
+type BodyState = "orbit" | "drag" | "free" | "return";
 
 interface Body {
     x: number;
@@ -59,6 +62,15 @@ interface Body {
     /** 0…1, eased. Drives label alpha and dot size. */
     focus: number;
     lit: number;
+    /** Seconds spent in free flight since release. */
+    freeT: number;
+    /** Seconds since it left the field bounds; 0 while inside. */
+    offT: number;
+    /** Progress 0…1 through the return leg. */
+    retT: number;
+    /** Where the return started — the target moves, this does not. */
+    retX: number;
+    retY: number;
 }
 
 /** Deterministic hash → 0…1. Index-based, so the starfield is stable. */
@@ -76,6 +88,7 @@ export class SkillOrbitEngine {
 
     private bodies: Body[] = SKILLS.map(() => ({
         x: 0, y: 0, vx: 0, vy: 0, state: "orbit", focus: 0, lit: 1,
+        freeT: 0, offT: 0, retT: 0, retX: 0, retY: 0,
     }));
 
     private anchors: Anchor[] = [];
@@ -217,7 +230,21 @@ export class SkillOrbitEngine {
     endDrag(): void {
         const i = this.dragging;
         if (i < 0) return;
-        this.bodies[i].state = "free";
+        const b = this.bodies[i];
+
+        /* Clamp the launch. `moveDrag` derives velocity from the pointer delta
+           × 12 with no ceiling, so a flick of the wrist produced 1500+ px/s
+           and, under the old friction, a 10,000px trajectory. */
+        const speed = Math.hypot(b.vx, b.vy);
+        if (speed > MAX_FLING) {
+            const s = MAX_FLING / speed;
+            b.vx *= s;
+            b.vy *= s;
+        }
+
+        b.state = "free";
+        b.freeT = 0;
+        b.offT = 0;
         this.dragging = -1;
     }
 
@@ -264,17 +291,50 @@ export class SkillOrbitEngine {
 
             if (b.state === "drag") continue;
 
+            const p = positionAt(o, a, this.t);
+
             if (b.state === "free") {
                 const decay = Math.pow(DRAG_DECAY, dt);
                 b.vx *= decay;
                 b.vy *= decay;
                 b.x += b.vx * dt;
                 b.y += b.vy * dt;
-                if (Math.hypot(b.vx, b.vy) < RECAPTURE_BELOW) b.state = "orbit";
+
+                b.freeT += dt;
+                /* Off the panel entirely? Then it is invisible, and running
+                   out the full free-flight budget just reads as having lost
+                   it. The clock only accumulates while it is actually out. */
+                const outside =
+                    b.x < 0 || b.y < 0 || b.x > this.w || b.y > this.h;
+                b.offT = outside ? b.offT + dt : 0;
+
+                /* A TIMER decides this now, not friction. Friction only
+                   shapes the arc on the way out. */
+                if (flightPhase(b.freeT, b.offT) === "return") {
+                    b.state = "return";
+                    b.retT = 0;
+                    b.retX = b.x;
+                    b.retY = b.y;
+                }
                 continue;
             }
 
-            const p = positionAt(o, a, this.t);
+            if (b.state === "return") {
+                b.retT = Math.min(1, b.retT + dt / RETURN_S);
+                const e = easeReturn(b.retT);
+                /* From a fixed release point toward a MOVING target, so the
+                   body curves in as its slot travels — a straight line to a
+                   stale point would arrive somewhere the orbit has left. */
+                b.x = b.retX + (p.x - b.retX) * e;
+                b.y = b.retY + (p.y - b.retY) * e;
+                if (b.retT >= 1) {
+                    b.state = "orbit";
+                    b.vx = 0;
+                    b.vy = 0;
+                }
+                continue;
+            }
+
             b.x += (p.x - b.x) * k;
             b.y += (p.y - b.y) * k;
         }
