@@ -157,6 +157,132 @@ html.lenis body {
   overscroll-behavior: contain;
 }
 
+/* ══════════════════════════════════════════════════════
+   Scrollbar — the measuring gutter
+
+   The one piece of chrome that was still the OS default,
+   arrow buttons and all, on a site whose entire visual
+   language is instrumentation. A hairline edge, ticks ruled
+   down the track like a measuring scale, and an accent thumb
+   puts it in the same family as the side-nav dots and the
+   reticle cursor.
+
+   Track and thumb derive from the surface tokens, so the
+   scrollbar retints with the case-study room for nothing —
+   `--surface-0` is already animated there.
+
+   ── Two mechanisms, and that is all there is ──
+   `::-webkit-scrollbar` (Chromium, Safari) carries the
+   design. Firefox has only `scrollbar-width` and
+   `scrollbar-color`, so it degrades to a thin two-tone bar;
+   the ticks and the edge simply cannot be expressed there
+   and there is no polyfill worth writing.
+
+   ── Known trade, invisible from Windows ──
+   macOS uses overlay scrollbars that appear only while
+   scrolling. Styling ::-webkit-scrollbar opts out of that,
+   so Mac visitors get a permanently visible gutter where
+   they previously saw nothing. Inherent to custom scrollbar
+   styling rather than a bug, and the gutter is reserved
+   either way by `scrollbar-gutter` below.
+   ══════════════════════════════════════════════════════ */
+
+html {
+  /* Keeps the gutter reserved between pages that overflow and pages that do
+     not, so navigating never shifts the layout sideways.
+
+     It does NOT survive the scroll lock: `scrollbar-gutter` has no effect
+     when `overflow` is `hidden`, and `lockScroll()` works by putting exactly
+     that on this element. Measured — auto and scroll both reserve 10px,
+     hidden reserves 0. So modals still shift the page by the scrollbar width;
+     fixing that needs the lock itself to change, which is a separate job. */
+  scrollbar-gutter: stable;
+}
+
+/* ── Firefox only, and the guard is load-bearing ──
+   Chromium ignores EVERY ::-webkit-scrollbar rule on an element that has the
+   standard `scrollbar-width` or `scrollbar-color` set. `scrollbar-color` is
+   an inherited property, so declaring it on `html` — the obvious place —
+   silently switches the whole document back to the default scrollbar and
+   throws away everything below. The first version of this block did that: it
+   measured 10px wide and looked plausible, but that was `scrollbar-width:
+   thin` doing the work, and the ticks, the hairline edge and the bordered
+   thumb were never drawn at all.
+
+   `@supports not selector(::-webkit-scrollbar)` is true only where those
+   pseudo-elements do not exist, which is precisely where these properties
+   are the only option. */
+@supports not selector(::-webkit-scrollbar) {
+  html {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(var(--accent-rgb) / 0.45) var(--surface-0);
+  }
+
+  [data-lenis-prevent] {
+    scrollbar-color: rgb(var(--accent-rgb) / 0.35) transparent;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+/* The arrows are the most "OS default" part of the whole thing. */
+::-webkit-scrollbar-button {
+  display: none;
+}
+
+::-webkit-scrollbar-track {
+  background-color: var(--surface-0);
+  border-left: 1px solid var(--border-subtle);
+  /* A tick every 8px — the measuring scale. Kept at a very low alpha: it
+     should read as texture at a glance and only resolve into ticks if you
+     actually look at it. */
+  background-image: repeating-linear-gradient(
+    to bottom,
+    rgba(148, 163, 184, 0.16) 0 1px,
+    transparent 1px 8px
+  );
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--surface-3);
+  border: 1px solid var(--accent-border);
+  border-radius: 2px;
+  /* Or the fill paints under its own border and the outline muddies. */
+  background-clip: padding-box;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgb(var(--accent-rgb) / 0.22);
+  border-color: rgb(var(--accent-rgb) / 0.55);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background-color: rgb(var(--accent-rgb) / 0.34);
+  border-color: var(--accent);
+}
+
+/* Without this the meeting point of two scrollbars renders white. */
+::-webkit-scrollbar-corner {
+  background-color: var(--surface-0);
+}
+
+/* Inner scrollers — the palette's results, the figure gallery panel, the
+   lightbox, the game modal. A 10px ruled gutter inside an overlay is far too
+   heavy, and the track would paint --surface-0 onto a --surface-2 panel. */
+[data-lenis-prevent]::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+[data-lenis-prevent]::-webkit-scrollbar-track {
+  background-color: transparent;
+  background-image: none;
+  border-left: none;
+}
+
 body {
   background: var(--surface-0);
   color: var(--text-primary);
