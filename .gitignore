@@ -49,3 +49,5 @@ CLAUDE.md
 .claude/
 .gemini/
 skills-lock.json
+# Verification builds (see distDir in next.config.ts)
+.next-verify

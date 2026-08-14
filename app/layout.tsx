@@ -71,6 +71,16 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      /* The script below adds `signal-connected` to this element BEFORE React
+         hydrates, which is the whole point of it running pre-paint. React then
+         compares the class list it rendered on the server against the one in
+         the DOM, finds an extra class and reports a hydration mismatch.
+
+         Suppressing it here is the documented answer for exactly this pattern
+         and is what every theme-flash script does. It is deliberately narrow:
+         it covers attribute differences on this ONE element and nothing else,
+         so a genuine mismatch anywhere in the tree is still reported. */
+      suppressHydrationWarning
     >
       <head>
         {/* Runs BEFORE first paint, which is the entire point.

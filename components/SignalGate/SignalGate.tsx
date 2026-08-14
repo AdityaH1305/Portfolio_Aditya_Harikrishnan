@@ -7,9 +7,19 @@ import {
     useState,
     useSyncExternalStore,
 } from "react";
+import { gsap } from "@/lib/motion";
 import { lockScroll, unlockScroll } from "@/lib/lenis";
 import { ATLAS_QUIET_EVENT } from "@/lib/zone";
-import { GATE_KEY, GATE_TTL_MS, shouldShowGate } from "./gate";
+import {
+    GATE_KEY,
+    GATE_TTL_MS,
+    shouldShowGate,
+    bootSequence,
+    BOOT_TOTAL_MS,
+    BOOT_FADE_MS,
+    BOOT_FADE_AT,
+} from "./gate";
+import { waveAt, WAVE_SAMPLES } from "./wave";
 
 /* ══════════════════════════════════════════════════════
    Signal Gate
@@ -117,19 +127,114 @@ export default function SignalGate() {
         getClientSnapshot,
         getServerSnapshot,
     );
+
+    /* Three phases, not one flag. `lost` is the idle instrument, `booting`
+       plays the readout, `leaving` cross-fades into the site. */
+    const [phase, setPhase] = useState<"lost" | "booting" | "leaving">("lost");
     const [dismissed, setDismissed] = useState(false);
-    const [leaving, setLeaving] = useState(false);
+    const [shown, setShown] = useState(0);
+
     const gateRef = useRef<HTMLDivElement>(null);
+    const canvasRef = useRef<HTMLCanvasElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const reducedRef = useRef(false);
+    const timers = useRef<number[]>([]);
+    /** 0 while lost, ramped to 1 on reconnect. Read by the draw loop. */
+    const liveRef = useRef(0);
 
     const open = wanted && !dismissed;
+    const lines = bootSequence();
 
     useEffect(() => {
         reducedRef.current = window.matchMedia(
             "(prefers-reduced-motion: reduce)",
         ).matches;
     }, []);
+
+    /* ── The carrier ───────────────────────────────────
+       On gsap.ticker rather than its own rAF, which is the rule everywhere
+       else in this repo: one frame clock, so nothing races Lenis. The canvas
+       unmounts with the gate, so none of this survives the entrance. */
+    useEffect(() => {
+        if (!open) return;
+        const canvas = canvasRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let w = 0;
+        let h = 0;
+
+        const size = () => {
+            const r = canvas.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) return;
+            w = r.width;
+            h = r.height;
+            canvas.width = Math.round(w * dpr);
+            canvas.height = Math.round(h * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        size();
+
+        /* Read the accent from CSS rather than hardcoding it, the same rule
+           the atlas and the orbit field follow. */
+        const raw = getComputedStyle(document.documentElement)
+            .getPropertyValue("--accent-rgb")
+            .trim();
+        const parsed = raw.split(/[\s,/]+/).map(Number);
+        const [ar, ag, ab] =
+            parsed.length >= 3 && parsed.every(Number.isFinite)
+                ? parsed
+                : [232, 163, 61];
+
+        const draw = (seconds: number) => {
+            if (w < 1) size();
+            if (w < 1) return;
+
+            const live = liveRef.current;
+            const mid = h / 2;
+            const amp = h * 0.42;
+
+            ctx.clearRect(0, 0, w, h);
+
+            /* The baseline stays visible underneath at all times: it is the
+               instrument, and the trace is what the instrument is reading. */
+            ctx.beginPath();
+            ctx.moveTo(0, mid);
+            ctx.lineTo(w, mid);
+            ctx.strokeStyle = `rgba(${ar},${ag},${ab},${0.1 + live * 0.12})`;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.beginPath();
+            for (let i = 0; i < WAVE_SAMPLES; i++) {
+                const x = (i / (WAVE_SAMPLES - 1)) * w;
+                const y = mid - waveAt(i, WAVE_SAMPLES, seconds, live) * amp;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = `rgba(${ar},${ag},${ab},${0.34 + live * 0.62})`;
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+        };
+
+        if (reducedRef.current) {
+            // One frame, no loop. The trace becomes a still reading.
+            draw(0);
+            return;
+        }
+
+        const tick = (time: number) => draw(time);
+        gsap.ticker.add(tick);
+        const ro = new ResizeObserver(size);
+        ro.observe(canvas);
+
+        return () => {
+            gsap.ticker.remove(tick);
+            ro.disconnect();
+        };
+    }, [open]);
 
     /* Hold the atlas dormant while the gate is up, so reconnecting is what
        brings it to life. Reuses the quiet broadcast the case-study zone and
@@ -151,7 +256,7 @@ export default function SignalGate() {
            It works by calling `lenis.stop()`, but ScrollProvider registers the
            Lenis instance from inside the gsap ticker, which first runs on the
            next animation frame. Mount effects run before that frame, so this
-           call always finds a null instance and does nothing — and
+           call always finds a null instance and does nothing, and
            `registerLenis` then resets the lock count to zero, discarding it
            outright. Measured: the gate was up with `overflow: visible` and no
            `lenis-stopped` class, so the page scrolled freely behind it and a
@@ -181,39 +286,89 @@ export default function SignalGate() {
         };
     }, [open]);
 
-    const reconnect = useCallback(() => {
-        if (leaving) return;
-        setLeaving(true);
-        announce();
-
+    /** Everything that must happen exactly once, whichever path gets there. */
+    const commit = useCallback(() => {
+        /* Written at the CLICK, not at the end, so a reload part way through
+           the boot does not gate the visitor again. */
         try {
             window.localStorage.setItem(GATE_KEY, String(Date.now()));
         } catch {
             /* Storage unavailable. The gate will show again next load, which
                is a small annoyance rather than a broken page. */
         }
-        /* Also clear the in-memory decision, or navigating to a case study
-           and back would remount this and gate an already-connected visitor
-           a second time. */
+        announce();
+    }, []);
+
+    /* Tearing down is its own step, and the in-memory flag MUST NOT be
+       cleared before it.
+
+       `cachedDecision` is what `getClientSnapshot` returns, and
+       `useSyncExternalStore` re-reads that on the very next render. Clearing
+       it inside `commit` therefore unmounted the gate the instant
+       `setPhase("booting")` re-rendered: measured, the whole two-second
+       sequence collapsed to 165ms and nobody ever saw a line. It belongs
+       here, where unmounting is the intent.
+
+       It still has to happen at all, or navigating to a case study and back
+       would remount this and gate an already-connected visitor twice. */
+    const close = useCallback(() => {
         cachedDecision = false;
+        setDismissed(true);
+    }, []);
 
-        // Matches the CSS fade. Instant when motion is reduced.
-        const hold = reducedRef.current ? 0 : 620;
-        window.setTimeout(() => setDismissed(true), hold);
-    }, [leaving]);
+    const reconnect = useCallback(() => {
+        if (phase !== "lost") return;
+        setPhase("booting");
+        commit();
 
-    /* Any key, not just the button. Someone who has read "reestablish" and
-       reached for the keyboard should not have to find the tab stop first. */
-    useEffect(() => {
-        if (!open) return;
-        const onKey = (e: KeyboardEvent) => {
-            if (e.metaKey || e.ctrlKey || e.altKey) return;
-            e.preventDefault();
-            reconnect();
+        if (reducedRef.current) {
+            setShown(lines.length);
+            close();
+            return;
+        }
+
+        /* One timer per line, plus the fade and the unmount, all scheduled
+           from the click rather than chained. Chaining would let a dropped
+           frame push the sequence past its two seconds; absolute offsets
+           cannot drift. */
+        lines.forEach((line, i) => {
+            timers.current.push(
+                window.setTimeout(() => setShown(i + 1), line.at),
+            );
+        });
+        timers.current.push(
+            window.setTimeout(() => setPhase("leaving"), BOOT_FADE_AT),
+        );
+        timers.current.push(window.setTimeout(close, BOOT_TOTAL_MS));
+
+        /* Ramp the trace into life so it grows rather than switching. Its own
+           rAF because it has to finish inside the first 320ms whatever the
+           line timers are doing. */
+        const start = performance.now();
+        const ramp = () => {
+            const p = Math.min(1, (performance.now() - start) / 320);
+            liveRef.current = p;
+            if (p < 1) requestAnimationFrame(ramp);
         };
-        window.addEventListener("keydown", onKey);
-        return () => window.removeEventListener("keydown", onKey);
-    }, [open, reconnect]);
+        requestAnimationFrame(ramp);
+    }, [phase, commit, lines]);
+
+    // Clear anything pending if the component goes away mid-sequence.
+    useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
+
+    /* THE BUTTON IS THE ONLY WAY THROUGH.
+
+       There was a global keydown handler here that reconnected on any key,
+       and a click-anywhere skip during the boot. Both are gone: the gate is
+       passed by pressing the control, and the two seconds then always play
+       in full rather than being cut short by a stray key or a misplaced
+       click.
+
+       No accessibility cost, and this is worth being clear about. The button
+       is still reachable by Tab and still activates on Enter and Space,
+       because that is what a native <button> does. What went away is "any
+       key dismisses", which is a different thing and was the part that made
+       the entrance feel accidental. */
 
     if (!open) return null;
 
@@ -221,37 +376,80 @@ export default function SignalGate() {
         <div
             ref={gateRef}
             className="signal-gate"
-            data-leaving={leaving ? "" : undefined}
+            data-phase={phase}
             role="dialog"
             aria-modal="true"
             aria-labelledby="signal-gate-title"
         >
+            {/* Target-lock brackets, the same motif the cursor draws. */}
+            <span className="signal-gate-frame" aria-hidden="true" />
+
             <div className="signal-gate-inner">
                 <p className="label-muted signal-gate-meta">
-                    Uplink <span aria-hidden="true">·</span> no carrier
+                    {phase === "lost"
+                        ? "Uplink / no carrier"
+                        : "Uplink / carrier locked"}
                 </p>
 
                 <p id="signal-gate-title" className="signal-gate-title">
-                    Signal lost
+                    {phase === "lost" ? "Signal lost" : "Reacquired"}
                 </p>
 
-                <p className="body-sm signal-gate-body">
-                    Telemetry from this station stopped mid-transmission.
-                    Everything is still down there.
-                </p>
+                {/* The instrument. Present in both phases so it never jumps;
+                    only what it reads changes. */}
+                <canvas
+                    ref={canvasRef}
+                    className="signal-gate-wave"
+                    aria-hidden="true"
+                />
 
-                <button
-                    ref={buttonRef}
-                    type="button"
-                    onClick={reconnect}
-                    className="signal-gate-action"
-                >
-                    Reestablish connection
-                </button>
+                {phase === "lost" ? (
+                    <>
+                        <p className="body-sm signal-gate-body">
+                            Telemetry from this station stopped mid
+                            transmission. Everything is still down there.
+                        </p>
 
-                <p className="label-muted signal-gate-hint">
-                    or press any key
-                </p>
+                        <button
+                            ref={buttonRef}
+                            type="button"
+                            onClick={reconnect}
+                            className="signal-gate-action"
+                        >
+                            <span
+                                className="signal-gate-caret"
+                                aria-hidden="true"
+                            />
+                            Reestablish connection
+                        </button>
+                    </>
+                ) : (
+                    <ol className="signal-gate-log" aria-live="polite">
+                        {lines.slice(0, shown).map((l) => (
+                            <li key={l.label} className="signal-gate-row">
+                                <span
+                                    className="signal-gate-arrow"
+                                    aria-hidden="true"
+                                >
+                                    &gt;
+                                </span>
+                                <span className="signal-gate-label">
+                                    {l.label}
+                                </span>
+                                {l.status ? (
+                                    <span className="signal-gate-status">
+                                        [{l.status}]
+                                    </span>
+                                ) : null}
+                            </li>
+                        ))}
+                        {shown < lines.length ? (
+                            <li className="signal-gate-row" aria-hidden="true">
+                                <span className="signal-gate-caret" />
+                            </li>
+                        ) : null}
+                    </ol>
+                )}
             </div>
         </div>
     );

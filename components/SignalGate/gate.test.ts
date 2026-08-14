@@ -4,9 +4,17 @@ import assert from "node:assert/strict";
 import {
     shouldShowGate,
     msUntilNextGate,
+    bootSequence,
     GATE_TTL_MS,
     GATE_KEY,
+    BOOT_TOTAL_MS,
+    BOOT_FADE_MS,
+    BOOT_EMIT_MS,
+    BOOT_FADE_AT,
 } from "./gate.ts";
+import { SECTION_IDS } from "../LivingArchitecture/stages.ts";
+import { SKILLS } from "../SkillOrbit/data.ts";
+import { CASE_STUDIES } from "../../lib/caseStudies.ts";
 
 /* Run with:
    node --experimental-strip-types --test components/SignalGate/gate.test.ts */
@@ -87,4 +95,88 @@ test("the countdown agrees with the decision", () => {
 
 test("the storage key is namespaced", () => {
     assert.ok(GATE_KEY.includes(":"), "should not collide with a bare key");
+});
+
+/* ── The boot sequence ─────────────────────────────── */
+
+test("click to portfolio is exactly two seconds", () => {
+    // The number was specified, so it is asserted rather than trusted.
+    assert.equal(BOOT_TOTAL_MS, 2000);
+    // The fade OVERLAPS the tail. If it were added on top the entrance would
+    // silently become 2.42s, which is the mistake this guards.
+    assert.equal(BOOT_EMIT_MS + BOOT_FADE_MS, BOOT_TOTAL_MS);
+    assert.equal(BOOT_FADE_AT, BOOT_EMIT_MS);
+});
+
+test("lines are ordered, start at zero and end as the fade begins", () => {
+    const lines = bootSequence();
+    assert.ok(lines.length >= 5, "too short to read as a boot");
+    assert.equal(lines[0].at, 0, "first line should be immediate");
+    assert.equal(
+        lines[lines.length - 1].at,
+        BOOT_FADE_AT,
+        "last line should land exactly as the fade starts",
+    );
+    for (let i = 1; i < lines.length; i++) {
+        assert.ok(
+            lines[i].at > lines[i - 1].at,
+            `line ${i} does not advance (${lines[i - 1].at} -> ${lines[i].at})`,
+        );
+        assert.ok(lines[i].at <= BOOT_TOTAL_MS, "line lands after the gate is gone");
+    }
+});
+
+test("no line is left unreadably brief", () => {
+    const lines = bootSequence();
+    for (let i = 1; i < lines.length; i++) {
+        assert.ok(
+            lines[i].at - lines[i - 1].at >= 90,
+            `gap ${lines[i].at - lines[i - 1].at}ms reads as a flicker`,
+        );
+    }
+});
+
+test("THE LOG CANNOT LIE — counts come from the live data", () => {
+    /* The whole reason the sequence reads from the real arrays. This fails
+       the day someone adds a skill, adds a section or ships a fourth case
+       study and forgets the entrance exists, which is exactly the kind of
+       thing that otherwise ships as a confident wrong number. */
+    const text = bootSequence()
+        .map((l) => l.label)
+        .join(" | ");
+
+    assert.ok(
+        text.includes(`${SECTION_IDS.length} stages`),
+        `expected ${SECTION_IDS.length} stages in: ${text}`,
+    );
+    assert.ok(
+        text.includes(`${SKILLS.length} bodies`),
+        `expected ${SKILLS.length} bodies in: ${text}`,
+    );
+    assert.ok(
+        text.includes(`case studies / ${CASE_STUDIES.length}`),
+        `expected ${CASE_STUDIES.length} case studies in: ${text}`,
+    );
+
+    // And no hardcoded number may survive anywhere in the log.
+    for (const n of text.match(/\d+/g) ?? []) {
+        assert.ok(
+            [SECTION_IDS.length, SKILLS.length, CASE_STUDIES.length]
+                .map(String)
+                .includes(n),
+            `"${n}" in the boot log matches no live count`,
+        );
+    }
+});
+
+test("the log opens and closes on a statement, not a check", () => {
+    const lines = bootSequence();
+    assert.equal(lines[0].status, undefined);
+    assert.equal(lines[lines.length - 1].status, undefined);
+    // Everything between reports a result.
+    for (const l of lines.slice(1, -1)) assert.equal(l.status, "OK");
+});
+
+test("the sequence is pure", () => {
+    assert.deepEqual(bootSequence(), bootSequence());
 });

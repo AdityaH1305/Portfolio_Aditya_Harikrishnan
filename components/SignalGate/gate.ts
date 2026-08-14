@@ -48,3 +48,74 @@ export function msUntilNextGate(now: number, stored: string | null): number {
     if (shouldShowGate(now, stored)) return 0;
     return GATE_TTL_MS - (now - Number(stored));
 }
+
+/* ══════════════════════════════════════════════════════
+   The boot sequence
+
+   What plays on screen between "reestablish connection"
+   and the site.
+
+   ── The log is not decoration, and it does not lie ──
+   The obvious version of this fetches BG.JPG and a couple
+   of hex blobs. On a site whose entire argument is that its
+   numbers were measured against something, inventing
+   filenames would be the one dishonest thing on the page.
+
+   So the counts are READ FROM THE ARRAYS THE SITE RENDERS
+   FROM. Add a skill and the log says 28 without anyone
+   touching it. There is a test asserting exactly that,
+   because the failure mode otherwise is silent and
+   embarrassing: a boot readout confidently reporting a
+   number the site stopped having.
+   ══════════════════════════════════════════════════════ */
+
+import { SECTION_IDS } from "../LivingArchitecture/stages.ts";
+import { SKILLS } from "../SkillOrbit/data.ts";
+import { CASE_STUDIES } from "../../lib/caseStudies.ts";
+
+/** Click to portfolio. Exactly two seconds, fade included, not added on top. */
+export const BOOT_TOTAL_MS = 2000;
+
+/** The cross-fade, which OVERLAPS the tail rather than following it. */
+export const BOOT_FADE_MS = 420;
+
+/** Lines are emitted across this window; the last lands as the fade starts. */
+export const BOOT_EMIT_MS = BOOT_TOTAL_MS - BOOT_FADE_MS;
+
+export interface BootLine {
+    /** Left side of the row. */
+    label: string;
+    /** Right side. Absent for lines that are statements, not checks. */
+    status?: string;
+    /** Milliseconds after the click at which this line appears. */
+    at: number;
+}
+
+/**
+ * The readout, timed.
+ *
+ * A function rather than a constant so the counts are resolved at call time,
+ * and so the test can compare a fresh result against the live arrays.
+ */
+export function bootSequence(): BootLine[] {
+    const rows: Omit<BootLine, "at">[] = [
+        { label: "carrier detected" },
+        { label: "handshake", status: "OK" },
+        { label: "scroll driver", status: "OK" },
+        { label: `system atlas / ${SECTION_IDS.length} stages`, status: "OK" },
+        { label: `orbital field / ${SKILLS.length} bodies`, status: "OK" },
+        { label: `case studies / ${CASE_STUDIES.length}`, status: "OK" },
+        { label: "uplink restored" },
+    ];
+
+    const last = rows.length - 1;
+    return rows.map((r, i) => ({
+        ...r,
+        // First at 0, last exactly at BOOT_EMIT_MS, evenly spaced between.
+        at: Math.round((i / last) * BOOT_EMIT_MS),
+    }));
+}
+
+/** When the gate starts fading. Equal to the last line's time, by design. */
+export const BOOT_FADE_AT = BOOT_EMIT_MS;
+

@@ -1358,6 +1358,10 @@ html.zone-immersive .zone-bar {
 /* ══════════════════════════════════════════════════════
    Signal Gate
 
+   The entrance. A dead instrument that comes back to life,
+   plays a boot readout, and hands over to the site — the
+   whole thing timed to exactly two seconds from the click.
+
    Sits over a fully rendered page rather than in place of
    one. Under `scripting: none` it never appears at all, so
    a no-JS visitor gets the site directly.
@@ -1370,56 +1374,118 @@ html.zone-immersive .zone-bar {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 2rem;
+  padding: clamp(1.5rem, 6vw, 5rem);
   background: var(--surface-0);
-  animation: signal-gate-in 420ms var(--ease) both;
 }
 
 /* The whole panel leaves together, so the page is revealed rather than the
-   gate merely disappearing. */
-.signal-gate[data-leaving] {
-  animation: signal-gate-out 620ms var(--ease) both;
+   gate merely disappearing. Duration must match BOOT_FADE_MS in gate.ts. */
+.signal-gate[data-phase="leaving"] {
+  animation: signal-out 420ms var(--ease) both;
   pointer-events: none;
 }
 
-@keyframes signal-gate-in {
-  from {
-    opacity: 0;
-  }
-}
-
-@keyframes signal-gate-out {
+@keyframes signal-out {
   to {
     opacity: 0;
   }
 }
 
+/* ── Target-lock brackets ──
+   Four corners drawn with gradients rather than four elements. Same motif
+   the cursor draws on a locked target, which is what ties the entrance to
+   the rest of the instrument language. */
+.signal-gate-frame {
+  position: absolute;
+  inset: clamp(0.75rem, 2.5vw, 1.75rem);
+  pointer-events: none;
+  --bracket: 22px;
+  background:
+    linear-gradient(var(--border-strong), var(--border-strong)) 0 0 / 1px
+      var(--bracket) no-repeat,
+    linear-gradient(90deg, var(--border-strong), var(--border-strong)) 0 0 /
+      var(--bracket) 1px no-repeat,
+    linear-gradient(var(--border-strong), var(--border-strong)) 100% 0 / 1px
+      var(--bracket) no-repeat,
+    linear-gradient(90deg, var(--border-strong), var(--border-strong)) 100% 0 /
+      var(--bracket) 1px no-repeat,
+    linear-gradient(var(--border-strong), var(--border-strong)) 0 100% / 1px
+      var(--bracket) no-repeat,
+    linear-gradient(90deg, var(--border-strong), var(--border-strong)) 0 100% /
+      var(--bracket) 1px no-repeat,
+    linear-gradient(var(--border-strong), var(--border-strong)) 100% 100% / 1px
+      var(--bracket) no-repeat,
+    linear-gradient(90deg, var(--border-strong), var(--border-strong)) 100% 100% /
+      var(--bracket) 1px no-repeat;
+  animation: signal-rise 700ms var(--ease) both;
+}
+
 .signal-gate-inner {
-  max-width: 30rem;
-  text-align: left;
+  width: min(34rem, 100%);
+}
+
+/* ── Staggered entrance ──
+   Each element arrives on the same curve the rest of the site uses, a beat
+   apart. Subtle enough to read as the panel settling rather than as five
+   separate animations. */
+@keyframes signal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+}
+
+.signal-gate-meta,
+.signal-gate-title,
+.signal-gate-wave,
+.signal-gate-body,
+.signal-gate-action,
+.signal-gate-hint {
+  animation: signal-rise 620ms var(--ease) both;
 }
 
 .signal-gate-meta {
-  /* The dead carrier: a flat line where the amber usually is. */
+  animation-delay: 60ms;
   color: var(--text-quaternary);
+  transition: color 420ms var(--ease);
+}
+
+/* Carrier locked: the telemetry line is the first thing to admit it. */
+.signal-gate[data-phase="booting"] .signal-gate-meta,
+.signal-gate[data-phase="leaving"] .signal-gate-meta {
+  color: var(--accent);
 }
 
 .signal-gate-title {
+  animation-delay: 120ms;
   font-size: clamp(2.5rem, 1rem + 4.4vw, 4.25rem);
   font-weight: 400;
   letter-spacing: 0.004em;
   line-height: 1;
   color: var(--text-primary);
-  margin-top: 1rem;
+  margin-top: 0.9rem;
+}
+
+/* ── The instrument ──
+   Fixed height so the panel never reflows between phases: the trace is in
+   the same place before and after, and only what it reads changes. */
+.signal-gate-wave {
+  animation-delay: 180ms;
+  display: block;
+  width: 100%;
+  height: 68px;
+  margin-top: 1.5rem;
 }
 
 .signal-gate-body {
-  margin-top: 1.25rem;
-  max-width: 34ch;
+  animation-delay: 240ms;
+  margin-top: 1.5rem;
+  max-width: 36ch;
 }
 
 .signal-gate-action {
-  margin-top: 2.25rem;
+  animation-delay: 320ms;
+  margin-top: 2rem;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
@@ -1435,13 +1501,15 @@ html.zone-immersive .zone-bar {
   transition:
     background 0.35s var(--ease),
     border-color 0.35s var(--ease),
-    color 0.35s var(--ease);
+    color 0.35s var(--ease),
+    transform 0.35s var(--ease);
 }
 
 .signal-gate-action:hover {
   background: var(--accent-muted);
   border-color: var(--accent);
   color: var(--accent-hover);
+  transform: translateY(-1px);
 }
 
 .signal-gate-action:active {
@@ -1454,14 +1522,102 @@ html.zone-immersive .zone-bar {
 }
 
 .signal-gate-hint {
+  animation-delay: 400ms;
   margin-top: 1rem;
+  color: var(--text-quaternary);
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+/* ── The boot readout ── */
+.signal-gate-log {
+  margin-top: 1.5rem;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  line-height: 1.9;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  list-style: none;
+}
+
+.signal-gate-row {
+  display: flex;
+  align-items: baseline;
+  gap: 0.55rem;
+  /* Each line arrives rather than blinking on. */
+  animation: signal-line 260ms var(--ease) both;
+}
+
+@keyframes signal-line {
+  from {
+    opacity: 0;
+    transform: translateX(-6px);
+  }
+}
+
+.signal-gate-arrow {
+  color: var(--accent);
+}
+
+.signal-gate-label {
+  color: var(--text-secondary);
+  /* The dotted leader, so the statuses line up in a column without a table. */
+  flex: 1 1 auto;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.signal-gate-label::after {
+  content: " ..................................................";
   color: var(--text-quaternary);
 }
 
+.signal-gate-status {
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+
+/* ── The caret ──
+   Taken from the reference, and the one thing on the gate that never stops
+   moving: it is what says the terminal is waiting for you rather than
+   finished with you. */
+.signal-gate-caret {
+  display: inline-block;
+  width: 0.55em;
+  height: 1em;
+  background: var(--accent);
+  animation: signal-blink 1.1s steps(1, end) infinite;
+  transform: translateY(0.12em);
+}
+
+@keyframes signal-blink {
+  0%,
+  50% {
+    opacity: 1;
+  }
+  50.01%,
+  100% {
+    opacity: 0;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .signal-gate,
-  .signal-gate[data-leaving] {
+  .signal-gate-frame,
+  .signal-gate-meta,
+  .signal-gate-title,
+  .signal-gate-wave,
+  .signal-gate-body,
+  .signal-gate-action,
+  .signal-gate-hint,
+  .signal-gate-row,
+  .signal-gate[data-phase="leaving"] {
     animation: none;
+  }
+
+  .signal-gate-caret {
+    animation: none;
+    opacity: 1;
   }
 }
 
@@ -1791,10 +1947,20 @@ html.cursor-custom [data-cursor="text"] {
   transform: translateY(16px);
 }
 
-/* If JS never runs, nothing may stay invisible. */
+/* If JS never runs, nothing may stay invisible.
+
+   `[data-hero]` belongs here and was missing. The hero's eyebrow, headline,
+   tagline, facts and CTAs are all server-rendered at `opacity: 0` as their
+   animation start state, and only GSAP ever set them back — so with
+   scripting off the entire first screen of the site rendered blank. It also
+   cost the page its Largest Contentful Paint candidate, because LCP ignores
+   anything at zero opacity: the biggest text on the page was invisible to
+   the metric, which is why a figure 2600px down was being reported as the
+   LCP element instead. */
 @media (scripting: none) {
   [data-reveal],
-  [data-reveal-child] {
+  [data-reveal-child],
+  [data-hero] {
     opacity: 1 !important;
     transform: none !important;
   }

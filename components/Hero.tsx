@@ -51,7 +51,30 @@ export default function Hero() {
 
             mm.add("(prefers-reduced-motion: no-preference)", () => {
                 let cancelled = false;
+                let started = false;
                 let cleanup: (() => void) | undefined;
+
+                /* ── Failsafe ──
+                   Everything below is gated on TWO things resolving: the web
+                   fonts, and a dynamically imported SplitText chunk. Until
+                   both land, the whole hero sits at the `opacity: 0` start
+                   state it was server-rendered with — so a slow chunk, an
+                   offline font or a failed import leaves the first screen of
+                   the site blank with no error anywhere.
+
+                   It also costs the page its LCP candidate the entire time,
+                   because the metric ignores anything at zero opacity. The
+                   largest text on the page cannot be the largest contentful
+                   paint while it is invisible, which is how a figure far down
+                   the document ended up being reported instead.
+
+                   So: if the entrance has not begun by now, show the hero.
+                   A hero that appears without its animation is a small loss.
+                   A hero that never appears is the page. */
+                const failsafe = window.setTimeout(() => {
+                    if (started || cancelled) return;
+                    gsap.set("[data-hero]", { opacity: 1, y: 0 });
+                }, 1200);
 
                 /* Fonts must be ready before splitting. next/font uses
                    display:swap, so splitting against fallback metrics gives
@@ -63,6 +86,12 @@ export default function Hero() {
                     const { SplitText } = await import("gsap/SplitText");
                     gsap.registerPlugin(SplitText);
                     if (cancelled || !headingRef.current) return;
+
+                    /* Claim the entrance before touching anything, so the
+                       failsafe cannot fire mid-split and fight the timeline
+                       over the same properties. */
+                    started = true;
+                    window.clearTimeout(failsafe);
 
                     const split = SplitText.create(headingRef.current, {
                         type: "chars",
@@ -102,6 +131,7 @@ export default function Hero() {
 
                 return () => {
                     cancelled = true;
+                    window.clearTimeout(failsafe);
                     cleanup?.();
                 };
             });
