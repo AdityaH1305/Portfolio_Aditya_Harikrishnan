@@ -31,7 +31,7 @@ export default function Throughline() {
         <section id="throughline" className="section-y section-divide">
             <div className="section-container">
                 <Reveal y={16}>
-                    <p className="label">02 / The Through-Line</p>
+                    <p className="label">The Through-Line</p>
                 </Reveal>
 
                 <Reveal y={24} delay={0.08}>

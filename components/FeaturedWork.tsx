@@ -23,11 +23,9 @@ import CaseStudyZone from "@/components/CaseStudyZone";
 export default function FeaturedWork() {
     return (
         <section id="work" className="relative section-y section-divide">
-            <div className="ludex-glow" aria-hidden="true" />
-
             <div className="section-container">
                 <Reveal>
-                    <p className="label">03 / Featured Work</p>
+                    <p className="label">Featured Work</p>
                     <h2 className="heading-lg mt-3">Case Studies</h2>
                     <p className="body-lg mt-5 measure-tight">
                         Three systems built end to end — each one measured

@@ -26,9 +26,6 @@ import { ZONE_EVENT } from "@/lib/zone";
 
 /** Total travel in px across the entire page, per layer. */
 const TRAVEL = {
-    glowHero: -80,
-    glowMid: -160,
-    glowLower: -240,
     grid: -40,
 } as const;
 
@@ -55,9 +52,12 @@ export default function AtmosphereParallax() {
 
             // ease "none" is required: an eased parallax decouples from
             // scroll position and drifts out of sync on fast scrolls.
-            tl.to(".atmosphere-glow--hero", { y: TRAVEL.glowHero, ease: "none" }, 0)
-                .to(".atmosphere-glow--mid", { y: TRAVEL.glowMid, ease: "none" }, 0)
-                .to(".atmosphere-glow--lower", { y: TRAVEL.glowLower, ease: "none" }, 0)
+            tl
+                /* The three accent glows used to travel here too. They are
+                   gone from the design, so this timeline drives one layer.
+                   Kept as a timeline rather than collapsed to a bare tween:
+                   the single-ScrollTrigger point below still stands if a
+                   second layer is ever added back. */
                 /* The grid moves by TRANSFORM now, not backgroundPositionY.
                    background-position is a paint property, so the old version
                    repainted a full-viewport grid overlay on every scroll

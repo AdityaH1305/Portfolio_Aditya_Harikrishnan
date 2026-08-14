@@ -226,9 +226,10 @@ export default function CaseStudyZone() {
 
     return (
         <div ref={rootRef}>
-            {/* The room: one composited layer carrying the violet field and
-                the finer violet grid, crossfaded over the cyan atmosphere. */}
-            <div className="zone-backdrop" aria-hidden="true" />
+            {/* The violet field is gone. The room is now a shift in VALUE,
+                not in hue: the surfaces deepen and the vignette tightens.
+                A second accent would have broken the one-accent lock, and a
+                glowing field was the last of the seven light layers. */}
 
             {/* Cinematic framing. Fixed, inert, always mounted; only their
                 opacity changes, driven by the `zone-immersive` class. */}

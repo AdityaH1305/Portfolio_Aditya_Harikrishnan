@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
 /* ══════════════════════════════════════════════════════
-   Design System — Technical / Systems
-   Canvas: #0B0F14  |  Text: #E8EDF2  |  Accent: #22D3EE
+   Design System — Apollo-era instrumentation
+   Canvas: #0A0908  |  Text: #F2EFEA  |  Accent: #E8A33D
+
+   Illuminated console panels: warm near-black, warm stone
+   hairlines, and one amber lamp. Light is rationed the way
+   colour is — the page itself does not glow anywhere, which
+   is what leaves the LivingArchitecture atlas and the
+   SkillOrbit field as the only things on the site that emit
+   any. Elevation comes from edges, not from halos.
 
    Every color, size and rhythm value in the site resolves
    to a token declared here. Components should never write
@@ -18,18 +25,17 @@
    interpolate instead of snap.
 
    All FOUR surfaces are registered, not just the canvas and
-   the raised layer. The zone shifts the whole ramp to indigo,
-   and leaving 2 and 3 behind meant the command palette and
-   every hover state stayed neutral near-black against an
-   indigo page — visible as a grey card floating in a blue
-   room.
+   the raised layer. The zone shifts the whole ramp, and
+   leaving 2 and 3 behind meant the command palette and every
+   hover state stayed at page brightness inside a darker
+   room — visible as a card floating a step too light.
 
    `--accent-rgb` is deliberately NOT animated:
    LivingArchitecture reads it once at runtime via
    syncAccentFromCSS(), so animating it would drift the
    canvas out of sync with the DOM. The zone leaves the accent
-   alone entirely — cyan is the site's identity and it is what
-   carries through into the room.
+   alone entirely — the amber is the site's identity and it is
+   what carries through into the room.
 
    Where @property is unsupported the zone simply snaps to
    the deeper palette instead of easing into it.
@@ -37,65 +43,90 @@
 @property --surface-0 {
   syntax: "<color>";
   inherits: true;
-  initial-value: #0b0f14;
+  initial-value: #0a0908;
 }
 
 @property --surface-1 {
   syntax: "<color>";
   inherits: true;
-  initial-value: #10151c;
+  initial-value: #111010;
 }
 
 @property --surface-2 {
   syntax: "<color>";
   inherits: true;
-  initial-value: #161d26;
+  initial-value: #181615;
 }
 
 @property --surface-3 {
   syntax: "<color>";
   inherits: true;
-  initial-value: #1d2630;
+  initial-value: #221f1d;
 }
 
 :root {
-  /* ── Surfaces — one ramp, replacing five ad-hoc near-blacks ── */
-  --surface-0: #0B0F14; /* canvas */
-  --surface-1: #10151C; /* raised — cards, bezel cores */
-  --surface-2: #161D26; /* overlay — modals, command palette */
-  --surface-3: #1D2630; /* hover / active */
+  /* ── Surfaces — warm near-black, one ramp ──
+     Was a slate-blue ramp starting at #0B0F14. That, plus a cyan accent and
+     slate borders, is the default palette of every generated dark portfolio,
+     and it was the single loudest thing making this site look untouched by a
+     person. These carry the faintest warm cast instead: illuminated console
+     panels, not a blue screen. Never pure #000 — that kills depth. */
+  --surface-0: #0A0908; /* canvas */
+  --surface-1: #111010; /* raised — cards, bezel cores */
+  --surface-2: #181615; /* overlay — modals, command palette */
+  --surface-3: #221F1D; /* hover / active */
 
-  /* ── Text ramp — cool, contrast-checked against --surface-0 ── */
-  --text-primary: #E8EDF2; /* ~15:1 — headings, primary copy */
-  --text-secondary: #9BA9B8; /* ~8:1  — body copy */
-  --text-tertiary: #78889B; /* ~5.3:1 — metadata, captions; still AA
-                               because components use this for real
-                               body copy, not just decoration */
-  --text-quaternary: #475569; /* ~2.4:1 — DECORATIVE ONLY, never text */
+  /* ── Text ramp — warm neutrals, measured against every surface ── */
+  --text-primary: #F2EFEA; /* 17.4:1 — headings, primary copy */
+  --text-secondary: #A8A29B; /* 7.9:1  — body copy */
+  --text-tertiary: #8A837A; /* 5.3:1 on canvas, 4.8:1 on overlay. The
+                               obvious warm match for the old value was
+                               #7C766E, which measures 4.43:1 and FAILS AA
+                               body — and components use this token for real
+                               body copy, not just captions. Lightened until
+                               it cleared 4.5:1 on all three surfaces. */
+  --text-quaternary: #4A4540; /* 2.1:1 — DECORATIVE ONLY, never text */
 
   /* ── Accent ──
      Declared once as channels. Everything else — CSS alphas and
      the LivingArchitecture canvas, which reads this at runtime —
-     derives from it, so changing the accent is a one-line edit. */
-  --accent-rgb: 34 211 238;
+     derives from it, so changing the accent is a one-line edit.
+
+     Amber, at 79% saturation and 9.2:1 on the canvas. Warm phosphor and
+     gauge lamps rather than neon: the point is that it looks lit from
+     behind, not that it glows. */
+  --accent-rgb: 232 163 61;
 
   --accent: rgb(var(--accent-rgb));
-  --accent-hover: #67E8F9;
-  --accent-pressed: #0891B2;
-  --accent-subtle: rgba(34, 211, 238, 0.06);
-  --accent-muted: rgba(34, 211, 238, 0.14);
-  --accent-border: rgba(34, 211, 238, 0.3);
+  --accent-hover: #F5BE6B;
+  --accent-pressed: #B87F27;
+  /* Derived, not literal. The comment above has always claimed a single
+     source while thirteen rgba(34,211,238,…) literals sat underneath it. */
+  --accent-subtle: rgb(var(--accent-rgb) / 0.06);
+  --accent-muted: rgb(var(--accent-rgb) / 0.14);
+  --accent-border: rgb(var(--accent-rgb) / 0.3);
 
-  /* ── Borders — slate-tinted so they stay cool, not grey ── */
-  --border-subtle: rgba(148, 163, 184, 0.08); /* section dividers */
-  --border-default: rgba(148, 163, 184, 0.14); /* cards */
-  --border-strong: rgba(148, 163, 184, 0.22); /* nav, overlays, hover */
+  /* ── Borders — warm stone, so hairlines belong to the same room ── */
+  --border-subtle: rgba(196, 181, 160, 0.07); /* section dividers */
+  --border-default: rgba(196, 181, 160, 0.12); /* cards */
+  --border-strong: rgba(196, 181, 160, 0.20); /* nav, overlays, hover */
 
   /* ── Rhythm ── */
   --space-section: clamp(5rem, 10vw, 9rem);
 
   /* ── Motion — the signature curve, used everywhere ── */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
+
+  /* ── Edge, which is what replaced glow ──
+     A highlight on the top edge, a hairline all the way round, a shade under
+     the bottom lip. Three layers describing a lit physical edge instead of a
+     halo, which is the whole substitution this redesign makes: elevation you
+     can point at rather than light that bleeds. Deliberately NOT a drop
+     shadow — those need a light source the page does not have. */
+  --edge-key:
+    inset 0 1px 0 rgba(255, 250, 240, 0.05),
+    0 0 0 1px var(--border-subtle),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
 
   /* Compatibility aliases — keep existing component markup
      resolving while sections are migrated one at a time.
@@ -241,7 +272,7 @@ html {
      actually look at it. */
   background-image: repeating-linear-gradient(
     to bottom,
-    rgba(148, 163, 184, 0.16) 0 1px,
+    rgba(196, 181, 160, 0.15) 0 1px,
     transparent 1px 8px
   );
 }
@@ -292,7 +323,7 @@ body {
 }
 
 ::selection {
-  background: rgba(34, 211, 238, 0.25);
+  background: rgb(var(--accent-rgb) / 0.22);
   color: var(--text-primary);
 }
 
@@ -317,40 +348,40 @@ body {
 
 .display {
   font-size: clamp(3rem, 1rem + 6.7vw, 6rem);
-  font-weight: 700;
-  letter-spacing: -0.035em;
+  font-weight: 400;
+  letter-spacing: 0.005em;
   line-height: 0.92;
   color: var(--text-primary);
 }
 
 .heading-xl {
   font-size: clamp(2.5rem, 1rem + 4.4vw, 4.25rem);
-  font-weight: 700;
-  letter-spacing: -0.03em;
+  font-weight: 400;
+  letter-spacing: 0.004em;
   line-height: 1;
   color: var(--text-primary);
 }
 
 .heading-lg {
   font-size: clamp(2rem, 1rem + 3.1vw, 3rem);
-  font-weight: 600;
-  letter-spacing: -0.025em;
+  font-weight: 500;
+  letter-spacing: 0.002em;
   line-height: 1.1;
   color: var(--text-primary);
 }
 
 .heading-md {
   font-size: clamp(1.5rem, 1rem + 1.8vw, 2.125rem);
-  font-weight: 600;
-  letter-spacing: -0.015em;
+  font-weight: 500;
+  letter-spacing: 0;
   line-height: 1.2;
   color: var(--text-primary);
 }
 
 .heading-sm {
   font-size: clamp(1.125rem, 0.95rem + 0.6vw, 1.5rem);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 500;
+  letter-spacing: 0;
   line-height: 1.35;
   color: var(--text-primary);
 }
@@ -656,11 +687,19 @@ body {
    figures to sit on. The accent is untouched, so cyan metrics and labels read
    as the same site — which is what stops the shift looking like a theme swap
    and makes it look like a room. */
+/* The room, as a shift in VALUE rather than hue.
+
+   It used to swing the whole ramp to indigo and fade in a violet field. That
+   was a second accent, which broke the one-accent lock, and the field was one
+   of the seven light layers this design removed. Deepening toward black does
+   the same job: the walls close in, the amber stays exactly as bright, and
+   because nothing else on the page emits light the case studies are the only
+   thing left to look at. */
 html.zone-immersive {
-  --surface-0: #080a18;
-  --surface-1: #0e1226;
-  --surface-2: #141a32;
-  --surface-3: #1b2340;
+  --surface-0: #040404;
+  --surface-1: #0a0908;
+  --surface-2: #111010;
+  --surface-3: #1a1817;
 }
 
 /* ── The choreographed stage ──────────────────────────
@@ -877,11 +916,7 @@ html.zone-immersive .atmosphere-grid {
 /* The cyan pools go out entirely — the backdrop's violet ones replace them.
    Leaving both on is what would make the room read as muddy rather than
    changed. */
-html.zone-immersive .atmosphere-glow {
-  opacity: 0;
-}
-
-/* The noise gets its own value and must NOT join the group above.
+html.zone-immersive /* The noise gets its own value and must NOT join the group above.
    Its base opacity is 0.02, so `opacity: 0.25` was not dimming it — it was
    12.5× MORE grain, applied at exactly the moment the background darkens and
    makes grain more visible. That was the "too grainy" report. */
@@ -905,63 +940,8 @@ html.zone-immersive .living-architecture-canvas {
 
 .side-nav,
 .atmosphere-grid,
-.atmosphere-glow,
 .living-architecture-canvas {
   transition: opacity 1200ms var(--ease);
-}
-
-/* ── The room itself ──────────────────────────────────
-   ONE fixed layer carrying both the violet field and the finer violet grid,
-   crossfading in over the cyan atmosphere on nothing but opacity.
-
-   Deliberately additive rather than re-tinting what is already there. The
-   existing glows and the 64px slate grid are painted gradients: interpolating
-   their colours means repainting them, and animating `background-size` on
-   `.atmosphere-grid` would also fight the one-whole-tile bleed that its
-   `inset: -64px 0` exists to provide. Fading one new composited layer in over
-   the old ones costs nothing per frame and cannot break the parallax
-   geometry.
-
-   z-index 0 with the atmosphere, below all content. */
-.zone-backdrop {
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0;
-  transition: opacity 1200ms var(--ease);
-  background-image:
-    /* the fine grid — 40px against the atmosphere's 64px, and violet
-       rather than slate, so it still reads as instrumentation but
-       unmistakably not the same instrument */
-    linear-gradient(rgba(139, 120, 221, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(139, 120, 221, 0.05) 1px, transparent 1px),
-    /* the field: two offset violet pools, replacing the cyan glows */
-    radial-gradient(
-      ellipse 60% 50% at 78% 18%,
-      rgba(129, 108, 220, 0.16) 0%,
-      rgba(129, 108, 220, 0) 100%
-    ),
-    radial-gradient(
-      ellipse 70% 60% at 12% 72%,
-      rgba(96, 92, 200, 0.13) 0%,
-      rgba(96, 92, 200, 0) 100%
-    ),
-    radial-gradient(
-      ellipse 120% 90% at 50% 50%,
-      rgba(14, 12, 38, 0.55) 0%,
-      rgba(6, 6, 20, 0.8) 100%
-    );
-  background-size:
-    40px 40px,
-    40px 40px,
-    auto,
-    auto,
-    auto;
-}
-
-html.zone-immersive .zone-backdrop {
-  opacity: 1;
 }
 
 /* Cinematic framing. Both are fixed, pointer-events:none, and only their
@@ -1033,9 +1013,7 @@ html.zone-immersive .zone-bar {
   :root,
   .side-nav,
   .atmosphere-grid,
-  .atmosphere-glow,
   .living-architecture-canvas,
-  .zone-backdrop,
   .zone-vignette,
   .zone-bar {
     transition: none;
@@ -1060,7 +1038,7 @@ html.zone-immersive .zone-bar {
 .skill-orbit-frame {
   padding: 0.375rem;
   border-radius: 1.5rem;
-  background: rgba(148, 163, 184, 0.04);
+  background: rgba(196, 181, 160, 0.035);
   box-shadow: 0 0 0 1px var(--border-subtle);
 }
 
@@ -1093,12 +1071,12 @@ html.zone-immersive .zone-bar {
   background:
     radial-gradient(
       ellipse 70% 55% at 50% 38%,
-      rgba(24, 38, 84, 0.55) 0%,
-      rgba(10, 16, 40, 0.35) 45%,
-      rgba(3, 6, 15, 0) 100%
+      rgba(46, 34, 18, 0.5) 0%,
+      rgba(24, 18, 11, 0.32) 45%,
+      rgba(6, 5, 4, 0) 100%
     ),
-    radial-gradient(ellipse 120% 100% at 50% 50%, #070c1c 0%, #03060f 100%);
-  box-shadow: inset 0 1px 1px rgba(148, 163, 184, 0.08);
+    radial-gradient(ellipse 120% 100% at 50% 50%, #0d0b09 0%, #050403 100%);
+  box-shadow: inset 0 1px 1px rgba(255, 250, 240, 0.07);
 }
 
 /* Two columns need more height for the same body count, and the readout
@@ -1148,7 +1126,7 @@ html.zone-immersive .zone-bar {
   gap: 1.5rem;
   padding: 0 1.25rem;
   border-top: 1px solid var(--border-default);
-  background: rgba(3, 6, 15, 0.72);
+  background: rgba(6, 5, 4, 0.72);
   overflow: hidden;
 }
 
@@ -1248,7 +1226,7 @@ html.zone-immersive .zone-bar {
   font-size: 0.6875rem;
   letter-spacing: 0.06em;
   color: var(--text-tertiary);
-  background: rgba(3, 6, 15, 0.85);
+  background: rgba(6, 5, 4, 0.85);
   border: 1px solid var(--border-default);
   border-radius: 9999px;
   padding: 0.35rem 0.8rem;
@@ -1332,6 +1310,178 @@ html.zone-immersive .zone-bar {
 }
 
 /* ══════════════════════════════════════════════════════
+   Keycap
+
+   A physical key, using the same three-layer edge as the
+   bezels: highlight on top, hairline round, shade beneath.
+   The one component on the site that is literally about
+   being pressed, so it gets the treatment most literally.
+   ══════════════════════════════════════════════════════ */
+
+.keycap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.75rem;
+  padding: 0.15rem 0.4rem;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.4;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  background: var(--surface-2);
+  border-radius: 0.3rem;
+  box-shadow: var(--edge-key);
+}
+
+.signal-strip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Under the nav rail, which is centred at 50% and grows from there. */
+.kbd-hint {
+  position: fixed;
+  left: 1.5rem;
+  bottom: 1.75rem;
+  z-index: 50;
+  align-items: center;
+}
+
+@media (max-width: 767px) {
+  .kbd-hint {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   Signal Gate
+
+   Sits over a fully rendered page rather than in place of
+   one. Under `scripting: none` it never appears at all, so
+   a no-JS visitor gets the site directly.
+   ══════════════════════════════════════════════════════ */
+
+.signal-gate {
+  position: fixed;
+  inset: 0;
+  z-index: 9997;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+  background: var(--surface-0);
+  animation: signal-gate-in 420ms var(--ease) both;
+}
+
+/* The whole panel leaves together, so the page is revealed rather than the
+   gate merely disappearing. */
+.signal-gate[data-leaving] {
+  animation: signal-gate-out 620ms var(--ease) both;
+  pointer-events: none;
+}
+
+@keyframes signal-gate-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes signal-gate-out {
+  to {
+    opacity: 0;
+  }
+}
+
+.signal-gate-inner {
+  max-width: 30rem;
+  text-align: left;
+}
+
+.signal-gate-meta {
+  /* The dead carrier: a flat line where the amber usually is. */
+  color: var(--text-quaternary);
+}
+
+.signal-gate-title {
+  font-size: clamp(2.5rem, 1rem + 4.4vw, 4.25rem);
+  font-weight: 400;
+  letter-spacing: 0.004em;
+  line-height: 1;
+  color: var(--text-primary);
+  margin-top: 1rem;
+}
+
+.signal-gate-body {
+  margin-top: 1.25rem;
+  max-width: 34ch;
+}
+
+.signal-gate-action {
+  margin-top: 2.25rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.75rem;
+  border-radius: 9999px;
+  border: 1px solid var(--accent-border);
+  background: var(--accent-subtle);
+  color: var(--accent);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition:
+    background 0.35s var(--ease),
+    border-color 0.35s var(--ease),
+    color 0.35s var(--ease);
+}
+
+.signal-gate-action:hover {
+  background: var(--accent-muted);
+  border-color: var(--accent);
+  color: var(--accent-hover);
+}
+
+.signal-gate-action:active {
+  transform: scale(0.98);
+}
+
+.signal-gate-action:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.signal-gate-hint {
+  margin-top: 1rem;
+  color: var(--text-quaternary);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .signal-gate,
+  .signal-gate[data-leaving] {
+    animation: none;
+  }
+}
+
+/* Set by the pre-paint script in app/layout.tsx when the visitor cleared the
+   gate less than an hour ago. This is what stops a returning visitor seeing
+   it for a single frame before React removes it. */
+html.signal-connected .signal-gate {
+  display: none;
+}
+
+/* No JS means no reconnect control, so the gate would be a dead end. The
+   script above also never runs, so this is the only thing standing between a
+   no-JS visitor and a permanent wall. */
+@media (scripting: none) {
+  .signal-gate {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
    Custom cursor
 
    `cursor-custom` is added by components/Cursor.tsx and only
@@ -1380,32 +1530,11 @@ html.cursor-custom [data-cursor="text"] {
   opacity: 0.32;
 }
 
-/* ══════════════════════════════════════════════════════
-   Ludex Case Study — section differentiation
-   ══════════════════════════════════════════════════════ */
-
-.ludex-glow {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 100%;
-  max-width: 1200px;
-  height: 60%;
-  background: radial-gradient(
-    ellipse 70% 50% at 50% 0%,
-    rgba(34, 211, 238, 0.05) 0%,
-    rgba(34, 211, 238, 0) 70%
-  );
-  pointer-events: none;
-  z-index: 0;
-}
-
 .ludex-hero-metric {
   font-size: clamp(3.5rem, 1rem + 8vw, 7rem);
-  font-weight: 700;
+  font-weight: 400;
   color: var(--accent);
-  letter-spacing: -0.04em;
+  letter-spacing: 0.002em;
   line-height: 1;
 }
 
@@ -1415,9 +1544,9 @@ html.cursor-custom [data-cursor="text"] {
    just above the title so the number still leads, without shouting. */
 .metric-card {
   font-size: clamp(2.25rem, 1rem + 3.2vw, 3.25rem);
-  font-weight: 700;
+  font-weight: 500;
   color: var(--accent);
-  letter-spacing: -0.04em;
+  letter-spacing: 0;
   line-height: 1;
 }
 
@@ -1462,8 +1591,8 @@ html.cursor-custom [data-cursor="text"] {
   position: absolute;
   inset: -64px 0;
   background-image:
-    linear-gradient(rgba(148, 163, 184, 0.035) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(148, 163, 184, 0.035) 1px, transparent 1px);
+    linear-gradient(rgba(196, 181, 160, 0.032) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(196, 181, 160, 0.032) 1px, transparent 1px);
   background-size: 64px 64px;
   will-change: transform;
 }
@@ -1475,54 +1604,6 @@ html.cursor-custom [data-cursor="text"] {
     ellipse 70% 60% at 50% 50%,
     transparent 40%,
     rgba(11, 15, 20, 0.95) 100%
-  );
-}
-
-/* These are large radial gradients translated on every scroll frame. Without
-   a compositor hint each move repaints the gradient; with one they are
-   promoted once and thereafter only composited. */
-.atmosphere-glow {
-  position: absolute;
-  pointer-events: none;
-  will-change: transform;
-}
-
-.atmosphere-glow--hero {
-  width: 600px;
-  height: 400px;
-  top: 5%;
-  left: 50%;
-  /* margin-left rather than translateX(-50%): the parallax tween owns the
-     transform channel, and a CSS transform here would be overwritten. */
-  margin-left: -300px;
-  background: radial-gradient(
-    circle closest-side,
-    rgba(34, 211, 238, 0.05) 0%,
-    rgba(34, 211, 238, 0) 100%
-  );
-}
-
-.atmosphere-glow--mid {
-  width: 500px;
-  height: 500px;
-  top: 35%;
-  left: 10%;
-  background: radial-gradient(
-    circle closest-side,
-    rgba(34, 211, 238, 0.035) 0%,
-    rgba(34, 211, 238, 0) 100%
-  );
-}
-
-.atmosphere-glow--lower {
-  width: 500px;
-  height: 400px;
-  top: 60%;
-  right: 5%;
-  background: radial-gradient(
-    circle closest-side,
-    rgba(34, 211, 238, 0.035) 0%,
-    rgba(34, 211, 238, 0) 100%
   );
 }
 
@@ -1620,17 +1701,22 @@ html.cursor-custom [data-cursor="text"] {
 }
 
 /* Nested-radius bezel: inner radius = outer − padding */
+/* Nested enclosure: an outer tray holding an inner plate, with the radii
+   concentric. With the page glow gone this is where depth comes from, so the
+   shell now carries the full pressed-key stack rather than a single ring:
+   a highlight catching the top edge, a hairline all the way round, and a
+   shade under the bottom lip. Light from above, on a physical object. */
 .shell-bezel {
-  background: rgba(148, 163, 184, 0.04);
+  background: rgba(196, 181, 160, 0.035);
   padding: 0.375rem;
   border-radius: 2rem;
-  box-shadow: 0 0 0 1px var(--border-subtle);
+  box-shadow: var(--edge-key);
 }
 
 .core-bezel {
   background: var(--surface-1);
   border-radius: calc(2rem - 0.375rem);
-  box-shadow: inset 0 1px 1px rgba(148, 163, 184, 0.08);
+  box-shadow: inset 0 1px 1px rgba(255, 250, 240, 0.07);
 }
 
 /* ══════════════════════════════════════════════════════

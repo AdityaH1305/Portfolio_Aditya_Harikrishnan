@@ -371,7 +371,7 @@ export class SkillOrbitEngine {
             const depth = h(i, 3);
             const r = 0.4 + depth * 1.0;
             g.globalAlpha = 0.12 + depth * 0.4;
-            g.fillStyle = depth > 0.85 ? this.rgba(0.9) : "#cfd8e6";
+            g.fillStyle = depth > 0.85 ? this.rgba(0.9) : "#e6ded2";
             g.beginPath();
             g.arc(x, y, r, 0, Math.PI * 2);
             g.fill();
@@ -447,7 +447,7 @@ export class SkillOrbitEngine {
             c.font = `600 11px var(--font-jetbrains-mono), ui-monospace, monospace`;
             c.textAlign = "center";
             c.textBaseline = "top";
-            c.fillStyle = "rgba(232,237,242,0.82)";
+            c.fillStyle = "rgba(242,239,234,0.82)";
             c.fillText(a.label.toUpperCase(), a.x, a.y + 14);
         }
     }
@@ -474,14 +474,14 @@ export class SkillOrbitEngine {
             c.fillStyle =
                 b.lit > 0.5
                     ? this.rgba(0.55 + b.focus * 0.45)
-                    : `rgba(120,136,155,${0.35 + b.focus * 0.3})`;
+                    : `rgba(138,131,122,${0.35 + b.focus * 0.3})`;
             c.beginPath();
             c.arc(b.x, b.y, r, 0, Math.PI * 2);
             c.fill();
 
             if (b.focus > 0.04) {
                 c.font = `500 11px var(--font-jetbrains-mono), ui-monospace, monospace`;
-                c.fillStyle = `rgba(232,237,242,${b.focus * b.lit})`;
+                c.fillStyle = `rgba(242,239,234,${b.focus * b.lit})`;
                 c.fillText(SKILLS[i].name, b.x, b.y - r - 6);
             }
         }

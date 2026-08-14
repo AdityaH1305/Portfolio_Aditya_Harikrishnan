@@ -45,7 +45,7 @@ export default function Skills() {
         <section id="stack" className="section-y section-divide">
             <div className="section-container">
                 <Reveal y={12}>
-                    <p className="label">06 / Stack</p>
+                    <p className="label">Stack</p>
                     <h2 className="heading-lg mt-3">Skills &amp; Tools</h2>
                     <p className="body-lg mt-5 measure-tight">
                         Listed against the work that used them, not as a

@@ -18,11 +18,18 @@ let accentRGB = ACCENT_FALLBACK;
 /**
  * Global opacity trim for the atlas.
  *
- * Every alpha in stages.ts was tuned for gold on a #050505 canvas.
- * The canvas is now #0B0F14 and the accent is cyan, so this one knob
- * restores the intended visual weight without retuning 13 draw sites.
+ * Every alpha in stages.ts was tuned for gold on a #050505 canvas, then
+ * trimmed to 1.15 for cyan on #0B0F14.
+ *
+ * Raised to 1.35 for amber on #0A0908. Two reasons, and they compound.
+ * The canvas is darker than it was, so the same alpha sits on less
+ * competition. More importantly the page around it no longer glows at all
+ * now that the three atmosphere washes are gone, which makes the atlas the
+ * only light source on the site rather than the brightest of several. It
+ * has to actually carry that, and at 1.15 against the new palette it read
+ * as a faint smudge instead of an instrument.
  */
-export const ACCENT_WEIGHT = 1.15;
+export const ACCENT_WEIGHT = 1.35;
 
 /**
  * Read `--accent-rgb` from the document root. Call once before

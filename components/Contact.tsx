@@ -20,7 +20,7 @@ export default function Contact() {
                 <div className="flex flex-col items-center text-center">
                     {/* ── Heading — personal, distinctive ── */}
                     <Reveal y={20} duration={0.6}>
-                        <p className="label">08 / Contact</p>
+                        <p className="label">Contact</p>
                         <h2 className="heading-lg mt-3">
                             Interested in building
                             <br />
@@ -91,6 +91,19 @@ export default function Contact() {
                         <span className="label-muted">
                             Built with Next.js + TypeScript
                         </span>
+
+                        {/* Telemetry, and the only place the site admits the
+                            command palette exists. Deliberately reads as an
+                            instrument line rather than an instruction: anyone
+                            who tries the shortcut finds a list, and one entry
+                            in that list is not documentation. No fake version
+                            string, and one middle dot at most. */}
+                        <span className="label-muted signal-strip">
+                            Uplink nominal
+                            <span aria-hidden="true">·</span>
+                            <kbd className="keycap">⌘K</kbd>
+                        </span>
+
                         <p className="text-xs text-tertiary mt-1">
                             © {new Date().getFullYear()} Aditya Harikrishnan
                         </p>

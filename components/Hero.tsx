@@ -124,7 +124,7 @@ export default function Hero() {
             <div className="section-container w-full relative z-[1]">
                 <div className="max-w-2xl">
                     <p className="label" data-hero="eyebrow" style={hidden(12)}>
-                        01 / Intro
+                        Intro
                     </p>
 
                     {/* Explicit aria-label: SplitText derives one from the

@@ -152,6 +152,20 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
             {/* Desktop: Resume link */}
             <MagneticResumeLink />
 
+            {/* The palette's only affordance. Nothing else on the page reveals
+                that Ctrl/⌘K does anything, which made the command list, and
+                the one thing hiding in it, effectively undiscoverable. Sits
+                under the nav rail so it reads as part of the instrument
+                chrome rather than as a tooltip. */}
+            <div
+                className={`kbd-hint hidden md:flex transition-opacity duration-700 ease-out ${
+                    mounted ? "opacity-100" : "opacity-0"
+                }`}
+                aria-hidden="true"
+            >
+                <kbd className="keycap">⌘K</kbd>
+            </div>
+
             {/* Mobile: Fluid Island Nav */}
             <nav
                 /* blur-md, not blur-xl: this is fixed over a scrolling page,

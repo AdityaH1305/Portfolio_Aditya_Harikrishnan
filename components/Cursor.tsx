@@ -508,10 +508,28 @@ export default function Cursor() {
                 ctx.stroke();
             }
 
-            // Charge arc for the SideNav easter egg.
+            /* Charge arc for the SideNav easter egg.
+
+               The arc used to be the ONLY tell, which meant it appeared for
+               the first time on the second or third click — long after a
+               visitor had any reason to keep clicking a nav item they had
+               already used. The hint arrived only for people who were
+               already doing the thing the hint was meant to suggest.
+
+               So the first click now draws a full faint ring as well: a
+               single click reads as "that registered as something", which is
+               enough to make a curious person try again. It stays under the
+               arc, so as the charge builds the ring is what the arc fills. */
             const age = now - chargeAt;
             if (charge > 0 && age < 1100) {
                 const fade = 1 - age / 1100;
+
+                ctx.beginPath();
+                ctx.arc(ox, oy, R + 14, 0, Math.PI * 2);
+                ctx.strokeStyle = A(0.16 * fade);
+                ctx.lineWidth = 1;
+                ctx.stroke();
+
                 ctx.beginPath();
                 ctx.arc(
                     ox,

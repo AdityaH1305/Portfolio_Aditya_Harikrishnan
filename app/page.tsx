@@ -16,6 +16,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import CommandPalette from "@/components/CommandPalette";
 import BackgroundAtmosphere from "@/components/BackgroundAtmosphere";
 import AtmosphereParallax from "@/components/AtmosphereParallax";
+import SignalGate from "@/components/SignalGate/SignalGate";
 
 /* ── Lazy-load heavy client-only modules — zero cost until needed ── */
 const SpaceInvadersModal = dynamic(
@@ -35,6 +36,13 @@ export default function Home() {
 
     return (
         <main className="bg-surface-0 text-primary min-h-screen relative">
+            {/* Renders OVER everything below, never instead of it: the whole
+                page is server-rendered underneath, so crawlers and no-JS
+                visitors are unaffected and the LCP is not deferred behind an
+                interaction. Home only, so a link to a case study is never
+                gated. */}
+            <SignalGate />
+
             {/* ── Background Systems ── */}
             <BackgroundAtmosphere />
             <AtmosphereParallax />

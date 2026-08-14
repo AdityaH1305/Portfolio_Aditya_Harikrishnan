@@ -55,7 +55,7 @@ export default function ResearchMindset() {
             <div className="section-container">
                 {/* ── Header ── */}
                 <Reveal y={16}>
-                    <p className="label">05 / Approach</p>
+                    <p className="label">Approach</p>
                     <h2 className="heading-lg mt-3">What I Build</h2>
                     <p className="body-lg mt-4 measure-tight">
                         Systems that combine software engineering with machine
