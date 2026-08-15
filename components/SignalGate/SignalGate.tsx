@@ -9,6 +9,7 @@ import {
 } from "react";
 import { gsap } from "@/lib/motion";
 import { lockScroll, unlockScroll } from "@/lib/lenis";
+import { claimEntrance, releaseEntrance } from "@/lib/entrance";
 import { ATLAS_QUIET_EVENT } from "@/lib/zone";
 import {
     GATE_KEY,
@@ -163,6 +164,24 @@ export default function SignalGate() {
             "(prefers-reduced-motion: reduce)",
         ).matches;
     }, []);
+
+    /* ── Who reveals the page ──────────────────────────
+       Claim it if this gate is going to render, so app/template.tsx stands
+       down and nothing behind the overlay starts moving. Release it here and
+       now if it is not — a visitor inside a live clearance never sees the
+       gate, and their reload should come in on the very next frame rather
+       than waiting out a failsafe.
+
+       Runs before the template's own effect: React fires effects bottom-up
+       and this lives inside {children}. `wanted` is resolved once per page
+       load by getClientSnapshot, so it cannot change underneath this. */
+    useEffect(() => {
+        if (wanted) {
+            claimEntrance();
+        } else {
+            releaseEntrance();
+        }
+    }, [wanted]);
 
     /* ── The carrier ───────────────────────────────────
        On gsap.ticker rather than its own rAF, which is the rule everywhere
@@ -333,6 +352,11 @@ export default function SignalGate() {
     const close = useCallback(() => {
         cachedDecision = false;
         setDismissed(true);
+        /* HERE, not in commit(). This is the moment the page becomes visible,
+           and the whole point of holding the entrance is that the reveals
+           start when the reader can actually see them. Released from commit()
+           they would run under the last 1.6s of the boot log. */
+        releaseEntrance();
     }, []);
 
     const reconnect = useCallback(() => {
@@ -359,6 +383,17 @@ export default function SignalGate() {
             window.setTimeout(() => setPhase("leaving"), BOOT_FADE_AT),
         );
         timers.current.push(window.setTimeout(close, BOOT_TOTAL_MS));
+
+        /* The entrance's backstop, armed HERE rather than on mount.
+           app/template.tsx deliberately refuses to release while this overlay
+           is on screen, because a reader may take any amount of time to press
+           the button — so the only bounded window is the one that starts at
+           the click. If `close` somehow never runs, this still hands the page
+           over a moment after the sequence should have ended. Idempotent, so
+           the normal path costs nothing. */
+        timers.current.push(
+            window.setTimeout(releaseEntrance, BOOT_TOTAL_MS + 400),
+        );
 
         /* Ramp the trace into life so it grows rather than switching. Its own
            rAF because it has to finish inside the first 320ms whatever the

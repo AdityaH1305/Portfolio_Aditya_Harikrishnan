@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, EASE } from "@/lib/motion";
+import { onEntranceReady } from "@/lib/entrance";
 
 /* ══════════════════════════════════════════════════════
    Hero
@@ -49,98 +50,114 @@ export default function Hero() {
         () => {
             const mm = gsap.matchMedia();
 
-            mm.add("(prefers-reduced-motion: no-preference)", () => {
-                let cancelled = false;
-                let started = false;
-                let cleanup: (() => void) | undefined;
+            /* ── Held until the page is visible ────────────
+               The whole entrance, INCLUDING the failsafe below, waits on
+               lib/entrance.ts. Arming that timer on mount was the subtle half
+               of the problem: on a gated load it fired at 1200ms, a full
+               second before the overlay lifted, so the hero was already
+               composed by the time anyone could see it — and the elaborate
+               character animation had played to an empty room.
 
-                /* ── Failsafe ──
-                   Everything below is gated on TWO things resolving: the web
-                   fonts, and a dynamically imported SplitText chunk. Until
-                   both land, the whole hero sits at the `opacity: 0` start
-                   state it was server-rendered with — so a slow chunk, an
-                   offline font or a failed import leaves the first screen of
-                   the site blank with no error anywhere.
+               Waiting also means the 1200ms budget is measured from the
+               moment the hero can actually be watched, which is what it was
+               always meant to mean. */
+            const unsubscribe = onEntranceReady(() => {
+                mm.add("(prefers-reduced-motion: no-preference)", () => {
+                    let cancelled = false;
+                    let started = false;
+                    let cleanup: (() => void) | undefined;
 
-                   It also costs the page its LCP candidate the entire time,
-                   because the metric ignores anything at zero opacity. The
-                   largest text on the page cannot be the largest contentful
-                   paint while it is invisible, which is how a figure far down
-                   the document ended up being reported instead.
+                    /* ── Failsafe ──
+                       Everything below is gated on TWO things resolving: the web
+                       fonts, and a dynamically imported SplitText chunk. Until
+                       both land, the whole hero sits at the `opacity: 0` start
+                       state it was server-rendered with — so a slow chunk, an
+                       offline font or a failed import leaves the first screen of
+                       the site blank with no error anywhere.
 
-                   So: if the entrance has not begun by now, show the hero.
-                   A hero that appears without its animation is a small loss.
-                   A hero that never appears is the page. */
-                const failsafe = window.setTimeout(() => {
-                    if (started || cancelled) return;
-                    gsap.set("[data-hero]", { opacity: 1, y: 0 });
-                }, 1200);
+                       It also costs the page its LCP candidate the entire time,
+                       because the metric ignores anything at zero opacity. The
+                       largest text on the page cannot be the largest contentful
+                       paint while it is invisible, which is how a figure far down
+                       the document ended up being reported instead.
 
-                /* Fonts must be ready before splitting. next/font uses
-                   display:swap, so splitting against fallback metrics gives
-                   wrong per-character offsets and visibly reflows when the
-                   real face arrives. */
-                void document.fonts.ready.then(async () => {
-                    if (cancelled) return;
+                       So: if the entrance has not begun by now, show the hero.
+                       A hero that appears without its animation is a small loss.
+                       A hero that never appears is the page. */
+                    const failsafe = window.setTimeout(() => {
+                        if (started || cancelled) return;
+                        gsap.set("[data-hero]", { opacity: 1, y: 0 });
+                    }, 1200);
 
-                    const { SplitText } = await import("gsap/SplitText");
-                    gsap.registerPlugin(SplitText);
-                    if (cancelled || !headingRef.current) return;
+                    /* Fonts must be ready before splitting. next/font uses
+                       display:swap, so splitting against fallback metrics gives
+                       wrong per-character offsets and visibly reflows when the
+                       real face arrives. */
+                    void document.fonts.ready.then(async () => {
+                        if (cancelled) return;
 
-                    /* Claim the entrance before touching anything, so the
-                       failsafe cannot fire mid-split and fight the timeline
-                       over the same properties. */
-                    started = true;
-                    window.clearTimeout(failsafe);
+                        const { SplitText } = await import("gsap/SplitText");
+                        gsap.registerPlugin(SplitText);
+                        if (cancelled || !headingRef.current) return;
 
-                    const split = SplitText.create(headingRef.current, {
-                        type: "chars",
-                        // Without aria handling, wrapping each letter in a
-                        // span makes screen readers announce the h1 letter
-                        // by letter.
-                        aria: "auto",
-                        mask: "chars",
+                        /* Claim the entrance before touching anything, so the
+                           failsafe cannot fire mid-split and fight the timeline
+                           over the same properties. */
+                        started = true;
+                        window.clearTimeout(failsafe);
+
+                        const split = SplitText.create(headingRef.current, {
+                            type: "chars",
+                            // Without aria handling, wrapping each letter in a
+                            // span makes screen readers announce the h1 letter
+                            // by letter.
+                            aria: "auto",
+                            mask: "chars",
+                        });
+
+                        gsap.set(headingRef.current, { opacity: 1 });
+                        gsap.set(split.chars, { yPercent: 110, opacity: 0 });
+
+                        const tl = gsap.timeline({
+                            defaults: { ease: EASE, duration: 1 },
+                        });
+
+                        tl.to("[data-hero='eyebrow']", { opacity: 1, y: 0, duration: 0.8 }, 0.15)
+                            .to(split.chars, {
+                                yPercent: 0,
+                                opacity: 1,
+                                duration: 0.9,
+                                stagger: 0.028,
+                            }, 0.25)
+                            .to("[data-hero='tagline']", { opacity: 1, y: 0 }, 0.5)
+                            .to("[data-hero='support']", { opacity: 1, y: 0 }, 0.65)
+                            .to("[data-hero='facts']", { opacity: 1, y: 0 }, 0.8)
+                            .to("[data-hero='ctas']", { opacity: 1, y: 0 }, 0.95);
+
+                        cleanup = () => {
+                            tl.kill();
+                            // Must revert, or Fast Refresh re-splits already-split
+                            // DOM and multiplies the character spans.
+                            split.revert();
+                        };
                     });
 
-                    gsap.set(headingRef.current, { opacity: 1 });
-                    gsap.set(split.chars, { yPercent: 110, opacity: 0 });
-
-                    const tl = gsap.timeline({
-                        defaults: { ease: EASE, duration: 1 },
-                    });
-
-                    tl.to("[data-hero='eyebrow']", { opacity: 1, y: 0, duration: 0.8 }, 0.15)
-                        .to(split.chars, {
-                            yPercent: 0,
-                            opacity: 1,
-                            duration: 0.9,
-                            stagger: 0.028,
-                        }, 0.25)
-                        .to("[data-hero='tagline']", { opacity: 1, y: 0 }, 0.5)
-                        .to("[data-hero='support']", { opacity: 1, y: 0 }, 0.65)
-                        .to("[data-hero='facts']", { opacity: 1, y: 0 }, 0.8)
-                        .to("[data-hero='ctas']", { opacity: 1, y: 0 }, 0.95);
-
-                    cleanup = () => {
-                        tl.kill();
-                        // Must revert, or Fast Refresh re-splits already-split
-                        // DOM and multiplies the character spans.
-                        split.revert();
+                    return () => {
+                        cancelled = true;
+                        window.clearTimeout(failsafe);
+                        cleanup?.();
                     };
                 });
 
-                return () => {
-                    cancelled = true;
-                    window.clearTimeout(failsafe);
-                    cleanup?.();
-                };
+                mm.add("(prefers-reduced-motion: reduce)", () => {
+                    gsap.set("[data-hero]", { opacity: 1, y: 0 });
+                });
             });
 
-            mm.add("(prefers-reduced-motion: reduce)", () => {
-                gsap.set("[data-hero]", { opacity: 1, y: 0 });
-            });
-
-            return () => mm.revert();
+            return () => {
+                unsubscribe();
+                mm.revert();
+            };
         },
         { scope: root },
     );

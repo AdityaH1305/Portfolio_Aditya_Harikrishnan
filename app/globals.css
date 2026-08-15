@@ -2417,8 +2417,15 @@ html.cursor-custom [data-cursor="text"] {
     scroll-behavior: auto;
   }
 
+  /* `[data-hero]` belongs here too, and only got added once the entrance
+     started being held. Its reduced-motion path is a `gsap.set` inside the
+     entrance callback, so it is the one start state on the site with no CSS
+     rescue behind it — every releaser would have to fail for the hero to stay
+     invisible, but "every releaser failed" is exactly the case a rescue is
+     for. `@media (scripting: none)` already lists all three. */
   [data-reveal],
-  [data-reveal-child] {
+  [data-reveal-child],
+  [data-hero] {
     opacity: 1 !important;
     transform: none !important;
   }

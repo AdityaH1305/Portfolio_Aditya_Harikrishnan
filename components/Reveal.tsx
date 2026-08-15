@@ -4,6 +4,7 @@ import { useRef, type ElementType, type ReactNode } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap } from "@/lib/motion";
 import { EASE } from "@/lib/motion";
+import { onEntranceReady } from "@/lib/entrance";
 
 /* ══════════════════════════════════════════════════════
    Reveal — the single scroll-reveal primitive
@@ -57,6 +58,22 @@ export default function Reveal({
 }: RevealProps) {
     const ref = useRef<HTMLElement>(null);
 
+    /* ── The trigger is created LATE, and that is the whole mechanism ──
+       Not created-and-paused: created only once `lib/entrance.ts` says the
+       page is visible and settled at the scroll position the reader was
+       returned to.
+
+       Building it on mount instead meant it measured against the position
+       that existed then — before restoration, and behind the signal gate's
+       opaque 2-second overlay. Everything in the viewport played its tween
+       under the overlay and the page was uncovered already finished, which
+       is exactly what this exists to stop.
+
+       Creating it after release means its FIRST evaluation happens against
+       the final geometry, so "is this on screen" gets the right answer with
+       no extra refresh and no special case for the elements that happen to
+       be in the opening viewport. They simply play, each with its own
+       authored `delay` — the stagger is the one the section already had. */
     useGSAP(
         () => {
             const el = ref.current;
@@ -70,28 +87,42 @@ export default function Reveal({
 
             const mm = gsap.matchMedia();
 
-            mm.add("(prefers-reduced-motion: no-preference)", () => {
-                const tween = gsap.to(targets, {
-                    opacity: 1,
-                    y: 0,
-                    x: 0,
-                    duration,
-                    delay,
-                    ease: EASE,
-                    stagger: stagger ?? 0,
-                    scrollTrigger: { trigger: el, start, once: true },
+            /* Held too, not just the animation. Under reduced motion the
+               reveals are a `set`, and running that early would leave the
+               content visible behind the gate — the same uncovered-finished
+               page, minus the fade. */
+            const unsubscribe = onEntranceReady(() => {
+                mm.add("(prefers-reduced-motion: no-preference)", () => {
+                    const tween = gsap.to(targets, {
+                        opacity: 1,
+                        y: 0,
+                        x: 0,
+                        duration,
+                        delay,
+                        ease: EASE,
+                        stagger: stagger ?? 0,
+                        scrollTrigger: { trigger: el, start, once: true },
+                    });
+                    return () => {
+                        tween.scrollTrigger?.kill();
+                        tween.kill();
+                    };
                 });
-                return () => {
-                    tween.scrollTrigger?.kill();
-                    tween.kill();
-                };
+
+                mm.add("(prefers-reduced-motion: reduce)", () => {
+                    gsap.set(targets, { opacity: 1, y: 0, x: 0 });
+                });
             });
 
-            mm.add("(prefers-reduced-motion: reduce)", () => {
-                gsap.set(targets, { opacity: 1, y: 0, x: 0 });
-            });
-
-            return () => mm.revert();
+            /* Unsubscribe unconditionally. If the release already happened
+               the callback ran synchronously and this is a no-op; if it has
+               not, this is what stops an unmounted Reveal from being revived
+               later — which under StrictMode's double-invoke is every single
+               mount. */
+            return () => {
+                unsubscribe();
+                mm.revert();
+            };
         },
         { dependencies: [y, x, delay, duration, stagger, start] },
     );
