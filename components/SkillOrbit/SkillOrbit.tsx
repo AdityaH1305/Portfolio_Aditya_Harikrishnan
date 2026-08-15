@@ -75,7 +75,7 @@ export default function SkillOrbit({ children }: { children: React.ReactNode }) 
         const accent: [number, number, number] =
             parsed.length >= 3 && parsed.every(Number.isFinite)
                 ? [parsed[0], parsed[1], parsed[2]]
-                : [34, 211, 238];
+                : [50, 130, 184];
 
         const engine = new SkillOrbitEngine(canvas, ctx, { accent }, reduced);
         engineRef.current = engine;

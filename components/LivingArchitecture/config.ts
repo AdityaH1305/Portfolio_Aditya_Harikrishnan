@@ -21,13 +21,14 @@ let accentRGB = ACCENT_FALLBACK;
  * Every alpha in stages.ts was tuned for gold on a #050505 canvas, then
  * trimmed to 1.15 for cyan on #0B0F14.
  *
- * Raised to 1.35 for amber on #0A0908. Two reasons, and they compound.
- * The canvas is darker than it was, so the same alpha sits on less
- * competition. More importantly the page around it no longer glows at all
- * now that the three atmosphere washes are gone, which makes the atlas the
- * only light source on the site rather than the brightest of several. It
- * has to actually carry that, and at 1.15 against the new palette it read
- * as a faint smudge instead of an instrument.
+ * Raised to 1.35 when the page stopped glowing. The three atmosphere washes
+ * are gone, which makes the atlas the only light source on the site rather
+ * than the brightest of several — it has to actually carry that, and at 1.15
+ * it read as a faint smudge instead of an instrument.
+ *
+ * It survived the move to #3282B8 on #1B262C unchanged. The accent is more
+ * luminous than the amber it replaced but the canvas is lighter by about the
+ * same amount, so the contrast the trim was compensating for did not move.
  */
 export const ACCENT_WEIGHT = 1.35;
 

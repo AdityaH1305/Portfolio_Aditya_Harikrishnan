@@ -11,8 +11,9 @@ import type { CaseStudy } from "@/lib/caseStudies";
    Three of these are stacked in the same sticky 100vh box
    (see CaseStudyZone). An act is a fixed cast of elements —
    head, one media panel, three text beats, one CTA row —
-   and scroll moves them between slots rather than scrolling
-   them past.
+   in a fixed composition: text left, media right. Scroll
+   swaps what is in each of those two places rather than
+   scrolling the whole act past.
 
    ── Why the cast is fixed ──
    The previous zone rendered the whole `<Showcase brief />`
@@ -43,48 +44,57 @@ import type { CaseStudy } from "@/lib/caseStudies";
    splitting them is how the two drift.
    ══════════════════════════════════════════════════════ */
 
-/* ── Slot geometry ─────────────────────────────────────
-   Every value is a fraction of the slots box (its width for x, its height
-   for y), so the composition holds its proportions from 1024px up.
+/* ── The composition is fixed; only the content changes ─
+   Text on the left, media on the right, for all nine beats in the zone.
 
-   The media panel is centre-anchored — `xPercent/yPercent: -50` in the
-   timeline — so these are offsets from the middle of the box, not from its
-   corner. The panel is min(40vw, 560px) wide, and the beat cards are
-   min(30vw, 380px) on the opposite side; the numbers below are chosen to
-   leave a real gutter between them at every width in that range rather than
-   to look right at one. */
-const MEDIA_SLOTS = [
-    { x: 0.24, y: 0.08, scale: 1 },
-    { x: -0.24, y: 0.08, scale: 0.94 },
-    { x: 0.26, y: 0.02, scale: 0.76 },
-] as const;
+   It used to relocate. The panel hopped between three slots per act and each
+   beat entered from whichever side the panel had just vacated, which is a
+   fine thing to watch once and a hostile thing to read: the reader had to go
+   looking for the next sentence, and it was never where the last one was.
+   Both sides are now pinned in CSS (`.zone-act-media { right: 0 }`,
+   `.zone-act-beat { left: 0 }`) and nothing in this file sets `x` at all.
 
-/** Which side each beat's text sits on — opposite the media panel. */
-const BEAT_SLOTS = ["left", "right", "left"] as const;
+   The immersion moved into the transitions rather than being dropped. A beat
+   cross-fades in place with a short rise; a slide cross-fades under a slight
+   scale settle; the act-to-act swap keeps its overlap, so one study dissolves
+   into the next. Same scroll cost, same sticky stage — the motion just stops
+   asking the reader to follow it across the screen.
+
+   ── Why there is still a scale on the slides ──
+   A pure opacity crossfade between two stills reads as a slideshow. 1.04 → 1
+   on the way in and 1 → 0.985 on the way out gives the swap a direction
+   without moving anything the eye is tracking. Both are composited; neither
+   touches layout. */
+const SLIDE_IN_SCALE = 1.04;
+const SLIDE_OUT_SCALE = 0.985;
 
 /* ── The score ─────────────────────────────────────────
-   Positions on a 0…1 timeline covering one act. The relocations are the gaps
+   Positions on a 0…1 timeline covering one act. The transitions are the gaps
    between the rest windows.
 
    THE GAPS ARE THE POINT, and the first version got their size badly wrong.
-   A hop window of 0.05 gave the entire relocation about 108px of scroll — one
-   notch of a mouse wheel. The panel appeared to teleport between two resting
-   positions; there was no motion to see.
+   A window of 0.05 gave the entire transition about 108px of scroll — one
+   notch of a mouse wheel, which read as a cut rather than a change.
 
-   Two passes since. The windows widened to 0.15, which fixed the teleport but
-   still read as hurried, and then the act itself went 300vh → 400vh (in
-   globals.css) with the score rebalanced toward the gaps: hops 0.15 → 0.18,
-   rests trimmed to pay for part of it. A relocation is now ~518px, about five
+   Two passes since. The windows widened to 0.15, which fixed that but still
+   read as hurried, and then the act itself went 300vh → 400vh (in
+   globals.css) with the score rebalanced toward the gaps: 0.15 → 0.18, rests
+   trimmed to pay for part of it. A transition is now ~518px, about five
    notches.
 
+   The pacing survived the switch from relocation to cross-fade unchanged, and
+   deliberately so: a cross-fade over five wheel notches is a dissolve you can
+   watch, and one over a single notch is a jump cut. The scroll cost buys the
+   same thing it always did.
+
    Why the split. The two levers are not equivalent — widening a window slows
-   the movement for free, while lengthening the act costs the reader scroll
-   everywhere. So the ratio was pushed as far as it sensibly goes first (hops
-   are 36% of an act against 49% of actual reading time) and only the
+   the change for free, while lengthening the act costs the reader scroll
+   everywhere. So the ratio was pushed as far as it sensibly goes first (36%
+   of an act in transitions against 49% of actual reading time) and only the
    remainder came from length. Pushing the ratio further would start eating
    the pauses the copy needs to be read in.
 
-   `REST` are the windows where the media panel is stationary. Ludex's video
+   `REST` are the windows where the composition is settled. Ludex's video
    plays only inside these — see CaseStudyZone. */
 export const ACT = {
     entry: [0, 0.09],
@@ -130,12 +140,7 @@ function Beat({ study, i }: { study: CaseStudy; i: number }) {
     const body = [study.intro, study.how, study.resultNote][i];
 
     return (
-        <div
-            data-act-beat
-            data-beat-index={i}
-            data-slot={BEAT_SLOTS[i]}
-            className="zone-act-beat"
-        >
+        <div data-act-beat data-beat-index={i} className="zone-act-beat">
             <p className="label">{BEAT_LABELS[i]}</p>
             <p className="body-sm mt-3">{body}</p>
         </div>
@@ -179,7 +184,7 @@ export default function CaseStudyStage({
                             </div>
 
                             <div className="shrink-0 sm:text-right">
-                                <p className="metric-card">{study.metric}</p>
+                                <p className="metric-card text-accent">{study.metric}</p>
                                 <p className="body-sm mt-1">
                                     {study.metricLabel}
                                 </p>
@@ -295,14 +300,6 @@ export function buildAct(
     const beatEls = q("[data-act-beat]");
     const ctas = q("[data-act-ctas]");
 
-    /* Measured lazily inside the tween functions so `invalidateOnRefresh`
-       picks up a new viewport without the timeline being rebuilt. */
-    const box = () => {
-        const el = act.querySelector<HTMLElement>(".zone-act-slots");
-        const r = el?.getBoundingClientRect();
-        return { w: r?.width ?? 0, h: r?.height ?? 0 };
-    };
-
     const p = (v: number) => at + v * span;
 
     /* ── The first act does not animate in ──────────────
@@ -316,9 +313,6 @@ export function buildAct(
        Later acts keep their entry: by then the stage is stuck, progress is
        moving, and the crossfade from the previous act is the whole point. */
     const isFirst = at === 0;
-
-    const slotX = (i: number) => () => box().w * MEDIA_SLOTS[i].x;
-    const slotY = (i: number) => () => box().h * MEDIA_SLOTS[i].y;
 
     /* `ei` — entry initial. Picks the hidden value for later acts and the
        resting value for the first, which turns act one's entry into an
@@ -369,50 +363,29 @@ export function buildAct(
         p(ACT.entry[1]),
     );
 
-    /* Media panel: the element that actually relocates. Centre-anchored, so
-       the slot offsets are measured from the middle of the box. */
-    gsap.set(media, { xPercent: -50, yPercent: -50 });
+    /* Media panel. Anchored right in CSS and vertically centred here; `x` is
+       never touched, so the panel occupies the same rectangle from the first
+       frame of act one to the last of act three. Only its contents change.
+
+       `yPercent` alone — the old `xPercent: -50` went with `left: 50%`, and
+       leaving it behind would shift the panel half its own width off the
+       right edge of the stage. */
+    gsap.set(media, { yPercent: -50 });
 
     tl.fromTo(
         media,
-        {
-            x: slotX(0),
-            y: slotY(0),
-            scale: ei(MEDIA_SLOTS[0].scale * 0.94, MEDIA_SLOTS[0].scale),
-            opacity: ei(0, 1),
-        },
-        {
-            x: slotX(0),
-            y: slotY(0),
-            scale: MEDIA_SLOTS[0].scale,
-            opacity: 1,
-            duration: entry,
-            ease: EASE,
-        },
+        { scale: ei(0.97, 1), opacity: ei(0, 1) },
+        { scale: 1, opacity: 1, duration: entry, ease: EASE },
         entryAt,
     );
 
-    /* One hop per gap between rest windows. MEDIA_SLOTS is indexed by beat,
-       so it must stay the same length as ACT.beats. */
+    /* The gaps between rest windows. They no longer carry a relocation, but
+       they are still where a slide changes and a beat is swapped — the score
+       is unchanged, only what happens inside it. */
     const hops = ACT.beats.map((_, i) => ({
         from: i > 0 ? ACT.beats[i - 1][1] : 0,
         to: ACT.beats[i][0],
     }));
-
-    for (let i = 1; i < ACT.beats.length; i++) {
-        const { from, to } = hops[i];
-        tl.to(
-            media,
-            {
-                x: slotX(i),
-                y: slotY(i),
-                scale: MEDIA_SLOTS[i].scale,
-                duration: span * (to - from),
-                ease: EASE,
-            },
-            p(from),
-        );
-    }
 
     /* ── Nothing is ever completely still ──────────────
        A slow drift inside the panel, so a beat being read is a composition
@@ -451,7 +424,7 @@ export function buildAct(
        invalidateOnRefresh fires, which on a mid-act resize is a half-faded
        slide that then becomes the new resting state. */
     slides.forEach((slide, i) =>
-        gsap.set(slide, { autoAlpha: i === 0 ? 1 : 0 }),
+        gsap.set(slide, { autoAlpha: i === 0 ? 1 : 0, scale: 1 }),
     );
 
     for (let i = 1; i < slideForBeat.length; i++) {
@@ -462,52 +435,49 @@ export function buildAct(
         const { from, to } = hops[i];
         const duration = span * (to - from);
 
+        /* The outgoing slide settles back as the incoming one comes forward,
+           both over the full hop window. Overlapping rather than sequential:
+           a gap between the two would show the empty panel through them. */
         tl.fromTo(
             slides[prev],
-            { autoAlpha: 1 },
-            { autoAlpha: 0, duration, ease: EASE },
+            { autoAlpha: 1, scale: 1 },
+            { autoAlpha: 0, scale: SLIDE_OUT_SCALE, duration, ease: EASE },
             p(from),
         ).fromTo(
             slides[next],
-            { autoAlpha: 0 },
-            { autoAlpha: 1, duration, ease: EASE },
+            { autoAlpha: 0, scale: SLIDE_IN_SCALE },
+            { autoAlpha: 1, scale: 1, duration, ease: EASE },
             p(from),
         );
     }
 
-    /* Beat cards: each enters from its own side and leaves the same way, so
-       the swap reads as the text relocating across the stage rather than
-       three paragraphs blinking in place. */
+    /* Beat cards: a cross-fade in place with a short rise. They all share one
+       column now, so a beat rises the last 22px into the exact position the
+       previous one left and continues upward on the way out — the column
+       reads as one thing being rewritten rather than three cards arriving
+       from three directions.
+
+       No `x`. That is the whole point of the fixed sides, and it is the one
+       property to keep out of this tween if the entrance is ever retuned. */
     beatEls.forEach((el, i) => {
         const [start, end] = ACT.beats[i];
-        const dir = BEAT_SLOTS[i] === "left" ? -1 : 1;
-        /* Kept in proportion to the widened hops. Leave this at 0.05 and the
-           panel glides while the text still snaps, which is worse than both
-           being fast — the two stop looking like one composition. */
+        /* Kept in proportion to the hop windows. Leave this at 0.05 and the
+           text snaps while the slide behind it still glides, which is worse
+           than both being fast — the two stop looking like one composition. */
         const lead = span * 0.1;
 
         /* Beat one of act one is part of the already-composed opening; every
-           other beat arrives from its own side. */
+           other beat fades up. */
         const opening = isFirst && i === 0;
 
         tl.fromTo(
             el,
-            {
-                autoAlpha: opening ? 1 : 0,
-                x: opening ? 0 : 34 * dir,
-                y: opening ? 0 : 14,
-            },
-            { autoAlpha: 1, x: 0, y: 0, duration: lead, ease: EASE },
+            { autoAlpha: opening ? 1 : 0, y: opening ? 0 : 22 },
+            { autoAlpha: 1, y: 0, duration: lead, ease: EASE },
             opening ? p(0) : p(start) - lead * 0.5,
         ).to(
             el,
-            {
-                autoAlpha: 0,
-                x: 26 * dir,
-                y: -12,
-                duration: span * 0.08,
-                ease: EASE,
-            },
+            { autoAlpha: 0, y: -18, duration: span * 0.08, ease: EASE },
             p(end),
         );
     });

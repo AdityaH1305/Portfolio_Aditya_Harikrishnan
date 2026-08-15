@@ -165,7 +165,7 @@ export default function VideoPlayer({
             <div
                 ref={shellRef}
                 onClick={(e) => e.stopPropagation()}
-                className={`relative w-full max-w-5xl bg-surface-0 rounded-xl overflow-hidden border border-edge-default transition-all duration-[250ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
+                className={`relative w-full max-w-5xl bg-surface-0 rounded-xl overflow-hidden transition-all duration-[250ms] ease-[cubic-bezier(0.32,0.72,0,1)] ${
                     shown ? "opacity-100 scale-100" : "opacity-0 scale-95"
                 }`}
             >
@@ -194,7 +194,7 @@ export default function VideoPlayer({
                     className="w-full h-auto max-h-[78vh] block bg-black cursor-pointer"
                 />
 
-                <div className="px-4 py-3 md:px-5 md:py-4 border-t border-edge">
+                <div className="px-4 py-3 md:px-5 md:py-4">
                     {/* Seek bar — generous hit area, thin visual line */}
                     <div
                         ref={barRef}

@@ -24,10 +24,16 @@ export default function FeaturedWork() {
     return (
         <section id="work" className="relative section-y section-divide">
             <div className="section-container">
-                <Reveal>
-                    <p className="label">Featured Work</p>
-                    <h2 className="heading-lg mt-3">Case Studies</h2>
-                    <p className="body-lg mt-5 measure-tight">
+                <Reveal className="section-head">
+                    {/* "Projects", not "Case Studies". The ids are untouched —
+                        #work still resolves for the atlas, the nav rail and
+                        the palette — but the phrase a reader sees is the one
+                        they use themselves. */}
+                    <div>
+                        <p className="label">Selected Work</p>
+                        <h2 className="heading-lg mt-3">Projects</h2>
+                    </div>
+                    <p className="body-lg measure-tight">
                         Three systems built end to end — each one measured
                         against a real baseline and written up with its limits
                         intact.

@@ -1,19 +1,26 @@
 @import "tailwindcss";
 
 /* ══════════════════════════════════════════════════════
-   Design System — Apollo-era instrumentation
-   Canvas: #0A0908  |  Text: #F2EFEA  |  Accent: #E8A33D
+   Design System — dark void, blue signal
+   Canvas #1B262C · Deep #0F4C75 · Signal #3282B8 · Ice #BBE1FA
 
-   Illuminated console panels: warm near-black, warm stone
-   hairlines, and one amber lamp. Light is rationed the way
-   colour is — the page itself does not glow anywhere, which
-   is what leaves the LivingArchitecture atlas and the
-   SkillOrbit field as the only things on the site that emit
-   any. Elevation comes from edges, not from halos.
+   Four supplied colours do the structural work; everything
+   between them is derived, never invented.
 
-   Every color, size and rhythm value in the site resolves
-   to a token declared here. Components should never write
-   a raw hex, rgba, or one-off font-size.
+   Hierarchy comes from SCALE AND WHITESPACE, not from weight,
+   borders or containers. Headlines are regular weight at
+   large sizes with negative tracking, lead copy is
+   ultra-light, and content floats on the canvas with nothing
+   drawn around it. Panels survive only where media needs an
+   edge to stop it bleeding into the page.
+
+   The page emits no light. LivingArchitecture and the
+   SkillOrbit field are the only things that do, which is what
+   makes them read as instruments rather than decoration.
+
+   Every color, size and rhythm value resolves to a token
+   declared here. Components should never write a raw hex,
+   rgba, or one-off font-size.
    ══════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════
@@ -43,94 +50,90 @@
 @property --surface-0 {
   syntax: "<color>";
   inherits: true;
-  initial-value: #0a0908;
+  initial-value: #1b262c;
 }
 
 @property --surface-1 {
   syntax: "<color>";
   inherits: true;
-  initial-value: #111010;
+  initial-value: #173346;
 }
 
 @property --surface-2 {
   syntax: "<color>";
   inherits: true;
-  initial-value: #181615;
+  initial-value: #13415f;
 }
 
 @property --surface-3 {
   syntax: "<color>";
   inherits: true;
-  initial-value: #221f1d;
+  initial-value: #0f4c75;
 }
 
 :root {
-  /* ── Surfaces — warm near-black, one ramp ──
-     Was a slate-blue ramp starting at #0B0F14. That, plus a cyan accent and
-     slate borders, is the default palette of every generated dark portfolio,
-     and it was the single loudest thing making this site look untouched by a
-     person. These carry the faintest warm cast instead: illuminated console
-     panels, not a blue screen. Never pure #000 — that kills depth. */
-  --surface-0: #0A0908; /* canvas */
-  --surface-1: #111010; /* raised — cards, bezel cores */
-  --surface-2: #181615; /* overlay — modals, command palette */
-  --surface-3: #221F1D; /* hover / active */
+  /* ── Surfaces ──
+     Canvas and deep are supplied; the two between them are interpolated, so
+     the ramp reads as one gradient rather than four separate opinions. */
+  --surface-0: #1B262C; /* canvas — supplied */
+  --surface-1: #173346; /* raised — media panels */
+  --surface-2: #13415F; /* overlay — modals, command palette */
+  --surface-3: #0F4C75; /* deepest — supplied; fills, hover */
 
-  /* ── Text ramp — warm neutrals, measured against every surface ── */
-  --text-primary: #F2EFEA; /* 17.4:1 — headings, primary copy */
-  --text-secondary: #A8A29B; /* 7.9:1  — body copy */
-  --text-tertiary: #8A837A; /* 5.3:1 on canvas, 4.8:1 on overlay. The
-                               obvious warm match for the old value was
-                               #7C766E, which measures 4.43:1 and FAILS AA
-                               body — and components use this token for real
-                               body copy, not just captions. Lightened until
-                               it cleared 4.5:1 on all three surfaces. */
-  --text-quaternary: #4A4540; /* 2.1:1 — DECORATIVE ONLY, never text */
+  /* ── Text ramp — measured against every surface ── */
+  --text-primary: #BBE1FA; /* 11.2:1 — supplied */
+  --text-secondary: #98B8CD; /* 7.4:1 */
+  /* 5.32:1 on the canvas AND 4.53:1 on --surface-1, which is the number that
+     actually set it. The obvious value was #7892A3 at 4.73:1 — fine until you
+     notice that figure captions sit on the media mat, not on the canvas,
+     where it measured 4.03:1 and failed. Every token that carries copy is
+     checked against the deepest surface that copy lands on, not the page. */
+  --text-tertiary: #839BAA;
+  --text-quaternary: #586D7A; /* 2.9:1 — DECORATIVE ONLY, never text */
 
-  /* ── Accent ──
-     Declared once as channels. Everything else — CSS alphas and
-     the LivingArchitecture canvas, which reads this at runtime —
-     derives from it, so changing the accent is a one-line edit.
+  /* ── The accent is TWO values, and that is the point ──
+     #3282B8 measures 3.69:1 on the canvas. Fine for a fill, a large numeral
+     or a canvas visual; it FAILS AA for body text. So it never carries small
+     type. `--accent-text` is the same hue lifted 20% toward the ice, clears
+     AA at 4.72:1, and takes every label, link and caption.
 
-     Amber, at 79% saturation and 9.2:1 on the canvas. Warm phosphor and
-     gauge lamps rather than neon: the point is that it looks lit from
-     behind, not that it glows. */
-  --accent-rgb: 232 163 61;
+     Reach for the wrong one and the site quietly becomes unreadable at 12px.
+     Both still derive from one channel triplet, which LivingArchitecture also
+     reads at runtime via syncAccentFromCSS(). */
+  --accent-rgb: 50 130 184;
 
-  --accent: rgb(var(--accent-rgb));
-  --accent-hover: #F5BE6B;
-  --accent-pressed: #B87F27;
-  /* Derived, not literal. The comment above has always claimed a single
-     source while thirteen rgba(34,211,238,…) literals sat underneath it. */
-  --accent-subtle: rgb(var(--accent-rgb) / 0.06);
-  --accent-muted: rgb(var(--accent-rgb) / 0.14);
-  --accent-border: rgb(var(--accent-rgb) / 0.3);
+  --accent: rgb(var(--accent-rgb)); /* fills, ≥24px type, canvas art */
+  /* The readable half of the accent split: 5.29:1 on the canvas, 4.50:1 on
+     --surface-1. Same correction as --text-tertiary above, for the same
+     reason — the legend labels inside the figure panels are accent. */
+  --accent-text: #5C9ECA;
+  /* Was #5B9FCC, which is one point off --accent-text — after that token was
+     lifted, hovering an accent link changed nothing anyone could see. */
+  --accent-hover: #7FB4D8;
+  --accent-pressed: #2A6E9C;
+  --accent-subtle: rgb(var(--accent-rgb) / 0.1);
+  --accent-muted: rgb(var(--accent-rgb) / 0.22);
+  --accent-border: rgb(var(--accent-rgb) / 0.42);
 
-  /* ── Borders — warm stone, so hairlines belong to the same room ── */
-  --border-subtle: rgba(196, 181, 160, 0.07); /* section dividers */
-  --border-default: rgba(196, 181, 160, 0.12); /* cards */
-  --border-strong: rgba(196, 181, 160, 0.20); /* nav, overlays, hover */
+  /* ── Borders ──
+     Almost nothing draws one now. What survives is media panels and the few
+     controls that need a findable hit target. */
+  --border-subtle: rgb(187 225 250 / 0.07);
+  --border-default: rgb(187 225 250 / 0.12);
+  --border-strong: rgb(187 225 250 / 0.22);
 
-  /* ── Rhythm ── */
-  --space-section: clamp(5rem, 10vw, 9rem);
+  /* ── Rhythm ──
+     Whitespace separates sections now that the dividers are gone. */
+  --space-section: clamp(3.75rem, 9vw, 7.5rem);
+  --page-max: 80rem;
 
   /* ── Motion — the signature curve, used everywhere ── */
   --ease: cubic-bezier(0.32, 0.72, 0, 1);
 
-  /* ── Edge, which is what replaced glow ──
-     A highlight on the top edge, a hairline all the way round, a shade under
-     the bottom lip. Three layers describing a lit physical edge instead of a
-     halo, which is the whole substitution this redesign makes: elevation you
-     can point at rather than light that bleeds. Deliberately NOT a drop
-     shadow — those need a light source the page does not have. */
-  --edge-key:
-    inset 0 1px 0 rgba(255, 250, 240, 0.05),
-    0 0 0 1px var(--border-subtle),
-    inset 0 -1px 0 rgba(0, 0, 0, 0.35);
+  /* Radius for the one surface treatment that survives. */
+  --panel-radius: 1.5rem;
 
-  /* Compatibility aliases — keep existing component markup
-     resolving while sections are migrated one at a time.
-     Removed once the last usage is gone. */
+  /* Compatibility aliases — keep existing component markup resolving. */
   --background: var(--surface-0);
   --foreground: var(--text-primary);
   --border: var(--border-default);
@@ -147,7 +150,18 @@
   --color-tertiary: var(--text-tertiary);
   --color-quaternary: var(--text-quaternary);
 
-  --color-accent: var(--accent);
+  /* THE ACCENT SPLITS, AND THIS IS THE HALF THE DOM GETS.
+     #3282B8 measures 3.69:1 on the canvas and fails AA for body text, so
+     every Tailwind accent utility — text-accent, border-accent, bg-accent —
+     resolves to the tint at 4.72:1 instead. The saturated value stays on
+     --accent for the canvases, which are graphics and not held to a text
+     ratio, and is read from there by syncAccentFromCSS.
+
+     Doing it here rather than at each call site is what makes it hold:
+     `hover:text-accent` is a generated utility and there is no rule of ours
+     for it to lose to. */
+  --color-accent: var(--accent-text);
+  --color-accent-text: var(--accent-text);
   --color-accent-hover: var(--accent-hover);
 
   --color-edge: var(--border-subtle);
@@ -157,7 +171,7 @@
   --color-background: var(--surface-0);
   --color-foreground: var(--text-primary);
 
-  --font-sans: var(--font-space-grotesk);
+  --font-sans: var(--font-inter);
   --font-mono: var(--font-jetbrains-mono);
 }
 
@@ -272,7 +286,7 @@ html {
      actually look at it. */
   background-image: repeating-linear-gradient(
     to bottom,
-    rgba(196, 181, 160, 0.15) 0 1px,
+    rgb(187 225 250 / 0.13) 0 1px,
     transparent 1px 8px
   );
 }
@@ -292,7 +306,7 @@ html {
 
 ::-webkit-scrollbar-thumb:active {
   background-color: rgb(var(--accent-rgb) / 0.34);
-  border-color: var(--accent);
+  border-color: var(--accent-text);
 }
 
 /* Without this the meeting point of two scrollbars renders white. */
@@ -328,90 +342,132 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
-   Typography — √2-derived modular scale
+   Typography — ONE LADDER, ten rungs
 
-   Minimums stay proportional to maximums so the hierarchy
-   survives at 375px instead of collapsing to a 20% gap.
+   At 1440px the whole site is 12 · 14 · 15 · 16 · 18.5 · 21
+   · 29 · 38 · 50 · 76, and nothing is allowed off it. Before
+   this pass there were fifteen distinct rendered sizes,
+   which is not a scale — 10, 11, 12, 13, 14, 14.9 and 15 all
+   appeared within one screen, told apart by nothing.
 
-   Every fluid middle term is `rem + vw`, never bare `vw`.
-   A bare-vw font-size ignores the reader's default font
-   size entirely: browser zoom happens to scale it because
-   zoom changes the CSS viewport, but a user who raises
-   their base font size — the accessibility setting people
-   actually use — gets nothing. Mixing in rem restores that,
-   which is what WCAG 1.4.4 is asking for.
+   ── The top came down ──
+   Display was 112px and heading-xl was 75px. On a 1280×720
+   laptop that put the name across three lines at 310px tall
+   and the through-line statement at 305px — a section
+   subhead taller than most sites' entire hero. The ratio
+   from display down is now 1.52 · 1.32 · 1.31 · 1.38, so the
+   hero is still unmistakably the largest thing on the site
+   and everything under it behaves like a document.
 
-   The rem/vw split is chosen to land each maximum at
-   roughly the viewport width it landed at before, so the
-   change is an accessibility fix and not a redesign.
+   ── The bottom came up, and 10px and 11px are gone ──
+   THE FLOOR IS 12px, everywhere, including canvas chrome and
+   the nav rail. Below 16 there are exactly three rungs — 12
+   for micro-labels and counters, 14 for captions and dense
+   copy, 15 for controls — and `.body-sm` moved 15 → 16
+   because it carries actual paragraphs (the case-study
+   beats, the project descriptions) and was never a "small"
+   style in practice.
+
+   Where two things used to be separated by one pixel they
+   are now separated by colour or weight instead. The nav
+   rail's number and label are both 12px and differ by token.
+
+   ── Tracking scales with size, as it must ──
+   -0.035em at 76px down to -0.01em at 21px. A single value
+   across the range is either loose at the top or cramped at
+   the bottom; the old scale used -0.04em on both display and
+   heading-xl and nothing under 24px.
+
+   Headlines and lead copy sit at comparable weights and are
+   told apart by SIZE: 400 at 38px+ against 200 at 18.5px.
+   That is why nothing on this page is bold.
+
+   Every fluid middle term stays `rem + vw`, never bare vw.
+   A bare-vw font-size ignores the reader's base font size:
+   browser zoom happens to scale it, but the accessibility
+   setting people actually use does nothing. Mixing in rem
+   restores that, which is what WCAG 1.4.4 asks for.
+
+   Each clamp is solved to hit its minimum at 375px and its
+   maximum at 1440px, so the whole ladder crosses the range
+   together instead of each rung topping out somewhere
+   different.
    ══════════════════════════════════════════════════════ */
 
+/* 44 → 76 */
 .display {
-  font-size: clamp(3rem, 1rem + 6.7vw, 6rem);
+  font-size: clamp(2.75rem, 2.05rem + 3vw, 4.75rem);
   font-weight: 400;
-  letter-spacing: 0.005em;
-  line-height: 0.92;
-  color: var(--text-primary);
-}
-
-.heading-xl {
-  font-size: clamp(2.5rem, 1rem + 4.4vw, 4.25rem);
-  font-weight: 400;
-  letter-spacing: 0.004em;
+  letter-spacing: -0.035em;
   line-height: 1;
   color: var(--text-primary);
 }
 
-.heading-lg {
-  font-size: clamp(2rem, 1rem + 3.1vw, 3rem);
-  font-weight: 500;
-  letter-spacing: 0.002em;
-  line-height: 1.1;
+/* 32 → 50 */
+.heading-xl {
+  font-size: clamp(2rem, 1.6rem + 1.69vw, 3.125rem);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.06;
   color: var(--text-primary);
 }
 
+/* 28 → 38 */
+.heading-lg {
+  font-size: clamp(1.75rem, 1.53rem + 0.94vw, 2.375rem);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.12;
+  color: var(--text-primary);
+}
+
+/* 22 → 29 */
 .heading-md {
-  font-size: clamp(1.5rem, 1rem + 1.8vw, 2.125rem);
-  font-weight: 500;
-  letter-spacing: 0;
+  font-size: clamp(1.375rem, 1.22rem + 0.66vw, 1.8125rem);
+  font-weight: 400;
+  letter-spacing: -0.02em;
   line-height: 1.2;
   color: var(--text-primary);
 }
 
+/* 17 → 21 */
 .heading-sm {
-  font-size: clamp(1.125rem, 0.95rem + 0.6vw, 1.5rem);
+  font-size: clamp(1.0625rem, 0.97rem + 0.38vw, 1.3125rem);
   font-weight: 500;
-  letter-spacing: 0;
+  letter-spacing: -0.01em;
   line-height: 1.35;
   color: var(--text-primary);
 }
 
-/* Body copy was fixed at every viewport — 18px on a 390px phone and on a
-   1920px display. Now it breathes a little, within a deliberately narrow
-   range: body text that scales as hard as a display face gets unreadable. */
+/* 16.5 → 18.5. Weight 200 is reserved for THIS size and up: at 15px and
+   below an ultra-light face on a dark ground blooms and stops being
+   readable, so `.body-sm` stays at 400. Leading went 1.6 → 1.65 with the
+   size drop — a lighter face at a smaller size needs more air, not less. */
 .body-lg {
-  /* Min stays at the old fixed 1.125rem so phones are unchanged; the fluid
-     term only ever adds. Shrinking body copy on the smallest screens to buy
-     growth on the largest is the wrong trade. */
-  font-size: clamp(1.125rem, 1.05rem + 0.25vw, 1.25rem);
-  line-height: 1.7;
-  color: var(--text-secondary);
-}
-
-.body-sm {
-  font-size: clamp(0.875rem, 0.85rem + 0.1vw, 0.9375rem);
+  font-size: clamp(1.03125rem, 0.99rem + 0.19vw, 1.15625rem);
+  font-weight: 200;
   line-height: 1.65;
   color: var(--text-secondary);
 }
 
-/* Measure. Long-form copy used to cap with max-w-xl / max-w-2xl, which are
-   rem widths — they hold a line length only at one font size, and the scale
-   above now moves it. `ch` tracks the font, so the line stays in the 60–75
-   character band wherever it renders.
+/* 15 → 16, up from 14 → 15.
+   Not a "small" style despite the name — this is the site's reading size. It
+   carries the case-study beats, the project descriptions and every figure
+   caption, and at 14.9px those were thin enough that people stopped reading
+   them. Renaming it would touch sixty call sites for no benefit. */
+.body-sm {
+  font-size: clamp(0.9375rem, 0.915rem + 0.09vw, 1rem);
+  font-weight: 400;
+  line-height: 1.65;
+  color: var(--text-secondary);
+}
 
-   BODY COPY ONLY. `ch` resolves against the element's own font-size, so
-   68ch on a 68px heading is ~3000px and the cap silently does nothing.
-   Cap display type with the container or an explicit rem width. */
+/* Measure. `ch` tracks the font, so the line stays in the 60-75 character
+   band wherever it renders.
+
+   BODY COPY ONLY. `ch` resolves against the element's own font-size, so 68ch
+   on a 68px heading is ~3000px and the cap silently does nothing. Cap display
+   type with the container or an explicit rem width. */
 .measure {
   max-width: 68ch;
 }
@@ -420,22 +476,22 @@ body {
   max-width: 54ch;
 }
 
-/* ── Micro-labels — exactly two, both mono ──
-   Replaces four competing sizes (9/10/11/13px) and
-   three trackings (0.12/0.15/0.2em). */
+/* ── Micro-labels — exactly two ──
+   Both use `--accent-text`, never `--accent`: at this size the supplied
+   #3282B8 measures 3.69:1 and fails AA. */
 
 .label {
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .label-muted {
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
@@ -454,10 +510,42 @@ body {
    ══════════════════════════════════════════════════════ */
 
 .section-container {
-  max-width: 72rem;
+  max-width: var(--page-max);
   margin: 0 auto;
   padding-left: 2rem;
   padding-right: 2rem;
+}
+
+/* ── The section header ────────────────────────────────
+   Eyebrow and headline left, the lead paragraph right, sharing a baseline.
+   It replaces a stacked eyebrow / heading / paragraph column that every
+   section on the page repeated verbatim — the templated rhythm that made the
+   whole thing read as generated.
+
+   Asymmetric on purpose: 1.15fr against 0.85fr, so the headline gets the
+   wider column and the two edges do not line up into a second implied
+   centre. `align-items: end` puts the paragraph's last line on the
+   headline's baseline rather than its first line on the cap height, which is
+   what makes the pairing look composed rather than merely adjacent.
+
+   THE STACKED FORM IS THE DEFAULT and the grid is additive, the same rule the
+   case-study zone follows: below 900px this is one column in DOM order, which
+   is the readable version.
+
+   `mt-*` on an element that also carries .section-container computes to 0 —
+   the container sets `margin: 0 auto` and is declared after Tailwind's
+   utilities. This class is always on an inner element for that reason. */
+.section-head {
+  display: grid;
+  gap: 1.5rem;
+}
+
+@media (min-width: 900px) {
+  .section-head {
+    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
+    align-items: end;
+    gap: clamp(2.5rem, 6vw, 6rem);
+  }
 }
 
 @media (min-width: 768px) {
@@ -481,8 +569,14 @@ body {
   padding-bottom: var(--space-section);
 }
 
+/* Dividers are gone. Rhythm comes from `--space-section` instead, which is
+   the point of this layout: a ruled line between every section is what made
+   the page read as a stack of boxes.
+
+   Kept as a no-op so eight components do not each need an edit to drop one
+   word from a className. */
 .section-divide {
-  border-top: 1px solid var(--border-subtle);
+  border-top: 0;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -513,20 +607,24 @@ body {
 }
 
 .side-nav-number {
-  font-size: 0.625rem;
+  font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.1em;
   font-family: var(--font-jetbrains-mono), monospace;
+  /* Tertiary, and the label beside it is secondary. The two used to be 10px
+     and 11px — a one-pixel difference nobody can see, doing the work that a
+     colour step does properly. Quaternary was tried and measures 2.86:1: the
+     rail is wayfinding, so its numbers are copy and have to clear AA. */
   color: var(--text-tertiary);
   min-width: 1rem;
   transition: color 0.3s ease;
 }
 
 .side-nav-label {
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   font-weight: 400;
   letter-spacing: 0.05em;
-  color: var(--text-tertiary);
+  color: var(--text-secondary);
   opacity: 0;
   transform: translateX(-4px);
   transition:
@@ -546,13 +644,13 @@ body {
 }
 
 .side-nav-item.active .side-nav-number {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .side-nav-item.active .side-nav-label {
   opacity: 1;
   transform: translateX(0);
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .side-nav-dot {
@@ -593,7 +691,7 @@ body {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
-  font-size: 0.8125rem;
+  font-size: 0.875rem;
   font-weight: 500;
   color: var(--text-secondary);
   text-decoration: none;
@@ -606,7 +704,7 @@ body {
 }
 
 .compact-link--accent {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .compact-link--accent:hover {
@@ -696,10 +794,10 @@ body {
    because nothing else on the page emits light the case studies are the only
    thing left to look at. */
 html.zone-immersive {
-  --surface-0: #040404;
-  --surface-1: #0a0908;
-  --surface-2: #111010;
-  --surface-3: #1a1817;
+  --surface-0: #0E161B;
+  --surface-1: #10222F;
+  --surface-2: #0F2E44;
+  --surface-3: #0D3A59;
 }
 
 /* ── The choreographed stage ──────────────────────────
@@ -832,11 +930,19 @@ html.zone-immersive {
      curve). Sizing the panel to each one would make the composition lurch
      every time a slide changed, and the tall one would collide with both the
      head above and the CTAs below. One box, object-fit: contain, and the
-     choreography is stable for every study. */
+     choreography is stable for every study.
+
+     ── Anchored right, and it never moves again ──
+     The panel used to hop between three slots per act, crossing the stage so
+     the text landed on whichever side it had just left. Reading a case study
+     then meant tracking a moving column to find the next sentence. It is now
+     pinned to the right edge for the whole zone — `right: 0`, no `left`, no
+     `xPercent` — and the choreography lives in the crossfades instead. */
   .zone-act-media {
     position: absolute;
     top: 50%;
-    left: 50%;
+    right: 0;
+    left: auto;
     width: min(40vw, 560px);
     height: min(44vh, 360px);
     margin-block: 0;
@@ -859,19 +965,16 @@ html.zone-immersive {
     min-height: 0;
   }
 
+  /* Every beat, every act, one column on the left. The panel owns the right
+     side; the reader's eye returns to the same x for all nine beats in the
+     zone. The `[data-slot="left"|"right"]` variants that used to alternate
+     sides are gone, along with the attribute that selected them. */
   .zone-act-beat {
     position: absolute;
     top: 42%;
-    width: min(30vw, 380px);
-    margin-top: 0;
-  }
-
-  .zone-act-beat[data-slot="left"] {
     left: 0;
-  }
-
-  .zone-act-beat[data-slot="right"] {
-    right: 0;
+    width: min(30vw, 400px);
+    margin-top: 0;
   }
 
   .zone-act-ctas {
@@ -1036,10 +1139,9 @@ html.zone-immersive .zone-bar {
    ══════════════════════════════════════════════════════ */
 
 .skill-orbit-frame {
-  padding: 0.375rem;
-  border-radius: 1.5rem;
-  background: rgba(196, 181, 160, 0.035);
-  box-shadow: 0 0 0 1px var(--border-subtle);
+  padding: 0.5rem;
+  border-radius: var(--panel-radius);
+  background: var(--surface-1);
 }
 
 .skill-orbit-stage {
@@ -1071,12 +1173,11 @@ html.zone-immersive .zone-bar {
   background:
     radial-gradient(
       ellipse 70% 55% at 50% 38%,
-      rgba(46, 34, 18, 0.5) 0%,
-      rgba(24, 18, 11, 0.32) 45%,
-      rgba(6, 5, 4, 0) 100%
+      rgb(50 130 184 / 0.16) 0%,
+      rgb(15 76 117 / 0.2) 45%,
+      rgb(13 18 22 / 0) 100%
     ),
-    radial-gradient(ellipse 120% 100% at 50% 50%, #0d0b09 0%, #050403 100%);
-  box-shadow: inset 0 1px 1px rgba(255, 250, 240, 0.07);
+    radial-gradient(ellipse 120% 100% at 50% 50%, #12202b 0%, #0b1116 100%);
 }
 
 /* Two columns need more height for the same body count, and the readout
@@ -1126,7 +1227,7 @@ html.zone-immersive .zone-bar {
   gap: 1.5rem;
   padding: 0 1.25rem;
   border-top: 1px solid var(--border-default);
-  background: rgba(6, 5, 4, 0.72);
+  background: rgb(13 18 22 / 0.78);
   overflow: hidden;
 }
 
@@ -1144,8 +1245,8 @@ html.zone-immersive .zone-bar {
 }
 
 .skill-orbit-readout-name {
-  font-size: 1.0625rem;
-  font-weight: 600;
+  font-size: 1.25rem;
+  font-weight: 500;
   letter-spacing: -0.01em;
   color: var(--text-primary);
   margin-top: 0.3rem;
@@ -1200,12 +1301,12 @@ html.zone-immersive .zone-bar {
 
 .skill-orbit-chip {
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   padding: 0.3rem 0.7rem;
   border-radius: 9999px;
   border: 1px solid var(--accent-border);
-  color: var(--accent);
+  color: var(--accent-text);
   background: var(--accent-subtle);
   cursor: pointer;
   transition:
@@ -1223,10 +1324,10 @@ html.zone-immersive .zone-bar {
   top: 1rem;
   left: 1rem;
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   letter-spacing: 0.06em;
   color: var(--text-tertiary);
-  background: rgba(6, 5, 4, 0.85);
+  background: rgb(13 18 22 / 0.85);
   border: 1px solid var(--border-default);
   border-radius: 9999px;
   padding: 0.35rem 0.8rem;
@@ -1235,7 +1336,7 @@ html.zone-immersive .zone-bar {
 }
 
 .skill-orbit-reset:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .skill-orbit-controls {
@@ -1249,7 +1350,7 @@ html.zone-immersive .zone-bar {
 
 .skill-orbit-toggle {
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   letter-spacing: 0.14em;
   text-transform: uppercase;
   color: var(--text-tertiary);
@@ -1263,7 +1364,7 @@ html.zone-immersive .zone-bar {
 }
 
 .skill-orbit-toggle:hover {
-  color: var(--accent);
+  color: var(--accent-text);
   border-color: var(--accent-border);
 }
 
@@ -1325,13 +1426,13 @@ html.zone-immersive .zone-bar {
   min-width: 1.75rem;
   padding: 0.15rem 0.4rem;
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-  font-size: 0.6875rem;
+  font-size: 0.75rem;
   line-height: 1.4;
   letter-spacing: 0.04em;
   color: var(--text-secondary);
   background: var(--surface-2);
   border-radius: 0.3rem;
-  box-shadow: var(--edge-key);
+  border: 1px solid var(--border-default);
 }
 
 .signal-strip {
@@ -1446,19 +1547,22 @@ html.zone-immersive .zone-bar {
 
 .signal-gate-meta {
   animation-delay: 60ms;
-  color: var(--text-quaternary);
+  /* Tertiary, not quaternary. It reads "Uplink / no carrier" — it is the only
+     thing on the gate that says what state the page is in, which makes it
+     copy rather than decoration, and quaternary measures 2.86:1. */
+  color: var(--text-tertiary);
   transition: color 420ms var(--ease);
 }
 
 /* Carrier locked: the telemetry line is the first thing to admit it. */
 .signal-gate[data-phase="booting"] .signal-gate-meta,
 .signal-gate[data-phase="leaving"] .signal-gate-meta {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .signal-gate-title {
   animation-delay: 120ms;
-  font-size: clamp(2.5rem, 1rem + 4.4vw, 4.25rem);
+  font-size: clamp(2.25rem, 1.72rem + 2.25vw, 3.75rem);
   font-weight: 400;
   letter-spacing: 0.004em;
   line-height: 1;
@@ -1493,8 +1597,14 @@ html.zone-immersive .zone-bar {
   border-radius: 9999px;
   border: 1px solid var(--accent-border);
   background: var(--accent-subtle);
-  color: var(--accent);
-  font-size: 0.8125rem;
+  /* Primary, not the accent tint. `--accent-subtle` lifts the ground under
+     this button to rgb(29 47 58), which drags #4D95C5 from 4.72:1 down to
+     4.22:1 — the one place on the site where the tint is not sitting on the
+     canvas. This is the single control the entire entrance depends on, so it
+     takes the ice at 9.9:1 and the accent stays on the border and the caret,
+     which is where it was doing the work anyway. */
+  color: var(--text-primary);
+  font-size: 0.9375rem;
   font-weight: 500;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -1507,8 +1617,10 @@ html.zone-immersive .zone-bar {
 
 .signal-gate-action:hover {
   background: var(--accent-muted);
-  border-color: var(--accent);
-  color: var(--accent-hover);
+  border-color: var(--accent-text);
+  /* Stays ice on hover for the same reason it is ice at rest — the ground
+     under it gets lighter still, not darker. */
+  color: var(--text-primary);
   transform: translateY(-1px);
 }
 
@@ -1517,7 +1629,7 @@ html.zone-immersive .zone-bar {
 }
 
 .signal-gate-action:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 3px;
 }
 
@@ -1557,7 +1669,7 @@ html.zone-immersive .zone-bar {
 }
 
 .signal-gate-arrow {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .signal-gate-label {
@@ -1574,7 +1686,7 @@ html.zone-immersive .zone-bar {
 }
 
 .signal-gate-status {
-  color: var(--accent);
+  color: var(--accent-text);
   flex: 0 0 auto;
 }
 
@@ -1621,11 +1733,109 @@ html.zone-immersive .zone-bar {
   }
 }
 
-/* Set by the pre-paint script in app/layout.tsx when the visitor cleared the
-   gate less than an hour ago. This is what stops a returning visitor seeing
-   it for a single frame before React removes it. */
+/* Set by the pre-paint script in app/layout.tsx when the visitor is still
+   inside their clearance. This is what stops a returning visitor seeing the
+   gate for a single frame before React removes it. */
 html.signal-connected .signal-gate {
   display: none;
+}
+
+/* ══════════════════════════════════════════════════════
+   Uplink timer — the clearance, counting down
+
+   Top left, opposite the resume pill, and the same object
+   language as the rest of the fixed chrome: a blurred pill
+   on the page rather than a card with an outline.
+
+   z-index sits BELOW the gate (9997). The clearance is
+   written at the click, so the countdown starts while the
+   boot log is still playing; showing it through the overlay
+   would spoil the reveal and put two live readouts on screen
+   at once.
+   ══════════════════════════════════════════════════════ */
+.uplink-timer {
+  position: fixed;
+  top: 1.5rem;
+  left: 1.5rem;
+  z-index: 60;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface-1) 85%, transparent);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.06em;
+  color: var(--text-tertiary);
+  pointer-events: none;
+  user-select: none;
+  animation: uplink-in 600ms var(--ease) both;
+}
+
+@keyframes uplink-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+}
+
+.uplink-timer-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--accent);
+  animation: uplink-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes uplink-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.35;
+  }
+}
+
+.uplink-timer-value {
+  color: var(--accent-text);
+  font-variant-numeric: tabular-nums;
+}
+
+/* Tertiary, not quaternary — this is the only sentence that tells a reader
+   what to do about an expired uplink, and quaternary measures 3.75:1. */
+.uplink-timer-note {
+  color: var(--text-tertiary);
+}
+
+/* Expired: the lamp goes out and the accent leaves with it. Nothing turns
+   red — there is one accent on this site and no error state to invent. */
+.uplink-timer[data-state="expired"] .uplink-timer-dot {
+  background: var(--text-quaternary);
+  animation: none;
+}
+
+/* Below the mobile island rather than beside it. The island is centred and
+   sized to its content, which on a 375px screen leaves it spanning x 86–290 —
+   a pill at left: 1rem would run straight into it.
+
+   5.25rem, measured: the island sits at top 16 and is 52px tall, so it ends
+   at 68 and this clears it by 16. 4.5rem was tried and left 4px, which the
+   entry animation's own −6px translate ate entirely. */
+@media (max-width: 767px) {
+  .uplink-timer {
+    top: 5.25rem;
+    left: 1rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .uplink-timer,
+  .uplink-timer-dot {
+    animation: none;
+  }
 }
 
 /* No JS means no reconnect control, so the gate would be a dead end. The
@@ -1687,9 +1897,9 @@ html.cursor-custom [data-cursor="text"] {
 }
 
 .ludex-hero-metric {
-  font-size: clamp(3.5rem, 1rem + 8vw, 7rem);
+  font-size: clamp(2.75rem, 2.05rem + 3vw, 4.75rem);
   font-weight: 400;
-  color: var(--accent);
+  color: var(--accent-text);
   letter-spacing: 0.002em;
   line-height: 1;
 }
@@ -1699,10 +1909,11 @@ html.cursor-custom [data-cursor="text"] {
    the card's own title (heading-lg, max 48px) by more than 2×. This lands
    just above the title so the number still leads, without shouting. */
 .metric-card {
-  font-size: clamp(2.25rem, 1rem + 3.2vw, 3.25rem);
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: clamp(1.875rem, 1.61rem + 1.13vw, 2.625rem);
   font-weight: 500;
-  color: var(--accent);
-  letter-spacing: 0;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
   line-height: 1;
 }
 
@@ -1747,19 +1958,24 @@ html.cursor-custom [data-cursor="text"] {
   position: absolute;
   inset: -64px 0;
   background-image:
-    linear-gradient(rgba(196, 181, 160, 0.032) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(196, 181, 160, 0.032) 1px, transparent 1px);
+    linear-gradient(rgb(187 225 250 / 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(187 225 250 / 0.03) 1px, transparent 1px);
   background-size: 64px 64px;
   will-change: transform;
 }
 
+/* The last literal from the old slate ramp — it read as a blue-grey halo over
+   a warm canvas through the whole Apollo pass and nobody caught it, because a
+   vignette is exactly the kind of thing that looks intentional whatever colour
+   it is. It darkens toward the canvas now, so the edges of the page fall away
+   to the same colour the page is made of. */
 .atmosphere-vignette {
   position: absolute;
   inset: 0;
   background: radial-gradient(
     ellipse 70% 60% at 50% 50%,
     transparent 40%,
-    rgba(11, 15, 20, 0.95) 100%
+    rgb(12 17 20 / 0.95) 100%
   );
 }
 
@@ -1775,7 +1991,7 @@ html.cursor-custom [data-cursor="text"] {
 }
 
 .link-accent:hover {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .link-accent::after {
@@ -1793,55 +2009,61 @@ html.cursor-custom [data-cursor="text"] {
   width: 100%;
 }
 
+/* ── The one filled action ──
+   ICE fill with canvas text, not the accent fill you would expect.
+
+   The accent cannot survive as a button surface: #3282B8 behind #1B262C text
+   measures 3.69:1, and a #0F4C75 fill sits at 1.70:1 against the canvas, so
+   the button's own edge would be invisible. Ice gives 11.22:1 both for the
+   label and for the shape against the page. It is the only combination in
+   this palette that passes both, and one light pill on a dark canvas is
+   unmistakably the primary action. */
 .btn-primary {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.75rem;
-  background: var(--accent);
+  padding: 0.85rem 1.6rem;
+  background: var(--text-primary);
   color: var(--surface-0);
-  font-size: 0.8125rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  letter-spacing: -0.005em;
   border: none;
   border-radius: 9999px;
   cursor: pointer;
   /* Named properties, not `all`: `all` makes the browser watch every
-     animatable property on the element, including layout ones. */
+     animatable property, including layout ones. */
   transition:
     background 0.35s var(--ease),
-    border-color 0.35s var(--ease),
     color 0.35s var(--ease),
     transform 0.35s var(--ease);
 }
 
 .btn-primary:hover {
-  background: var(--accent-hover);
+  background: #ffffff;
   transform: translateY(-1px);
 }
 
 .btn-primary:active {
-  background: var(--accent-pressed);
   transform: scale(0.98);
 }
 
+/* Secondary is a ghost: hierarchy from type, not from a container. A hairline
+   only, so the hit target stays findable. */
 .btn-secondary {
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.75rem 1.75rem;
+  padding: 0.85rem 1.6rem;
   background: transparent;
   color: var(--text-primary);
-  font-size: 0.8125rem;
-  font-weight: 500;
-  letter-spacing: 0.02em;
+  font-size: 0.9375rem;
+  font-weight: 400;
+  letter-spacing: -0.005em;
   border: 1px solid var(--border-default);
   border-radius: 9999px;
   cursor: pointer;
-  /* Named properties, not `all`: `all` makes the browser watch every
-     animatable property on the element, including layout ones. */
   transition:
-    background 0.35s var(--ease),
     border-color 0.35s var(--ease),
     color 0.35s var(--ease),
     transform 0.35s var(--ease);
@@ -1849,30 +2071,45 @@ html.cursor-custom [data-cursor="text"] {
 
 .btn-secondary:hover {
   border-color: var(--border-strong);
-  background: var(--surface-1);
 }
 
 .btn-secondary:active {
   transform: scale(0.98);
 }
 
-/* Nested-radius bezel: inner radius = outer − padding */
-/* Nested enclosure: an outer tray holding an inner plate, with the radii
-   concentric. With the page glow gone this is where depth comes from, so the
-   shell now carries the full pressed-key stack rather than a single ring:
-   a highlight catching the top edge, a hairline all the way round, and a
-   shade under the bottom lip. Light from above, on a physical object. */
+/* ── The one surface treatment left ──
+   Was a nested tray-and-plate carrying a three-layer pressed-key edge. This
+   design has no cards, no borders and no shadows: content floats on the
+   canvas and whitespace does the separating.
+
+   These two survive ONLY because media needs an edge. A screenshot with a
+   light background bleeds straight into a dark page with nothing to stop it,
+   and the orbit field was built as a viewport into somewhere else. Both are
+   now one flat raised plane rather than an enclosure. Do not reach for them
+   around text. */
+/* ── One panel, not a stack ────────────────────────────
+   These two classes were a shell around a core around an inset ring: three
+   planes and a hairline to frame one screenshot. What survives is a single
+   raised mat.
+
+   Both names stay because they are used together in a dozen places and the
+   pair still does something: the shell is the mat, the core is the rounded
+   window that clips the image to it. The core no longer PAINTS — a second
+   fill under an `object-contain` image just letterboxes it in a different
+   colour than the mat it sits on, which is the double-bezel look this
+   redesign removed.
+
+   Media keeps a mat at all when body copy does not, and that is deliberate:
+   these screenshots have light content in them and would otherwise bleed
+   straight into the page. */
 .shell-bezel {
-  background: rgba(196, 181, 160, 0.035);
-  padding: 0.375rem;
-  border-radius: 2rem;
-  box-shadow: var(--edge-key);
+  background: var(--surface-1);
+  padding: 0.5rem;
+  border-radius: var(--panel-radius);
 }
 
 .core-bezel {
-  background: var(--surface-1);
-  border-radius: calc(2rem - 0.375rem);
-  box-shadow: inset 0 1px 1px rgba(255, 250, 240, 0.07);
+  border-radius: calc(var(--panel-radius) - 0.5rem);
 }
 
 /* ══════════════════════════════════════════════════════
@@ -1905,7 +2142,7 @@ html.cursor-custom [data-cursor="text"] {
 
 .side-nav-item:focus-visible .side-nav-number,
 .side-nav-item:focus-visible .side-nav-label {
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .side-nav-item:focus-visible .side-nav-label {
@@ -1915,20 +2152,20 @@ html.cursor-custom [data-cursor="text"] {
 
 .btn-primary:focus-visible,
 .btn-secondary:focus-visible {
-  outline: 2px solid var(--accent);
+  outline: 2px solid var(--accent-text);
   outline-offset: 3px;
 }
 
 .compact-link:focus-visible {
   outline: none;
-  color: var(--accent);
+  color: var(--accent-text);
   text-decoration: underline;
   text-underline-offset: 3px;
 }
 
 .link-accent:focus-visible {
   outline: none;
-  color: var(--accent);
+  color: var(--accent-text);
 }
 
 .link-accent:focus-visible::after {

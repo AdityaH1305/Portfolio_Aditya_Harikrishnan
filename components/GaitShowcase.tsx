@@ -144,9 +144,9 @@ export default function GaitShowcase() {
                                 {results.map((r) => (
                                     <tr
                                         key={`${r.task}-${r.label}`}
-                                        className="border-b border-edge"
+                                        className=""
                                     >
-                                        <td className="py-2.5 mono text-[10px] text-quaternary align-baseline pr-4">
+                                        <td className="py-2.5 mono text-xs text-tertiary align-baseline pr-4">
                                             {r.task}
                                         </td>
                                         <td
@@ -158,7 +158,7 @@ export default function GaitShowcase() {
                                         >
                                             {r.label}
                                             {r.code && (
-                                                <span className="mono text-[10px] text-quaternary ml-2">
+                                                <span className="mono text-xs text-tertiary ml-2">
                                                     {r.code}
                                                 </span>
                                             )}
@@ -166,7 +166,7 @@ export default function GaitShowcase() {
                                         <td
                                             className={`py-2.5 text-right mono text-sm align-baseline ${
                                                 r.lead
-                                                    ? "text-accent font-semibold"
+                                                    ? "text-accent font-medium"
                                                     : "text-secondary"
                                             }`}
                                         >
@@ -256,7 +256,7 @@ export default function GaitShowcase() {
                                             className="w-16 h-16 md:w-28 md:h-28 block rounded-md bg-surface-0 [image-rendering:pixelated]"
                                         />
                                         <figcaption className="mt-3">
-                                            <span className="mono text-[10px] text-accent tracking-widest">
+                                            <span className="mono text-xs text-accent tracking-widest">
                                                 {c.code}
                                             </span>
                                             <span className="block text-xs md:text-sm text-secondary mt-1 leading-snug">
@@ -267,7 +267,7 @@ export default function GaitShowcase() {
                                 ))}
                             </div>
 
-                            <p className="label-muted mt-8 pt-5 border-t border-edge normal-case tracking-normal">
+                            <p className="label-muted mt-8 pt-5 normal-case tracking-normal">
                                 64 × 64 px · background-stripped silhouette
                             </p>
                         </div>

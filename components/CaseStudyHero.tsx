@@ -61,7 +61,7 @@ export default function CaseStudyHero({ slug }: { slug: string }) {
                     utilities, so an `mt-*` on it would compute to 0px. */}
                 <Reveal y={20} delay={0.15}>
                     <div
-                        className="mt-12 md:mt-16 pt-8 border-t border-edge
+                        className="mt-12 md:mt-16 pt-8
                                    grid gap-8 md:gap-16
                                    md:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]"
                     >

@@ -1,14 +1,26 @@
 import type { Metadata, Viewport } from "next";
-import { Space_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import ScrollProvider from "@/components/ScrollProvider";
 import RouteScrollReset from "@/components/RouteScrollReset";
 import Cursor from "@/components/Cursor";
 
-const spaceGrotesk = Space_Grotesk({
-  variable: "--font-space-grotesk",
+/* Inter, and the weight range matters more than the family here. The design
+   sets 18px lead copy at weight 200 and 60px+ headlines at 400 — the same
+   weight doing both, with scale carrying the hierarchy instead. Space Grotesk
+   could not do that: its lightest cut is 300, and its letterforms assert
+   personality at display sizes where this wants a neutral surface. */
+/* Three weights, and the list is exhaustive: 200 for lead copy, 400 for
+   everything else, 500 for labels and emphasis. 600 was in here and is no
+   longer used anywhere — it was a fourth weight that only appeared through
+   scattered `font-semibold` utilities, and dropping it stops the browser
+   fetching a face nothing renders. Add a weight here only after adding it to
+   the ladder in globals.css. */
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
   display: "swap",
+  weight: ["200", "400", "500"],
 });
 
 const jetbrainsMono = JetBrains_Mono({
@@ -58,7 +70,7 @@ export const viewport: Viewport = {
   /* Must track --surface-0. It paints the mobile browser chrome and the
      overscroll gutter, so a stale value shows as a hairline of the old
      palette above and below the page. */
-  themeColor: "#0A0908",
+  themeColor: "#1B262C",
   colorScheme: "dark",
 };
 
@@ -70,7 +82,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
       /* The script below adds `signal-connected` to this element BEFORE React
          hydrates, which is the whole point of it running pre-paint. React then
          compares the class list it rendered on the server against the one in
@@ -87,10 +99,17 @@ export default function RootLayout({
 
             The signal gate ships in the server HTML so a new visitor never
             sees the page flash before it appears. That leaves the opposite
-            problem: a returning visitor still inside their hour would see the
-            gate for one frame before React could remove it. This decides
-            first and hands CSS a class, so neither group sees a flash of the
-            wrong thing.
+            problem: a returning visitor still inside their clearance would
+            see the gate for one frame before React could remove it. This
+            decides first and hands CSS a class, so neither group sees a flash
+            of the wrong thing.
+
+            IT MUST AGREE WITH components/SignalGate/gate.ts. This is the same
+            rule written twice — `"<at>:<ttl>"`, elapsed inside [0, ttl), the
+            TTL clamped at 60s — because a pre-paint script cannot import a
+            module. The stored format was kept to two integers and a colon
+            precisely so this line could stay honest; if it drifts, the gate
+            silently stops being hidden and every return visit flashes it.
 
             Deliberately blocking and tiny. It reads one key and sets one
             class. The try/catch matters because localStorage throws outright
@@ -99,7 +118,7 @@ export default function RootLayout({
             the harmless direction. */}
         <script
           dangerouslySetInnerHTML={{
-            __html: `try{var v=localStorage.getItem("signal:cleared"),t=Number(v);if(v!==null&&isFinite(t)&&Date.now()-t>=0&&Date.now()-t<3600000){document.documentElement.classList.add("signal-connected")}}catch(e){}`,
+            __html: `try{var p=(localStorage.getItem("signal:cleared")||"").split(":"),t=+p[0],d=Math.min(+p[1],60000),x=Date.now()-t;if(p.length===2&&isFinite(t)&&isFinite(d)&&d>0&&x>=0&&x<d){document.documentElement.classList.add("signal-connected")}}catch(e){}`,
           }}
         />
       </head>

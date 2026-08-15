@@ -132,7 +132,7 @@ export default function GaitPipeline() {
     const inputCanvases = useRef<HTMLCanvasElement[]>([]);
     const pooledCanvas = useRef<HTMLCanvasElement | null>(null);
     const meanCanvas = useRef<HTMLCanvasElement | null>(null);
-    const accentRef = useRef<[number, number, number]>([34, 211, 238]);
+    const accentRef = useRef<[number, number, number]>([50, 130, 184]);
 
     const progress = useRef(0);
     const [stage, setStage] = useState(0);
@@ -507,11 +507,11 @@ export default function GaitPipeline() {
                 {/* Stage list. Doubles as the no-JS and reduced-motion
                     fallback: the whole explanation is readable as text even
                     if the canvas never paints. */}
-                <ol className="border-t border-edge">
+                <ol className="">
                     {STAGES.map((s, i) => (
                         <li
                             key={s.title}
-                            className={`py-4 border-b border-edge transition-opacity duration-500 ${
+                            className={`py-4 transition-opacity duration-500 ${
                                 i === stage ? "opacity-100" : "opacity-45"
                             }`}
                         >

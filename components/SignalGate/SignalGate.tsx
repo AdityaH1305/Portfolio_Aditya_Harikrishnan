@@ -12,7 +12,8 @@ import { lockScroll, unlockScroll } from "@/lib/lenis";
 import { ATLAS_QUIET_EVENT } from "@/lib/zone";
 import {
     GATE_KEY,
-    GATE_TTL_MS,
+    encodeClearance,
+    randomTtl,
     shouldShowGate,
     bootSequence,
     BOOT_TOTAL_MS,
@@ -44,16 +45,26 @@ import { waveAt, WAVE_SAMPLES } from "./wave";
    would tank the entry experience for exactly the audience
    most likely to be sent one.
 
-   ── One hour ──
-   Reloading must not re-gate; coming back tomorrow should.
-   `gate.ts` holds that decision and is unit-tested, because
-   the alternative is verifying it by waiting an hour.
+   ── A clearance that visibly decays ──
+   Passing the gate buys 30–60 seconds, rolled per visit and
+   counted down in the corner. Reloading inside that window
+   must not re-gate; reloading after it must. `gate.ts` holds
+   that decision and is unit-tested, because the alternative
+   is verifying it by sitting and waiting.
+
+   The expiry NEVER interrupts a reader. `cachedDecision`
+   below is resolved once per page load, so a clearance that
+   runs out while someone is halfway down the page does
+   nothing at all until they next load it.
    ══════════════════════════════════════════════════════ */
 
 /** Printed on reconnect. Not on load: it belongs to the action. */
 function announce(): void {
-    const brand = "color:#E8A33D;font-weight:600";
-    const body = "color:#A8A29B";
+    /* Literal hex, not the CSS tokens: devtools styles the console with its
+       own stylesheet and `var(--accent-text)` resolves to nothing there. These
+       are --accent-text and --text-secondary, copied. */
+    const brand = "color:#4D95C5;font-weight:600";
+    const body = "color:#98B8CD";
     /* eslint-disable no-console */
     console.log(
         "%c◆ SIGNAL REACQUIRED%c\n" +
@@ -63,7 +74,7 @@ function announce(): void {
             "Press ⌘K. Something in that list is not documentation.",
         brand,
         body,
-        "color:#8A837A;font-style:italic",
+        "color:#7892A3;font-style:italic",
     );
     /* eslint-enable no-console */
 }
@@ -80,9 +91,11 @@ function announce(): void {
    snapshot decides on the first client render.
 
    The result is cached at module scope rather than recomputed, for two
-   reasons. It must not flip back to `true` if the page happens to be open
-   when the hour rolls over, and a client-side navigation away and back must
-   not re-gate a visitor who already reconnected this session. */
+   reasons. IT MUST NOT FLIP BACK TO `true` while the page is open — that is
+   the whole "never mid-browsing" rule, and with a 30-second clearance it is
+   no longer a theoretical case the way an hour was — and a client-side
+   navigation away and back must not re-gate a visitor who already
+   reconnected this session. */
 let cachedDecision: boolean | null = null;
 
 function subscribe(): () => void {
@@ -113,7 +126,7 @@ function getClientSnapshot(): boolean {
    reads as a bug rather than as a transmission dropping.
 
    So the gate now ships in the HTML and the pre-paint script hides it for
-   anyone still inside their hour. React hydrates against this snapshot and
+   anyone still inside their clearance. React hydrates against this snapshot and
    then re-renders with the client one, which is exactly what
    useSyncExternalStore exists to make safe — an already-hidden element
    unmounting is invisible. */
@@ -291,7 +304,13 @@ export default function SignalGate() {
         /* Written at the CLICK, not at the end, so a reload part way through
            the boot does not gate the visitor again. */
         try {
-            window.localStorage.setItem(GATE_KEY, String(Date.now()));
+            /* The TTL is rolled HERE and stored with the timestamp. Rolling it
+               at read time instead would give a different answer on every
+               render, and the countdown would jitter between 30 and 60. */
+            window.localStorage.setItem(
+                GATE_KEY,
+                encodeClearance(Date.now(), randomTtl(Math.random())),
+            );
         } catch {
             /* Storage unavailable. The gate will show again next load, which
                is a small annoyance rather than a broken page. */
@@ -454,5 +473,3 @@ export default function SignalGate() {
         </div>
     );
 }
-
-export { GATE_KEY, GATE_TTL_MS };

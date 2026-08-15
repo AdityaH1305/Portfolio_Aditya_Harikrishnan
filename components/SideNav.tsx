@@ -12,8 +12,8 @@ const RESUME_URL =
 const sections = [
     { id: "intro", label: "Intro", number: "01" },
     { id: "throughline", label: "Through-Line", number: "02" },
-    { id: "work", label: "Work", number: "03" },
-    { id: "projects", label: "Projects", number: "04" },
+    { id: "work", label: "Projects", number: "03" },
+    { id: "projects", label: "Experiments", number: "04" },
     { id: "research", label: "Approach", number: "05" },
     { id: "stack", label: "Stack", number: "06" },
     { id: "journey", label: "Journey", number: "07" },
@@ -46,8 +46,7 @@ function MagneticResumeLink() {
                choreography runs. The heavier fill holds the same legibility
                with less blur behind it. */
             className="fixed top-6 right-6 z-50 hidden md:inline-block
-                       px-5 py-2 label-muted
-                       border border-edge-default rounded-full
+                       px-5 py-2 label-muted rounded-full
                        bg-surface-1/85 backdrop-blur-md
                        hover:border-accent hover:text-accent
                        transition-colors duration-300"
@@ -178,8 +177,7 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                    animatable property, and only opacity and transform are
                    ever animated here. */
                 className={`md:hidden fixed top-4 left-1/2 -translate-x-[50%] max-w-[calc(100%-2rem)] w-auto z-50
-                           bg-surface-1/85 backdrop-blur-md
-                           border border-edge-default rounded-full shadow-2xl
+                           bg-surface-1/85 backdrop-blur-md rounded-full shadow-2xl
                            transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]
                            ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
             >
@@ -205,8 +203,7 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                             href={RESUME_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="px-4 py-1.5 text-xs font-medium rounded-full
-                                       border border-edge-default text-tertiary
+                            className="px-4 py-1.5 text-xs font-medium rounded-full text-tertiary
                                        hover:border-accent hover:text-accent
                                        transition-colors duration-300"
                         >

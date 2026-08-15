@@ -30,24 +30,33 @@ export default function Throughline() {
     return (
         <section id="throughline" className="section-y section-divide">
             <div className="section-container">
-                <Reveal y={16}>
-                    <p className="label">The Through-Line</p>
-                </Reveal>
+                {/* Three Reveals inside the grid rather than one around it:
+                    the eyebrow, the headline and the lead keep their own
+                    delays, so the header still assembles in sequence instead
+                    of arriving as one block. The grid only decides where the
+                    pieces land. */}
+                <div className="section-head">
+                    <div>
+                        <Reveal y={16}>
+                            <p className="label">The Through-Line</p>
+                        </Reveal>
 
-                <Reveal y={24} delay={0.08}>
-                    <h2 className="heading-xl mt-6 max-w-[16ch]">
-                        Measured against something that already existed.
-                    </h2>
-                </Reveal>
+                        <Reveal y={24} delay={0.08}>
+                            <h2 className="heading-xl mt-6 max-w-[16ch]">
+                                Measured against something that already existed.
+                            </h2>
+                        </Reveal>
+                    </div>
 
-                <Reveal y={20} delay={0.16}>
-                    <p className="body-lg mt-10 measure">
-                        A number with nothing to compare it to is not a result.
-                        Each of these was measured against a published
-                        benchmark or the approach it replaced, and each one
-                        names where it falls down.
-                    </p>
-                </Reveal>
+                    <Reveal y={20} delay={0.16}>
+                        <p className="body-lg measure">
+                            A number with nothing to compare it to is not a
+                            result. Each of these was measured against a
+                            published benchmark or the approach it replaced,
+                            and each one names where it falls down.
+                        </p>
+                    </Reveal>
+                </div>
 
                 {/* Compact proof rows. Deliberately understated: this is a
                     threshold, not a results section — the zone that follows
@@ -55,14 +64,14 @@ export default function Throughline() {
                 <Reveal
                     stagger={0.07}
                     delay={0.22}
-                    className="mt-16 border-t border-edge"
+                    className="mt-16"
                 >
                     {CASE_STUDIES.map((study, i) => (
                         <div
                             key={study.slug}
                             data-reveal-child
                             className="flex flex-wrap items-baseline gap-x-6 gap-y-2
-                                       py-5 border-b border-edge"
+                                       py-5"
                         >
                             <span className="mono text-xs text-quaternary tabular-nums shrink-0">
                                 {String(i + 1).padStart(2, "0")}

@@ -53,26 +53,35 @@ export default function ResearchMindset() {
     return (
         <section id="research" className="section-y section-divide">
             <div className="section-container">
-                {/* ── Header ── */}
-                <Reveal y={16}>
-                    <p className="label">Approach</p>
-                    <h2 className="heading-lg mt-3">What I Build</h2>
-                    <p className="body-lg mt-4 measure-tight">
+                {/* ── Header — headline left, lead right ── */}
+                <Reveal y={16} className="section-head">
+                    <div>
+                        <p className="label">Approach</p>
+                        <h2 className="heading-lg mt-3">What I Build</h2>
+                    </div>
+                    <p className="body-lg measure-tight">
                         Systems that combine software engineering with machine
                         learning — each one shipped, measured, and running.
                     </p>
                 </Reveal>
 
-                {/* ── Capabilities — bordered grid on a hairline ── */}
+                {/* ── Capabilities ──
+                    Was a `gap-px bg-edge` grid: four cells on a hairline
+                    lattice, which is a table pretending to be a layout. The
+                    lattice is gone and the cards are separated by space
+                    instead, which is the whole move this redesign makes.
+                    The padding stays — it is what gives each one its own
+                    hover target — and only the lines went. */}
                 <Reveal
                     stagger={0.08}
-                    className="mt-14 grid md:grid-cols-2 gap-px bg-edge"
+                    className="mt-14 grid md:grid-cols-2 gap-x-10 gap-y-4 lg:gap-x-16"
                 >
                     {capabilities.map((item) => (
                         <div
                             key={item.title}
                             data-reveal-child
-                            className="group bg-surface-0 p-8 lg:p-10
+                            className="group py-8 lg:py-10 px-6 lg:px-8 -mx-6 lg:-mx-8
+                                       rounded-2xl
                                        transition-colors duration-300
                                        hover:bg-surface-1"
                         >
@@ -91,7 +100,7 @@ export default function ResearchMindset() {
                                 {item.title}
                             </h3>
                             <p className="body-sm mt-3">{item.description}</p>
-                            <p className="label-muted mt-5 normal-case tracking-normal text-[0.75rem]">
+                            <p className="label-muted mt-5 normal-case tracking-normal text-xs">
                                 {item.evidence}
                             </p>
                         </div>

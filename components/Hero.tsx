@@ -173,15 +173,25 @@ export default function Hero() {
                         <span className="block">HARIKRISHNAN</span>
                     </h1>
 
+                    {/* `.heading-md`, not a bespoke `text-xl md:text-2xl
+                        lg:text-3xl font-light`. That was a fourth heading size
+                        (20/24/30) sitting between two real rungs and the only
+                        weight 300 in the codebase — two off-system values on
+                        the most-looked-at element of the site.
+
+                        The two-tone survives because the colour is on the
+                        SPANS: `.heading-md` sets `color` and is declared after
+                        Tailwind's utilities, so a `text-secondary` on this
+                        element would lose to it, while one on a child wins
+                        against mere inheritance. */}
                     <p
                         data-hero="tagline"
                         style={hidden(24)}
-                        className="mt-8 text-xl md:text-2xl lg:text-3xl
-                                   font-light leading-snug tracking-tight text-secondary"
+                        className="mt-8 heading-md"
                     >
-                        Building systems,
+                        <span className="text-secondary">Building systems,</span>
                         <br />
-                        <span className="text-primary">not just websites.</span>
+                        not just websites.
                     </p>
 
                     <p

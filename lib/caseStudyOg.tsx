@@ -18,7 +18,7 @@ export function renderCaseStudyOg(study: CaseStudy) {
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
-                    background: "#0B0F14",
+                    background: "#1B262C",
                     padding: "72px 80px",
                     fontFamily: "sans-serif",
                 }}
@@ -51,7 +51,7 @@ export function renderCaseStudyOg(study: CaseStudy) {
                             display: "flex",
                             fontSize: 22,
                             letterSpacing: "0.18em",
-                            color: "#22D3EE",
+                            color: "#4D95C5",
                             textTransform: "uppercase",
                         }}
                     >
@@ -66,7 +66,7 @@ export function renderCaseStudyOg(study: CaseStudy) {
                             fontWeight: 700,
                             letterSpacing: "-0.035em",
                             lineHeight: 1.05,
-                            color: "#E8EDF2",
+                            color: "#BBE1FA",
                             maxWidth: 940,
                         }}
                     >
@@ -79,7 +79,7 @@ export function renderCaseStudyOg(study: CaseStudy) {
                                 display: "flex",
                                 marginTop: 20,
                                 fontSize: 26,
-                                color: "#9BA9B8",
+                                color: "#98B8CD",
                             }}
                         >
                             {study.context}
@@ -99,13 +99,13 @@ export function renderCaseStudyOg(study: CaseStudy) {
                                 fontSize: 92,
                                 fontWeight: 700,
                                 letterSpacing: "-0.04em",
-                                color: "#22D3EE",
+                                color: "#4D95C5",
                                 lineHeight: 1,
                             }}
                         >
                             {study.metric}
                         </span>
-                        <span style={{ fontSize: 28, color: "#9BA9B8" }}>
+                        <span style={{ fontSize: 28, color: "#98B8CD" }}>
                             {study.metricLabel}
                         </span>
                     </div>
@@ -116,12 +116,12 @@ export function renderCaseStudyOg(study: CaseStudy) {
                         display: "flex",
                         gap: 28,
                         fontSize: 22,
-                        color: "#78889B",
+                        color: "#7892A3",
                         borderTop: "1px solid rgba(148,163,184,0.14)",
                         paddingTop: 28,
                     }}
                 >
-                    <span style={{ color: "#E8EDF2" }}>
+                    <span style={{ color: "#BBE1FA" }}>
                         Aditya Harikrishnan
                     </span>
                     <span>·</span>

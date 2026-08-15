@@ -22,8 +22,8 @@ const REPORT_URL = "/ludex-technical-report.pdf";
 const NAV: { id: string; label: string; icon: string }[] = [
     { id: "intro", label: "Intro", icon: "↑" },
     { id: "throughline", label: "Through-Line", icon: "→" },
-    { id: "work", label: "Featured Work", icon: "★" },
-    { id: "projects", label: "Projects", icon: "◆" },
+    { id: "work", label: "Projects", icon: "★" },
+    { id: "projects", label: "Experiments", icon: "◆" },
     { id: "research", label: "Approach", icon: "→" },
     { id: "stack", label: "Stack", icon: "→" },
     { id: "journey", label: "Journey", icon: "→" },
@@ -49,7 +49,7 @@ function getCommands(
             id: study.slug,
             label: study.title,
             icon: "▸",
-            section: "Case Studies",
+            section: "Projects",
             action: () => push(`/work/${study.slug}`),
         })),
         {
@@ -231,7 +231,7 @@ export default function CommandPalette({
             aria-label="Command Palette"
         >
             <div
-                className={`w-full max-w-[520px] mx-4 rounded-xl border border-edge-strong bg-surface-2/95 shadow-2xl overflow-hidden backdrop-blur-xl transition-all duration-150 ease-out ${
+                className={`w-full max-w-[520px] mx-4 rounded-xl border border-edge-strong bg-surface-1/95 shadow-2xl overflow-hidden backdrop-blur-xl transition-all duration-150 ease-out ${
                     shown
                         ? "opacity-100 scale-100 translate-y-0"
                         : "opacity-0 scale-[0.96] -translate-y-2"
@@ -240,7 +240,7 @@ export default function CommandPalette({
                 onKeyDown={handleKeyDown}
             >
                         {/* Search input */}
-                        <div className="flex items-center gap-3 px-4 py-3 border-b border-edge-default">
+                        <div className="flex items-center gap-3 px-4 py-3-default">
                             <svg
                                 className="w-4 h-4 text-accent shrink-0"
                                 fill="none"
@@ -265,7 +265,7 @@ export default function CommandPalette({
                                 autoComplete="off"
                                 spellCheck={false}
                             />
-                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] font-mono text-tertiary border border-edge-default rounded bg-surface-3">
+                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-mono text-primary rounded bg-surface-3">
                                 ESC
                             </kbd>
                         </div>
@@ -285,7 +285,7 @@ export default function CommandPalette({
 
                             {grouped.map((group) => (
                                 <div key={group.section}>
-                                    <p className="px-4 pt-2 pb-1 text-[10px] font-mono uppercase tracking-widest text-accent/60">
+                                    <p className="px-4 pt-2 pb-1 text-xs font-mono uppercase tracking-widest text-accent">
                                         {group.section}
                                     </p>
                                     {group.items.map((cmd) => (
@@ -304,7 +304,7 @@ export default function CommandPalette({
                                             </span>
                                             <span className="flex-1">{cmd.label}</span>
                                             {cmd.globalIndex === selectedIndex && (
-                                                <span className="text-[10px] text-accent font-mono">
+                                                <span className="text-xs text-accent font-mono">
                                                     ↵
                                                 </span>
                                             )}
@@ -315,7 +315,7 @@ export default function CommandPalette({
                         </div>
 
                         {/* Footer hint */}
-                        <div className="flex items-center justify-between px-4 py-2 border-t border-edge text-[10px] font-mono text-tertiary bg-surface-1/60">
+                        <div className="flex items-center justify-between px-4 py-2 text-xs font-mono text-tertiary bg-surface-1/60">
                             <span>↑↓ navigate</span>
                             <span>↵ select</span>
                             <span>esc close</span>

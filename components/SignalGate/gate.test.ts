@@ -3,9 +3,13 @@ import assert from "node:assert/strict";
 
 import {
     shouldShowGate,
-    msUntilNextGate,
+    msRemaining,
+    randomTtl,
+    encodeClearance,
+    parseClearance,
     bootSequence,
-    GATE_TTL_MS,
+    TTL_MIN_MS,
+    TTL_MAX_MS,
     GATE_KEY,
     BOOT_TOTAL_MS,
     BOOT_FADE_MS,
@@ -20,11 +24,74 @@ import { CASE_STUDIES } from "../../lib/caseStudies.ts";
    node --experimental-strip-types --test components/SignalGate/gate.test.ts */
 
 const NOW = 1_700_000_000_000;
-const at = (msAgo: number) => String(NOW - msAgo);
 
-test("the clearance lasts exactly one hour", () => {
-    assert.equal(GATE_TTL_MS, 3_600_000);
+/** A clearance granted `msAgo` ago, lasting `ttl`. */
+const at = (msAgo: number, ttl = TTL_MIN_MS) =>
+    encodeClearance(NOW - msAgo, ttl);
+
+/* ── The roll ─────────────────────────────────────────
+   The length is now drawn per visit, so the bounds are the thing to assert;
+   `rand` is injected precisely so this can be done without stubbing
+   Math.random. */
+
+test("a rolled clearance is always 30-60 seconds", () => {
+    assert.equal(TTL_MIN_MS, 30_000);
+    assert.equal(TTL_MAX_MS, 60_000);
+
+    for (let i = 0; i <= 1000; i++) {
+        const ttl = randomTtl(i / 1000);
+        assert.ok(
+            ttl >= TTL_MIN_MS && ttl <= TTL_MAX_MS,
+            `rand ${i / 1000} gave ${ttl}`,
+        );
+    }
+
+    // Both ends are actually reachable — a roll that never hits its bounds is
+    // a narrower range than the one being claimed.
+    assert.equal(randomTtl(0), TTL_MIN_MS);
+    assert.equal(randomTtl(1), TTL_MAX_MS);
 });
+
+test("a broken caller cannot produce a clearance that never expires", () => {
+    // NaN stored as a TTL would compare false against everything and suppress
+    // the gate permanently. Every one of these must land back in range.
+    for (const r of [NaN, Infinity, -Infinity, -5, 7]) {
+        const ttl = randomTtl(r);
+        assert.ok(
+            ttl >= TTL_MIN_MS && ttl <= TTL_MAX_MS,
+            `rand ${r} gave ${ttl}`,
+        );
+    }
+});
+
+/* ── The stored form ──────────────────────────────────
+   Both the timestamp and that visit's TTL, because with a rolled length the
+   remaining time is not derivable from the timestamp alone. */
+
+test("encode and parse round-trip", () => {
+    for (const ttl of [TTL_MIN_MS, 45_000, TTL_MAX_MS]) {
+        const c = parseClearance(encodeClearance(NOW, ttl));
+        assert.deepEqual(c, { at: NOW, ttl });
+    }
+});
+
+test("the stored form stays parseable by a one-line script", () => {
+    /* app/layout.tsx re-implements this parse pre-paint and cannot import the
+       module. Two integers and one colon is the contract that keeps the two
+       honest; anything richer would be the thing that silently drifts. */
+    const raw = encodeClearance(NOW, 42_000);
+    assert.match(raw, /^\d+:\d+$/);
+    assert.equal(raw.split(":").length, 2);
+});
+
+test("the old timestamp-only format is not mistaken for a clearance", () => {
+    // Shipped before the roll existed. It must read as "no clearance" — one
+    // extra trip through the gate — rather than as a TTL of nothing.
+    assert.equal(parseClearance(String(NOW)), null);
+    assert.equal(shouldShowGate(NOW, String(NOW)), true);
+});
+
+/* ── The rule ─────────────────────────────────────── */
 
 test("a first-time visitor sees the gate", () => {
     assert.equal(shouldShowGate(NOW, null), true);
@@ -32,24 +99,32 @@ test("a first-time visitor sees the gate", () => {
 
 test("a visitor who just cleared it does not see it again", () => {
     assert.equal(shouldShowGate(NOW, at(0)), false);
-    assert.equal(shouldShowGate(NOW, at(60_000)), false);
-    assert.equal(shouldShowGate(NOW, at(GATE_TTL_MS - 1)), false);
+    assert.equal(shouldShowGate(NOW, at(10_000)), false);
+    assert.equal(shouldShowGate(NOW, at(TTL_MIN_MS - 1)), false);
 });
 
-test("the gate returns once the hour is up", () => {
-    assert.equal(shouldShowGate(NOW, at(GATE_TTL_MS)), true);
-    assert.equal(shouldShowGate(NOW, at(GATE_TTL_MS + 1)), true);
+test("the gate returns once THAT VISIT'S clearance is up, not a constant", () => {
+    // The reason the TTL is stored: a 30s and a 60s clearance of the same age
+    // must disagree.
+    assert.equal(shouldShowGate(NOW, at(45_000, 30_000)), true);
+    assert.equal(shouldShowGate(NOW, at(45_000, 60_000)), false);
+
+    assert.equal(shouldShowGate(NOW, at(TTL_MIN_MS, TTL_MIN_MS)), true);
+    assert.equal(shouldShowGate(NOW, at(TTL_MAX_MS, TTL_MAX_MS)), true);
     assert.equal(shouldShowGate(NOW, at(24 * 60 * 60 * 1000)), true);
 });
 
-test("reloading inside the hour never re-gates", () => {
-    // The specific complaint this rule exists to prevent.
-    for (let m = 0; m < 60; m++) {
-        assert.equal(
-            shouldShowGate(NOW, at(m * 60_000)),
-            false,
-            `re-gated after ${m} minutes`,
-        );
+test("reloading inside the clearance never re-gates", () => {
+    // The specific complaint this rule exists to prevent, swept a second at a
+    // time across both ends of the range.
+    for (const ttl of [TTL_MIN_MS, 45_000, TTL_MAX_MS]) {
+        for (let s = 0; s * 1000 < ttl; s++) {
+            assert.equal(
+                shouldShowGate(NOW, at(s * 1000, ttl)),
+                false,
+                `re-gated ${s}s into a ${ttl}ms clearance`,
+            );
+        }
     }
 });
 
@@ -58,38 +133,85 @@ test("reloading inside the hour never re-gates", () => {
    the page content, so a throw here would take the whole site down. */
 
 test("a corrupt stored value shows the gate rather than throwing", () => {
-    for (const junk of ["", "  ", "null", "undefined", "NaN", "abc", "{}", "[]"]) {
-        assert.equal(shouldShowGate(NOW, junk), true, `junk: ${JSON.stringify(junk)}`);
+    for (const junk of [
+        "",
+        "  ",
+        "null",
+        "undefined",
+        "NaN",
+        "abc",
+        "{}",
+        "[]",
+        ":",
+        "abc:def",
+        `${NOW}:`,
+        `:${TTL_MIN_MS}`,
+        `${NOW}:${TTL_MIN_MS}:extra`,
+        `${NOW}:0`,
+        `${NOW}:-30000`,
+        `${NOW}:Infinity`,
+    ]) {
+        assert.equal(
+            shouldShowGate(NOW, junk),
+            true,
+            `junk: ${JSON.stringify(junk)}`,
+        );
+        assert.equal(msRemaining(NOW, junk), 0, `junk: ${JSON.stringify(junk)}`);
     }
 });
 
 test("a stored time in the future shows the gate", () => {
     // Clock moved backwards: travel, DST, a corrected NTP sync. Otherwise the
-    // clearance outlives its hour by however far the clock jumped.
-    assert.equal(shouldShowGate(NOW, String(NOW + 5_000)), true);
-    assert.equal(shouldShowGate(NOW, String(NOW + 10 * GATE_TTL_MS)), true);
+    // clearance outlives its window by however far the clock jumped.
+    assert.equal(shouldShowGate(NOW, encodeClearance(NOW + 5_000, TTL_MIN_MS)), true);
+    assert.equal(
+        shouldShowGate(NOW, encodeClearance(NOW + 10 * TTL_MAX_MS, TTL_MAX_MS)),
+        true,
+    );
 });
 
-test("absurd values do not lock anyone out", () => {
-    // Every one of these must SHOW the gate. The failure mode worth guarding
-    // is a value that silently suppresses it forever, not one that shows it.
-    assert.equal(shouldShowGate(NOW, "-1"), true); // 1970, long past the hour
-    assert.equal(shouldShowGate(NOW, "0"), true); // epoch, same
-    assert.equal(shouldShowGate(NOW, String(Number.MAX_SAFE_INTEGER)), true); // far future
-    assert.equal(shouldShowGate(NOW, "Infinity"), true); // not finite
-    assert.equal(shouldShowGate(NOW, "-Infinity"), true);
+test("a hand-edited TTL cannot hide the gate forever", () => {
+    /* The failure mode worth guarding is a value that silently suppresses the
+       gate, not one that shows it. An over-long TTL is clamped to the maximum,
+       so a clearance written by hand still expires on schedule. */
+    const forever = encodeClearance(NOW - TTL_MAX_MS, 1e12);
+    assert.equal(parseClearance(forever)?.ttl, TTL_MAX_MS);
+    assert.equal(shouldShowGate(NOW, forever), true);
+
+    assert.equal(shouldShowGate(NOW, at(0, Number.MAX_SAFE_INTEGER)), false);
+    assert.equal(shouldShowGate(NOW, at(TTL_MAX_MS, Number.MAX_SAFE_INTEGER)), true);
 });
+
+test("absurd timestamps do not lock anyone out", () => {
+    assert.equal(shouldShowGate(NOW, at(NOW)), true); // epoch, long past
+    assert.equal(shouldShowGate(NOW, encodeClearance(-1, TTL_MIN_MS)), true);
+    assert.equal(
+        shouldShowGate(NOW, encodeClearance(Number.MAX_SAFE_INTEGER, TTL_MIN_MS)),
+        true,
+    );
+});
+
+/* ── The countdown ────────────────────────────────────
+   UplinkTimer renders this number while the gate reads the boolean above. If
+   they ever disagree the visible timer sits at zero with no gate, or counts
+   down past a gate that already returned. */
 
 test("the countdown agrees with the decision", () => {
-    assert.equal(msUntilNextGate(NOW, null), 0);
-    assert.equal(msUntilNextGate(NOW, at(GATE_TTL_MS)), 0);
-    assert.equal(msUntilNextGate(NOW, at(0)), GATE_TTL_MS);
-    assert.equal(msUntilNextGate(NOW, at(GATE_TTL_MS / 2)), GATE_TTL_MS / 2);
+    assert.equal(msRemaining(NOW, null), 0);
+    assert.equal(msRemaining(NOW, at(TTL_MIN_MS)), 0);
+    assert.equal(msRemaining(NOW, at(0)), TTL_MIN_MS);
+    assert.equal(msRemaining(NOW, at(10_000, 45_000)), 35_000);
 
-    // Never negative, never longer than the TTL itself.
-    for (const ago of [0, 1, 1000, GATE_TTL_MS - 1, GATE_TTL_MS, GATE_TTL_MS * 3]) {
-        const left = msUntilNextGate(NOW, at(ago));
-        assert.ok(left >= 0 && left <= GATE_TTL_MS, `out of range at ${ago}`);
+    for (const ttl of [TTL_MIN_MS, 45_000, TTL_MAX_MS]) {
+        for (const ago of [0, 1, 1_000, ttl - 1, ttl, ttl + 1, ttl * 3]) {
+            const left = msRemaining(NOW, at(ago, ttl));
+            assert.ok(left >= 0 && left <= ttl, `${left} out of range at ${ago}`);
+            assert.equal(
+                left === 0,
+                shouldShowGate(NOW, at(ago, ttl)),
+                `countdown and gate disagree ${ago}ms into ${ttl}ms`,
+            );
+        }
     }
 });
 
@@ -154,8 +276,8 @@ test("THE LOG CANNOT LIE — counts come from the live data", () => {
         `expected ${SKILLS.length} bodies in: ${text}`,
     );
     assert.ok(
-        text.includes(`case studies / ${CASE_STUDIES.length}`),
-        `expected ${CASE_STUDIES.length} case studies in: ${text}`,
+        text.includes(`projects / ${CASE_STUDIES.length}`),
+        `expected ${CASE_STUDIES.length} projects in: ${text}`,
     );
 
     // And no hardcoded number may survive anywhere in the log.

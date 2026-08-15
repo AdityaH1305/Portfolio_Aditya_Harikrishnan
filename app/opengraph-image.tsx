@@ -17,7 +17,7 @@ export default function OpengraphImage() {
                     display: "flex",
                     flexDirection: "column",
                     justifyContent: "space-between",
-                    background: "#0B0F14",
+                    background: "#1B262C",
                     padding: "72px 80px",
                     fontFamily: "sans-serif",
                 }}
@@ -53,7 +53,7 @@ export default function OpengraphImage() {
                             display: "flex",
                             fontSize: 22,
                             letterSpacing: "0.18em",
-                            color: "#22D3EE",
+                            color: "#4D95C5",
                             textTransform: "uppercase",
                         }}
                     >
@@ -68,7 +68,7 @@ export default function OpengraphImage() {
                             fontWeight: 700,
                             letterSpacing: "-0.035em",
                             lineHeight: 1,
-                            color: "#E8EDF2",
+                            color: "#BBE1FA",
                         }}
                     >
                         <span>ADITYA</span>
@@ -79,7 +79,7 @@ export default function OpengraphImage() {
                             display: "flex",
                             marginTop: 32,
                             fontSize: 34,
-                            color: "#9BA9B8",
+                            color: "#98B8CD",
                             letterSpacing: "-0.01em",
                         }}
                     >
@@ -92,7 +92,7 @@ export default function OpengraphImage() {
                         display: "flex",
                         gap: 40,
                         fontSize: 22,
-                        color: "#78889B",
+                        color: "#7892A3",
                         borderTop: "1px solid rgba(148,163,184,0.14)",
                         paddingTop: 28,
                     }}
@@ -103,7 +103,7 @@ export default function OpengraphImage() {
                     <span>·</span>
                     <span>IIIT Pune</span>
                     <span>·</span>
-                    <span style={{ color: "#22D3EE" }}>
+                    <span style={{ color: "#4D95C5" }}>
                         Ludex · +27% Precision@20
                     </span>
                 </div>

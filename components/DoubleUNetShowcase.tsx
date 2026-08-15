@@ -154,7 +154,7 @@ export default function DoubleUNetShowcase() {
                                 Binary segmentation · same data, same split
                             </caption>
                             <thead>
-                                <tr className="border-b border-edge-default">
+                                <tr className="-default">
                                     <th className="label-muted font-normal py-2 pr-4">
                                         Model
                                     </th>
@@ -173,12 +173,12 @@ export default function DoubleUNetShowcase() {
                                 {baseline.map((row) => (
                                     <tr
                                         key={row.model}
-                                        className="border-b border-edge"
+                                        className=""
                                     >
                                         <td
                                             className={`py-3 pr-4 text-sm ${
                                                 row.ours
-                                                    ? "text-accent font-semibold"
+                                                    ? "text-accent font-medium"
                                                     : "text-secondary"
                                             }`}
                                         >
@@ -190,7 +190,7 @@ export default function DoubleUNetShowcase() {
                                         <td
                                             className={`py-3 pr-4 text-sm mono text-right ${
                                                 row.ours
-                                                    ? "text-accent font-semibold"
+                                                    ? "text-accent font-medium"
                                                     : "text-secondary"
                                             }`}
                                         >
@@ -199,7 +199,7 @@ export default function DoubleUNetShowcase() {
                                         <td
                                             className={`py-3 text-sm mono text-right ${
                                                 row.ours
-                                                    ? "text-accent font-semibold"
+                                                    ? "text-accent font-medium"
                                                     : "text-secondary"
                                             }`}
                                         >
@@ -243,9 +243,9 @@ export default function DoubleUNetShowcase() {
                                 {ternary.map((t) => (
                                     <div
                                         key={t.dataset}
-                                        className="flex flex-wrap items-baseline gap-x-5 gap-y-1 pb-4 border-b border-edge"
+                                        className="flex flex-wrap items-baseline gap-x-5 gap-y-1 pb-4"
                                     >
-                                        <span className="text-sm font-semibold text-primary min-w-[7.5rem]">
+                                        <span className="text-sm font-medium text-primary min-w-[7.5rem]">
                                             {t.dataset}
                                         </span>
                                         <span className="label-muted">

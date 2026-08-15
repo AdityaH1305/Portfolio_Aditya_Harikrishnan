@@ -23,11 +23,11 @@ import { CASE_STUDIES } from "@/lib/caseStudies";
 
 export default function CredibilityBand() {
     return (
-        <div className="relative z-[1] border-t border-edge">
+        <div className="relative z-[1]">
             <div className="section-container">
                 <Reveal stagger={0.07} className="py-10 md:py-12">
                     <p data-reveal-child className="label-muted">
-                        Measured results · each links to its case study
+                        Measured results · each links to its full write-up
                     </p>
 
                     <div
@@ -41,7 +41,7 @@ export default function CredibilityBand() {
                                 className="group/stat block"
                             >
                                 <p
-                                    className="mono text-3xl md:text-4xl font-medium tracking-tight
+                                    className="metric-card
                                                text-primary transition-colors duration-300
                                                group-hover/stat:text-accent"
                                 >

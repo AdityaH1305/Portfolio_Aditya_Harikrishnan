@@ -178,14 +178,14 @@ export default function LudexShowcase() {
                             sticky panel has real travel to hold through. */}
                         <div
                             data-reveal-child
-                            className="pt-8 border-t border-edge flex flex-col gap-5"
+                            className="pt-8 flex flex-col gap-5"
                         >
                             {stats.map((s) => (
                                 <div
                                     key={s.value}
                                     className="flex items-baseline gap-3"
                                 >
-                                    <span className="text-2xl font-semibold text-primary tracking-tight">
+                                    <span className="heading-sm text-primary">
                                         {s.value}
                                     </span>
                                     <span className="text-sm text-tertiary">
@@ -280,7 +280,7 @@ export default function LudexShowcase() {
                                                 >
                                                     <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
                                                 </svg>
-                                                <span className="mono text-[10px] tracking-widest uppercase">
+                                                <span className="mono text-xs tracking-widest uppercase">
                                                     Expand
                                                 </span>
                                             </button>
@@ -362,20 +362,20 @@ export default function LudexShowcase() {
                             }`}
                         />
                         <span
-                            className={`mono text-[10px] tracking-widest ${
+                            className={`mono text-xs tracking-widest ${
                                 s.accent ? "text-accent" : "text-tertiary"
                             }`}
                         >
                             {s.step}
                         </span>
                         <p
-                            className={`text-sm font-semibold mt-2 ${
+                            className={`text-sm font-medium mt-2 ${
                                 s.accent ? "text-accent" : "text-primary"
                             }`}
                         >
                             {s.title}
                         </p>
-                        <p className="text-[11px] text-tertiary mt-1.5 leading-snug">
+                        <p className="text-xs text-tertiary mt-1.5 leading-snug">
                             {s.detail}
                         </p>
                     </div>

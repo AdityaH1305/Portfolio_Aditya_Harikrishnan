@@ -82,7 +82,7 @@ export default function CaseStudyChrome({
 
             {/* Route header. Sticky rather than fixed so it participates in
                 the document and cannot overlap the footer. */}
-            <header className="sticky top-0 z-30 bg-surface-0/80 backdrop-blur-md border-b border-edge">
+            <header className="sticky top-0 z-30 bg-surface-0/80 backdrop-blur-md">
                 <div className="section-container">
                     <div className="flex items-center gap-4 h-14 md:h-16">
                         <Link
@@ -125,13 +125,13 @@ export default function CaseStudyChrome({
 
             {/* Onward link — a case study should never be a dead end. */}
             {next && (
-                <nav className="relative z-[1] border-t border-edge">
+                <nav className="relative z-[1]">
                     <div className="section-container">
                         <Link
                             href={`/work/${next.slug}`}
                             className="group/next block py-16 md:py-24"
                         >
-                            <p className="label-muted">Next case study</p>
+                            <p className="label-muted">Next project</p>
                             <p
                                 className="heading-lg mt-4 transition-colors duration-300
                                            group-hover/next:text-accent"
@@ -145,7 +145,7 @@ export default function CaseStudyChrome({
                                 className="mono text-xs text-tertiary mt-6 inline-flex items-center gap-2
                                            group-hover/next:text-accent transition-colors duration-300"
                             >
-                                Read case study
+                                Read the write-up
                                 <span
                                     aria-hidden="true"
                                     className="transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]

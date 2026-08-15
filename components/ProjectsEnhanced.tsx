@@ -147,7 +147,7 @@ function ProjectCard({
                                 preload={staggerIndex === 0}
                             />
                             {project.images.length > 1 && (
-                                <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-surface-0/85 border border-edge-default text-[10px] mono text-tertiary">
+                                <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-surface-0/85 text-xs mono text-tertiary">
                                     +{project.images.length - 1} more
                                 </div>
                             )}
@@ -170,9 +170,9 @@ function ProjectCard({
                     {project.highlights.map((item, i) => (
                         <li
                             key={i}
-                            className="flex items-start gap-2.5 text-[13px] text-secondary leading-snug"
+                            className="flex items-start gap-2.5 text-sm text-secondary leading-snug"
                         >
-                            <span className="text-accent mt-0.5 text-[10px] shrink-0">
+                            <span className="text-accent mt-0.5 text-xs shrink-0">
                                 ─
                             </span>
                             {item}
@@ -241,10 +241,15 @@ export default function ProjectsEnhanced() {
         <section id="projects" className="section-y section-divide">
             {/* Section heading */}
             <div className="section-container">
-                <Reveal y={16}>
-                    <p className="label">Projects</p>
-                    <h2 className="heading-lg mt-3">More Work</h2>
-                    <p className="body-lg mt-4 max-w-lg">
+                <Reveal y={16} className="section-head">
+                    {/* "Projects" moved up to #work, so this section takes the
+                        name that always described it better: the smaller
+                        builds, without a measured baseline behind them. */}
+                    <div>
+                        <p className="label">Also Built</p>
+                        <h2 className="heading-lg mt-3">Experiments</h2>
+                    </div>
+                    <p className="body-lg max-w-lg">
                         Data platforms, applied AI, and full-stack engineering.
                     </p>
                 </Reveal>

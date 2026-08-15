@@ -152,7 +152,7 @@ export default function Cursor() {
         canvas.width = BOX * dpr;
         canvas.height = BOX * dpr;
 
-        let accent: [number, number, number] = [34, 211, 238];
+        let accent: [number, number, number] = [50, 130, 184];
         const raw = getComputedStyle(html)
             .getPropertyValue("--accent-rgb")
             .trim();
@@ -774,7 +774,7 @@ export default function Cursor() {
                 ref={labelRef}
                 className="absolute top-0 left-0 px-2 py-1 rounded-full
                            bg-surface-0/90 backdrop-blur-sm border border-edge-strong
-                           mono text-[0.625rem] leading-none tracking-[0.14em]
+                           mono text-xs leading-none tracking-[0.14em]
                            uppercase text-accent whitespace-nowrap opacity-0
                            transition-opacity duration-200"
                 style={{ willChange: "transform" }}

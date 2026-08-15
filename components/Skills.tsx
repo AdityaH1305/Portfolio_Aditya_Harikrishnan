@@ -44,10 +44,12 @@ export default function Skills() {
     return (
         <section id="stack" className="section-y section-divide">
             <div className="section-container">
-                <Reveal y={12}>
-                    <p className="label">Stack</p>
-                    <h2 className="heading-lg mt-3">Skills &amp; Tools</h2>
-                    <p className="body-lg mt-5 measure-tight">
+                <Reveal y={12} className="section-head">
+                    <div>
+                        <p className="label">Stack</p>
+                        <h2 className="heading-lg mt-3">Skills &amp; Tools</h2>
+                    </div>
+                    <p className="body-lg measure-tight">
                         Listed against the work that used them, not as a
                         checklist.
                     </p>
@@ -66,20 +68,20 @@ export default function Skills() {
                                         {group.note}
                                     </p>
 
-                                    <dl className="border-t border-edge">
+                                    <dl className="">
                                         {SKILLS.filter(
                                             (s) => s.category === group.id,
                                         ).map((entry) => (
                                             <div
                                                 key={entry.name}
                                                 className="flex items-baseline justify-between gap-4
-                                                           py-2.5 border-b border-edge"
+                                                           py-2.5"
                                             >
                                                 <dt className="text-sm text-secondary">
                                                     {entry.name}
                                                 </dt>
                                                 {entry.where && (
-                                                    <dd className="mono text-[0.6875rem] text-quaternary text-right shrink-0">
+                                                    <dd className="mono text-xs text-tertiary text-right shrink-0">
                                                         {entry.where}
                                                     </dd>
                                                 )}

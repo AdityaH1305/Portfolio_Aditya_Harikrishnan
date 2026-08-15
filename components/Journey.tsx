@@ -58,14 +58,16 @@ export default function Journey() {
     return (
         <section id="journey" className="section-y section-divide">
             <div className="section-container">
-                {/* ── Header ── */}
-                <Reveal y={16}>
-                    <p className="label">The Path</p>
-                    <h2 className="heading-lg mt-3">Journey</h2>
-                </Reveal>
-
-                {/* ── About text (preserved from original About component) ── */}
-                <Reveal y={14} delay={0.08} className="mt-12">
+                {/* ── Header ──
+                    The about paragraph is the right-hand column rather than a
+                    block 12rem below the heading. It was always the lead for
+                    this section; stacking it just made the section open with
+                    two short lines and a lot of nothing. */}
+                <Reveal y={16} className="section-head">
+                    <div>
+                        <p className="label">The Path</p>
+                        <h2 className="heading-lg mt-3">Journey</h2>
+                    </div>
                     <p className="body-lg measure">
                         A Computer Science undergrad at IIIT Pune, building at
                         the intersection of software engineering and machine
@@ -110,7 +112,7 @@ export default function Journey() {
                 {/* ── Current Status (preserved from About) ── */}
                 <Reveal
                     y={12}
-                    className="mt-20 grid sm:grid-cols-3 gap-10 pt-10 border-t border-edge"
+                    className="mt-20 grid sm:grid-cols-3 gap-10 pt-10"
                 >
                     <div>
                         <p className="label mb-2">Education</p>

@@ -65,7 +65,7 @@ export default function CtaRow({
                     className="group/more mono text-xs text-tertiary hover:text-accent
                                transition-colors duration-300 inline-flex items-center gap-2 ml-1"
                 >
-                    Read the full case study
+                    Read the full write-up
                     <span
                         aria-hidden="true"
                         className="transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]

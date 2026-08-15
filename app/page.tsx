@@ -17,6 +17,7 @@ import CommandPalette from "@/components/CommandPalette";
 import BackgroundAtmosphere from "@/components/BackgroundAtmosphere";
 import AtmosphereParallax from "@/components/AtmosphereParallax";
 import SignalGate from "@/components/SignalGate/SignalGate";
+import UplinkTimer from "@/components/SignalGate/UplinkTimer";
 
 /* ── Lazy-load heavy client-only modules — zero cost until needed ── */
 const SpaceInvadersModal = dynamic(
@@ -42,6 +43,12 @@ export default function Home() {
                 interaction. Home only, so a link to a case study is never
                 gated. */}
             <SignalGate />
+
+            {/* The clearance, counting down. Home only, matching the gate —
+                it is the gate's receipt, and there is no gate on /work/*. It
+                reads localStorage and nothing else, so it can never bring the
+                gate back mid-session. */}
+            <UplinkTimer />
 
             {/* ── Background Systems ── */}
             <BackgroundAtmosphere />

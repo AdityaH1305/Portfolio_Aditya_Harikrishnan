@@ -43,7 +43,9 @@ function Starfield() {
     const draw = () => {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       for (const s of stars) {
-        ctx.fillStyle = `rgba(56,189,248,${0.2 + s.speed * 0.4})`; /* sky-400 tint for stars */
+        /* The site's accent, not sky-400. Canvas art, so the saturated
+           `--accent` is the right half of the split — nothing here is text. */
+        ctx.fillStyle = `rgba(50,130,184,${0.2 + s.speed * 0.4})`;
         ctx.beginPath();
         ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
         ctx.fill();
@@ -138,9 +140,9 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
           w-full max-w-[680px]
           max-h-[92vh] overflow-y-auto
           rounded-2xl
-          border border-sky-500/20
-          bg-gradient-to-b from-[#09090b]/95 to-black/95
-          backdrop-blur-xl shadow-2xl shadow-sky-500/10
+          border border-edge-strong
+          bg-surface-1/95
+          backdrop-blur-xl shadow-2xl
           transition-all duration-500 ease-out
           ${mounted ? "opacity-100 scale-100" : "opacity-0 scale-95"}
         `}
@@ -152,7 +154,7 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
             absolute top-4 right-4 z-20
             w-8 h-8 flex items-center justify-center
             rounded-full bg-white/5 border border-white/10
-            text-zinc-500 hover:text-white hover:bg-white/10 hover:border-sky-500/50
+            text-tertiary hover:text-primary hover:bg-surface-2 hover:border-accent
             transition-all duration-200
           "
           aria-label="Close modal"
@@ -164,8 +166,8 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
         <div className="px-5 sm:px-6 py-5 space-y-4">
           {/* Title */}
           <div className="flex items-center gap-3">
-            <span className="text-2xl drop-shadow-[0_0_8px_rgba(56,189,248,0.5)]">🚀</span>
-            <h2 className="text-lg sm:text-xl font-bold tracking-tight text-zinc-100">
+            <span className="text-2xl">🚀</span>
+            <h2 className="heading-sm">
               Space Invaders
             </h2>
           </div>
@@ -175,8 +177,8 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
 
           {/* ── Footer ── */}
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 pt-1">
-            <p className="text-[11px] sm:text-xs text-zinc-500 leading-relaxed max-w-md">
-              Originally built in <span className="text-sky-400 font-medium">Python + Pygame</span> ~4 years ago, no AI tools used.
+            <p className="text-sm text-tertiary leading-relaxed max-w-md">
+              Originally built in <span className="text-accent font-medium">Python + Pygame</span> ~4 years ago, no AI tools used.
               Recreated here as a web canvas game.
             </p>
             <a
@@ -185,9 +187,9 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
               rel="noopener noreferrer"
               className="
                 shrink-0
-                px-4 py-1.5 rounded-lg text-xs font-medium
-                bg-white/5 border border-white/10 text-zinc-300
-                hover:bg-sky-500/10 hover:border-sky-500/30 hover:text-sky-300
+                px-4 py-1.5 rounded-lg text-sm font-medium
+                bg-surface-2 border border-edge-default text-secondary
+                hover:border-accent hover:text-accent
                 transition-all duration-200
               "
             >

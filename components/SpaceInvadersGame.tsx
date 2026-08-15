@@ -566,7 +566,7 @@ export default function SpaceInvadersGame() {
 
       {/* Controls bar */}
       <div className="flex items-center justify-between w-full" style={{ maxWidth: W }}>
-        <span className="text-[11px] text-slate-500 tracking-wide">
+        <span className="text-xs text-quaternary tracking-wide">
           Arrow keys / WASD · Space to shoot · Touch to play on mobile
         </span>
 
