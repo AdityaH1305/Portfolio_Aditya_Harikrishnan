@@ -77,7 +77,7 @@ export default function Journey() {
                 </Reveal>
 
                 {/* ── Timeline ── */}
-                <div className="mt-24 relative pl-8 md:pl-12">
+                <div className="mt-16 relative pl-8 md:pl-12">
                     {/* Vertical line */}
                     <div className="timeline-line" />
 
@@ -112,7 +112,7 @@ export default function Journey() {
                 {/* ── Current Status (preserved from About) ── */}
                 <Reveal
                     y={12}
-                    className="mt-20 grid sm:grid-cols-3 gap-10 pt-10"
+                    className="mt-16 grid sm:grid-cols-3 gap-10"
                 >
                     <div>
                         <p className="label mb-2">Education</p>

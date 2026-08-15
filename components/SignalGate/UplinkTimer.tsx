@@ -121,26 +121,38 @@ export default function UplinkTimer() {
     const expired = state === "expired";
     const seconds = expired ? 0 : Number(state.slice("live:".length));
 
+    /* The full sentence, which no longer fits on screen. It reaches a mouse
+       through `title` and a screen reader through the sr-only span below. */
+    const full = expired
+        ? "Uplink clearance expired — refresh to reconnect"
+        : `Uplink clearance — ${clock(seconds)} remaining`;
+
+    /* ── Why this is a chip and not a pill ──
+       It is `position: fixed` at left: 1.5rem, and the content column starts
+       at x = 128 (`.section-container` has padding-left: 8rem to clear the nav
+       rail). That leaves a 104px gutter. The readout used to spell itself out
+       — "Uplink expired · refresh to reconnect" measured ~290px — so it lay
+       across the left third of every heading that scrolled past it. Measured,
+       even the live form at 119px was already 15px into the text.
+
+       So the wording goes and the data stays: `● 0:36` is ~70px and
+       `● expired` is ~94px, both inside the gutter at every width. */
     return (
         <div
             className="uplink-timer"
             data-state={expired ? "expired" : "live"}
-            /* Polite, not assertive, and only the state word is announced.
-               A countdown that re-announces every second is unusable with a
-               screen reader on. */
+            title={full}
+            /* Polite, not assertive, and the announced string is the sr-only
+               sentence rather than the digits. A countdown that re-announces
+               every second is unusable with a screen reader on, which is why
+               the visible value is aria-hidden. */
             aria-live="polite"
         >
             <span className="uplink-timer-dot" aria-hidden="true" />
-            <span className="uplink-timer-label">
-                {expired ? "Uplink expired" : "Uplink"}
+            <span className="sr-only">{full}</span>
+            <span className="uplink-timer-value" aria-hidden="true">
+                {expired ? "expired" : clock(seconds)}
             </span>
-            {expired ? (
-                <span className="uplink-timer-note">refresh to reconnect</span>
-            ) : (
-                <span className="uplink-timer-value" aria-hidden="true">
-                    {clock(seconds)}
-                </span>
-            )}
         </div>
     );
 }

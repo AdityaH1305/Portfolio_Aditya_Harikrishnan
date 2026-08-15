@@ -257,7 +257,7 @@ export default function ProjectsEnhanced() {
 
             {/* Balanced 2-column grid */}
             <div className="section-container">
-                <div className="mt-16 md:mt-20 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 lg:gap-10 items-start">
+                <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 lg:gap-10 items-start">
                     {projects.map((project, i) => (
                         <ProjectCard
                             key={project.title}

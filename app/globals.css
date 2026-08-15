@@ -71,6 +71,38 @@
   initial-value: #0f4c75;
 }
 
+/* ── The capability cards' outline ──
+   All four registered for the same reason the surfaces are: a bare custom
+   property has no type, so neither `@keyframes` nor `transition` can
+   interpolate it. Unregistered, the sweep would jump 0 → 360 in one step and
+   the hover would snap between two alphas instead of swelling.
+
+   `inherits: false` on all four, so each card owns its own copy — which is
+   also why they are declared on the ::before rather than the card. */
+@property --ring-angle {
+  syntax: "<angle>";
+  inherits: false;
+  initial-value: 0deg;
+}
+
+@property --ring-base {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: rgb(187 225 250 / 0.05);
+}
+
+@property --ring-tint {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: rgb(50 130 184 / 0.35);
+}
+
+@property --ring-head {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: rgb(187 225 250 / 0.55);
+}
+
 :root {
   /* ── Surfaces ──
      Canvas and deep are supplied; the two between them are interpolated, so
@@ -123,8 +155,19 @@
   --border-strong: rgb(187 225 250 / 0.22);
 
   /* ── Rhythm ──
-     Whitespace separates sections now that the dividers are gone. */
-  --space-section: clamp(3.75rem, 9vw, 7.5rem);
+     Whitespace separates sections now that the dividers are gone.
+
+     THIS TOKEN IS HALF THE GAP, NOT THE GAP. `.section-y` puts it on both
+     `padding-top` and `padding-bottom`, so two adjacent sections are always
+     twice this far apart. It was `clamp(3.75rem, 9vw, 7.5rem)` — 120px a
+     side, so 240px of nothing between one section's last line and the next
+     section's 12px eyebrow, on a 900px-tall screen.
+
+     44 → 79px puts the gap at 88 on a phone and 158 on a desktop: roughly
+     four times the 38px section heading, which still reads as a clear break
+     without the page turning into islands. Anything that wants a different
+     rhythm from this belongs inside a section, not between two. */
+  --space-section: clamp(2.75rem, 5.5vw, 5rem);
   --page-max: 80rem;
 
   /* ── Motion — the signature curve, used everywhere ── */
@@ -567,6 +610,131 @@ body {
 .section-y {
   padding-top: var(--space-section);
   padding-bottom: var(--space-section);
+}
+
+/* ══════════════════════════════════════════════════════
+   Capability card — the one place an outline is drawn
+
+   THIS IS A DELIBERATE EXCEPTION and it is scoped to
+   `#research`. Everywhere else on this site, hierarchy is
+   scale and whitespace and nothing is drawn around content;
+   that rule stands. These four cards carry a 1px ring with a
+   light source travelling around it, subtle on all four and
+   much stronger on the one under the cursor. It does not
+   license outlines coming back elsewhere.
+
+   ── How it is drawn ──
+   A masked pseudo-element, not a border. `border-image`
+   cannot take a radius, and a real border would need a
+   second element to round. The ::before is inset to the card
+   edge, padded 1px, filled with a conic gradient, and then
+   masked so only that 1px padding band survives — the
+   `exclude` composite subtracts the content box from the
+   border box, leaving a ring.
+
+   The angle is the animated part (`--ring-angle`, registered
+   above), so the gradient rotates in place while the element
+   stays still.
+
+   ── Colour: accent on the canvas, ice at the head ──
+   The card sits on --surface-0 and hovers to --surface-1, so
+   the ring must not be either. It is the site's one accent
+   with an ice leading edge — light moving along an edge
+   rather than a second colour being introduced. --ring-base
+   is a floor rather than `transparent`, so a card is never
+   completely edgeless between sweeps.
+
+   ── The animation is PAUSED unless the section is on screen ──
+   A conic gradient repaints its element every frame. Four of
+   them running for the whole session, alongside the atlas
+   canvas, is exactly what the load-shedding rules elsewhere
+   in this file exist to prevent. ResearchMindset toggles
+   `.ring-live` with a single ScrollTrigger; without JS the
+   class never lands and the rings are simply static, which
+   is the safe direction to fail in.
+   ══════════════════════════════════════════════════════ */
+.capability-card {
+  position: relative;
+  border-radius: 1rem;
+}
+
+.capability-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+
+  /* Declared HERE and not on the card, because they are registered with
+     `inherits: false` — set on the parent they would never reach this
+     pseudo-element, which would silently fall back to the initial values and
+     make the hover do nothing. */
+  --ring-base: rgb(187 225 250 / 0.05);
+  --ring-tint: rgb(var(--accent-rgb) / 0.35);
+  --ring-head: rgb(187 225 250 / 0.55);
+
+  transition:
+    --ring-base 400ms var(--ease),
+    --ring-tint 400ms var(--ease),
+    --ring-head 400ms var(--ease);
+  background: conic-gradient(
+    from var(--ring-angle),
+    var(--ring-base) 0deg,
+    var(--ring-tint) 40deg,
+    var(--ring-head) 55deg,
+    var(--ring-tint) 70deg,
+    var(--ring-base) 110deg,
+    var(--ring-base) 360deg
+  );
+  /* The -webkit- pair is not optional — Safari still needs it, and without
+     the prefixed `mask-composite` the value it understands is `xor`, not
+     `exclude`. Get this wrong and the pseudo-element fills the whole card
+     instead of just its edge. */
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  pointer-events: none;
+  animation: ring-sweep 9s linear infinite;
+  animation-play-state: paused;
+}
+
+@keyframes ring-sweep {
+  to {
+    --ring-angle: 360deg;
+  }
+}
+
+/* Only while #research is actually on screen. */
+.ring-live .capability-card::before {
+  animation-play-state: running;
+}
+
+/* Hover: the same ring, turned up. The alphas roughly triple, so the card
+   under the cursor is unmistakable against three that are still ticking over,
+   and the transition above makes it swell rather than switch.
+
+   The DURATION deliberately does not change. Shortening it on hover was the
+   obvious extra — but `animation-duration` is applied against elapsed time,
+   so progress recomputes the instant it changes and the ring visibly jumps to
+   a new angle. Brightness alone carries the emphasis, and it carries it
+   without a glitch on every mouse-over. */
+.capability-card:hover::before {
+  --ring-base: rgb(187 225 250 / 0.1);
+  --ring-tint: rgb(var(--accent-rgb) / 0.95);
+  --ring-head: rgb(187 225 250 / 1);
+}
+
+/* No sweep, but the hover still reads: the alphas are a colour change, not
+   motion, so the ring simply brightens in place. */
+@media (prefers-reduced-motion: reduce) {
+  .capability-card::before {
+    animation: none;
+  }
 }
 
 /* Dividers are gone. Rhythm comes from `--space-section` instead, which is
@@ -1744,8 +1912,23 @@ html.signal-connected .signal-gate {
    Uplink timer — the clearance, counting down
 
    Top left, opposite the resume pill, and the same object
-   language as the rest of the fixed chrome: a blurred pill
+   language as the rest of the fixed chrome: a blurred chip
    on the page rather than a card with an outline.
+
+   ── IT HAS TO FIT THE GUTTER ──
+   This is `position: fixed` at left: 1.5rem, and
+   `.section-container` starts its content at x = 128 to
+   clear the nav rail. Everything between is a 104px gutter,
+   and ANY fixed element here that is wider than that lies
+   across the text.
+
+   The readout used to spell itself out — "Uplink expired ·
+   refresh to reconnect" measured ~290px and covered the left
+   third of every heading that scrolled past it, and even the
+   live form at 119px was 15px into the column. It is now a
+   dot plus the value: ~70px live, ~94px expired. The wording
+   moved to `title` and an sr-only span, which is why this
+   takes pointer events despite being an ornament.
 
    z-index sits BELOW the gate (9997). The clearance is
    written at the click, so the countdown starts while the
@@ -1760,8 +1943,12 @@ html.signal-connected .signal-gate {
   z-index: 60;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.4rem 0.8rem;
+  gap: 0.45rem;
+  /* 0.7rem, not 0.8: the gutter is 104px and the widest state ("expired")
+     measured 96px with the roomier padding. The fallback mono that renders
+     during `display: swap` can be wider than JetBrains, and 8px was not
+     enough headroom to survive that. */
+  padding: 0.4rem 0.7rem;
   border-radius: 999px;
   background: color-mix(in srgb, var(--surface-1) 85%, transparent);
   backdrop-filter: blur(8px);
@@ -1769,7 +1956,11 @@ html.signal-connected .signal-gate {
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   color: var(--text-tertiary);
-  pointer-events: none;
+  /* Auto, not none: the chip no longer says what it means, so the native
+     tooltip is now the only place the full sentence exists for a mouse. It
+     is ~90px of chrome in a gutter and covers nothing clickable. */
+  pointer-events: auto;
+  cursor: default;
   user-select: none;
   animation: uplink-in 600ms var(--ease) both;
 }
@@ -1804,17 +1995,17 @@ html.signal-connected .signal-gate {
   font-variant-numeric: tabular-nums;
 }
 
-/* Tertiary, not quaternary — this is the only sentence that tells a reader
-   what to do about an expired uplink, and quaternary measures 3.75:1. */
-.uplink-timer-note {
-  color: var(--text-tertiary);
-}
-
 /* Expired: the lamp goes out and the accent leaves with it. Nothing turns
-   red — there is one accent on this site and no error state to invent. */
+   red — there is one accent on this site and no error state to invent. The
+   word takes --text-tertiary rather than the accent, which now means "still
+   counting". */
 .uplink-timer[data-state="expired"] .uplink-timer-dot {
   background: var(--text-quaternary);
   animation: none;
+}
+
+.uplink-timer[data-state="expired"] .uplink-timer-value {
+  color: var(--text-tertiary);
 }
 
 /* Below the mobile island rather than beside it. The island is centred and

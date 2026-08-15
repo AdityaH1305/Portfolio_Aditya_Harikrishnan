@@ -1,6 +1,9 @@
 "use client";
 
+import { useRef } from "react";
+import { useGSAP } from "@gsap/react";
 import Reveal from "@/components/Reveal";
+import { gsap, ScrollTrigger } from "@/lib/motion";
 
 /* ══════════════════════════════════════════════════════
    Approach — What I Build
@@ -12,6 +15,23 @@ import Reveal from "@/components/Reveal";
 
    Keeps id="research" — the atlas and SideNav index
    against it.
+
+   ── The one animated outline on the site ──
+   The four cards carry a light source travelling around a
+   1px ring, quiet on all four and much brighter under the
+   cursor. All of it is CSS (`.capability-card` in
+   globals.css); the only job here is to say WHEN it may run.
+
+   A conic gradient repaints its whole element every frame,
+   so four of them running for the entire session — next to
+   the atlas canvas, which is already drawing — is precisely
+   the cost this repo sheds everywhere else. One
+   ScrollTrigger toggles `.ring-live` while the section is on
+   screen and the CSS keeps the animation paused otherwise.
+
+   ScrollTrigger from lib/motion, not gsap/ScrollTrigger:
+   that module is where registerGsap() registers it, and an
+   unregistered plugin fails silently.
    ══════════════════════════════════════════════════════ */
 
 /* Every entry names the project that proves it. That constraint is the
@@ -50,8 +70,44 @@ const capabilities = [
 ];
 
 export default function ResearchMindset() {
+    const section = useRef<HTMLElement>(null);
+
+    useGSAP(
+        () => {
+            const el = section.current;
+            if (!el) return;
+
+            const mm = gsap.matchMedia();
+
+            /* Gated on reduced-motion here as well as in CSS. The CSS branch
+               stops the sweep; this stops the trigger from existing at all,
+               so a reader who never wants motion also never pays for a
+               scroll listener that only ever enables one. */
+            mm.add("(prefers-reduced-motion: no-preference)", () => {
+                const st = ScrollTrigger.create({
+                    trigger: el,
+                    /* The full crossing, both edges: running from the moment
+                       any part of the section enters the viewport until the
+                       last of it leaves. A tighter window would have the
+                       rings visibly start moving partway down the section. */
+                    start: "top bottom",
+                    end: "bottom top",
+                    toggleClass: { targets: el, className: "ring-live" },
+                });
+                return () => st.kill();
+            });
+
+            return () => mm.revert();
+        },
+        { scope: section },
+    );
+
     return (
-        <section id="research" className="section-y section-divide">
+        <section
+            ref={section}
+            id="research"
+            className="section-y section-divide"
+        >
             <div className="section-container">
                 {/* ── Header — headline left, lead right ── */}
                 <Reveal y={16} className="section-head">
@@ -68,20 +124,30 @@ export default function ResearchMindset() {
                 {/* ── Capabilities ──
                     Was a `gap-px bg-edge` grid: four cells on a hairline
                     lattice, which is a table pretending to be a layout. The
-                    lattice is gone and the cards are separated by space
-                    instead, which is the whole move this redesign makes.
-                    The padding stays — it is what gives each one its own
-                    hover target — and only the lines went. */}
+                    lattice went; what each card has now is its own travelling
+                    ring, drawn by `.capability-card` in globals.css.
+
+                    THE COLUMN GAP HAD TO GROW, and by a specific amount. The
+                    cards bleed past the text column with `-mx-6 lg:-mx-8` so
+                    the hover background reaches beyond the copy — invisible
+                    while nothing was drawn at those edges, and fatal once
+                    something is. At lg the bleed is 32px a side, so two
+                    neighbours eat 64px, which is exactly what `gap-x-16` was:
+                    the rings would have met with no space between them.
+
+                    gap-x-20 / lg:gap-x-24 leaves 32px of real gap at both
+                    breakpoints (80 − 24 − 24, and 96 − 32 − 32). gap-y-6
+                    because rows have no negative margin to absorb. */}
                 <Reveal
                     stagger={0.08}
-                    className="mt-14 grid md:grid-cols-2 gap-x-10 gap-y-4 lg:gap-x-16"
+                    className="mt-14 grid md:grid-cols-2 gap-x-20 gap-y-6 lg:gap-x-24"
                 >
                     {capabilities.map((item) => (
                         <div
                             key={item.title}
                             data-reveal-child
-                            className="group py-8 lg:py-10 px-6 lg:px-8 -mx-6 lg:-mx-8
-                                       rounded-2xl
+                            className="group capability-card
+                                       py-8 lg:py-10 px-6 lg:px-8 -mx-6 lg:-mx-8
                                        transition-colors duration-300
                                        hover:bg-surface-1"
                         >

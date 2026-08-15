@@ -77,7 +77,7 @@ export default function Contact() {
                 branches. max-w-sm keeps the whole block clear of that
                 boundary from 1024px upward, and on mobile the atlas stops at
                 90% viewport height so the footer sits below it either way. */}
-            <footer className="mt-24 pt-8">
+            <footer className="mt-16 pt-8">
                 <div className="section-container">
                     <div className="max-w-sm pb-10 flex flex-col gap-2.5">
                         <div className="flex flex-wrap gap-x-6 gap-y-2">
