@@ -3,7 +3,11 @@
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
-import CaseStudyStage, { buildAct, REST } from "@/components/CaseStudyStage";
+import CaseStudyStage, {
+    buildAct,
+    REST,
+    slideForBeat,
+} from "@/components/CaseStudyStage";
 import { CASE_STUDIES } from "@/lib/caseStudies";
 import { ZONE_EVENT } from "@/lib/zone";
 
@@ -121,27 +125,53 @@ export default function CaseStudyZone() {
 
                    Direct DOM writes, not React state: this runs in the scroll
                    path, and `playing` gates it so play()/pause() are only
-                   called on an actual change. */
-                const clips = acts
-                    .map((act, i) => ({
-                        act: i,
-                        video: act.querySelector<HTMLVideoElement>(
-                            "[data-act-video]",
-                        ),
-                        poster: act.querySelector<HTMLElement>(
-                            "[data-act-poster]",
-                        ),
-                        playing: false,
-                    }))
-                    .filter((c) => c.video && c.poster);
+                   called on an actual change.
+
+                   ── ONE CLIP PER SLIDE, not one per act ──
+                   This used to be `act.querySelector("[data-act-video]")`,
+                   which returns the FIRST match. Ludex has two video slides,
+                   so only the dashboard clip was ever registered: it played
+                   through all three of its rest windows while the sign-in
+                   slide sat on top of it, its own video never started and its
+                   poster never lifted. Nothing errored — the wrong video was
+                   simply playing underneath the right still.
+
+                   So every slide gets its own entry, and a clip may play only
+                   when it is the slide the current beat is showing. */
+                const clips = acts.flatMap((act, actIndex) => {
+                    const slides = gsap.utils.toArray<HTMLElement>(
+                        "[data-act-slide]",
+                        act,
+                    );
+                    return slides
+                        .map((slide, slideIndex) => ({
+                            act: actIndex,
+                            slideIndex,
+                            slideCount: slides.length,
+                            video: slide.querySelector<HTMLVideoElement>(
+                                "[data-act-video]",
+                            ),
+                            poster: slide.querySelector<HTMLElement>(
+                                "[data-act-poster]",
+                            ),
+                            playing: false,
+                        }))
+                        .filter((c) => c.video && c.poster);
+                });
 
                 const syncClips = (time: number) => {
                     for (const c of clips) {
                         const local = time - c.act;
+                        /* Which rest window we are in, or -1 while the
+                           composition is mid-transition. */
+                        const beat = REST.findIndex(
+                            ([a, b]) => local >= a && local <= b,
+                        );
                         const resting =
                             local >= 0 &&
                             local <= 1 &&
-                            REST.some(([a, b]) => local >= a && local <= b);
+                            beat !== -1 &&
+                            slideForBeat(beat, c.slideCount) === c.slideIndex;
 
                         if (resting === c.playing) continue;
                         c.playing = resting;

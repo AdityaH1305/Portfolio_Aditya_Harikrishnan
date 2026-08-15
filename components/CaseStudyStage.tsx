@@ -1,7 +1,10 @@
 "use client";
 
+import { useCallback, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import Image from "next/image";
 import CtaRow from "@/components/CtaRow";
+import VideoPlayer from "@/components/VideoPlayer";
 import { gsap, EASE } from "@/lib/motion";
 import type { CaseStudy } from "@/lib/caseStudies";
 
@@ -110,6 +113,21 @@ export const ACT = {
 export const REST = ACT.beats;
 
 /**
+ * Which slide a given beat shows.
+ *
+ * Clamped, so a two-slide study (Ludex) holds its second slide through the
+ * closing beat instead of repeating one to pad the array out to three.
+ *
+ * EXPORTED because CaseStudyZone needs the same answer. It gates video
+ * playback on the beat, and until it could ask this question it played
+ * whichever `[data-act-video]` came first in the act — which for Ludex meant
+ * the dashboard clip ran under a sign-in slide whose own video never started
+ * and whose poster never lifted.
+ */
+export const slideForBeat = (beat: number, slideCount: number): number =>
+    Math.min(beat, slideCount - 1);
+
+/**
  * How far a later act's entry starts BEFORE its own act boundary.
  *
  * Without it the outgoing act reaches zero opacity at exactly the position
@@ -154,6 +172,51 @@ export default function CaseStudyStage({
     study: CaseStudy;
     index: number;
 }) {
+    /* Index of the slide open in the expanded player; null = closed. Same
+       affordance the full write-up has — the concise stage autoplays a clip
+       muted and silent, and there was no way to actually watch one without
+       leaving for /work/<slug>. */
+    const [expanded, setExpanded] = useState<number | null>(null);
+    const mediaRef = useRef<HTMLDivElement>(null);
+
+    /** The inline <video> and its poster cover, for one slide. */
+    const slideParts = useCallback((i: number) => {
+        const slide = mediaRef.current?.querySelectorAll("[data-act-slide]")[i];
+        return {
+            video: slide?.querySelector<HTMLVideoElement>("[data-act-video]"),
+            poster: slide?.querySelector<HTMLElement>("[data-act-poster]"),
+        };
+    }, []);
+
+    const open = useCallback(
+        (i: number) => {
+            /* Pause the inline copy first. The player locks scroll, which
+               stops Lenis, which stops ScrollTrigger updating — so the zone's
+               own sync will not run again while the modal is up and would
+               otherwise leave a second copy decoding behind it. */
+            slideParts(i).video?.pause();
+            setExpanded(i);
+        },
+        [slideParts],
+    );
+
+    const close = useCallback(() => {
+        const i = expanded;
+        setExpanded(null);
+        if (i === null) return;
+
+        /* Hand the clip back in the state the scroll position implies. The
+           zone lifts a slide's poster only while that clip is meant to be
+           running, so the poster's own opacity is the authority here — no new
+           state to keep in step with it. */
+        const { video, poster } = slideParts(i);
+        if (video && poster?.style.opacity === "0") {
+            void video.play().catch(() => {});
+        }
+    }, [expanded, slideParts]);
+
+    const expandedMedia = expanded === null ? null : study.media[expanded];
+
     return (
         <article data-act className="zone-act">
             <div className="zone-act-frame section-container">
@@ -200,7 +263,11 @@ export default function CaseStudyStage({
                         case study. */}
                     <Beat study={study} i={0} />
 
-                    <div data-act-media className="zone-act-media">
+                    <div
+                        ref={mediaRef}
+                        data-act-media
+                        className="zone-act-media"
+                    >
                         {study.media.map((m, i) => (
                             <figure
                                 key={m.src}
@@ -209,7 +276,7 @@ export default function CaseStudyStage({
                                 className="zone-act-slide"
                             >
                                 <div className="zone-act-slide-frame shell-bezel">
-                                    <div className="core-bezel relative w-full h-full overflow-hidden">
+                                    <div className="core-bezel relative w-full h-full overflow-hidden group/media">
                                         {m.type === "video" ? (
                                             <>
                                                 {/* preload="none" and the
@@ -245,6 +312,46 @@ export default function CaseStudyStage({
                                                         className="object-contain"
                                                     />
                                                 </div>
+
+                                                {/* "Expand", not "play": the
+                                                    clip is already running by
+                                                    the time this is reachable,
+                                                    and the only thing a click
+                                                    can add is size and
+                                                    controls. Same wording and
+                                                    same player as the write-up.
+
+                                                    Overlaid rather than placed
+                                                    in flow, so the choreography
+                                                    measures the same box it
+                                                    always did. */}
+                                                <button
+                                                    type="button"
+                                                    data-cursor="expand"
+                                                    onClick={() => open(i)}
+                                                    aria-label={`Expand ${m.caption}`}
+                                                    className="absolute top-3 right-3 z-10 flex items-center gap-2
+                                                               px-3 py-2 rounded-full
+                                                               bg-surface-0/90 backdrop-blur-sm border border-edge-strong
+                                                               text-secondary hover:text-accent hover:border-accent
+                                                               opacity-0 group-hover/media:opacity-100 focus-visible:opacity-100
+                                                               transition-all duration-200"
+                                                >
+                                                    <svg
+                                                        width="13"
+                                                        height="13"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        aria-hidden="true"
+                                                    >
+                                                        <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
+                                                    </svg>
+                                                    <span className="mono text-xs tracking-widest uppercase">
+                                                        Expand
+                                                    </span>
+                                                </button>
                                             </>
                                         ) : (
                                             <Image
@@ -276,6 +383,25 @@ export default function CaseStudyStage({
                     </div>
                 </div>
             </div>
+
+            {/* PORTALLED, and this is not optional. The player is
+                `position: fixed`, but `html.zone-immersive` puts
+                `will-change: transform` on `.zone-act` — which makes that act
+                the containing block for any fixed descendant. Rendered in
+                place, the player would be laid out inside the 100vh sticky
+                stage and then clipped by its `overflow: hidden`, i.e. a
+                full-screen modal trapped in a panel. */}
+            {expandedMedia &&
+                typeof document !== "undefined" &&
+                createPortal(
+                    <VideoPlayer
+                        src={expandedMedia.src}
+                        poster={expandedMedia.poster}
+                        label={expandedMedia.caption}
+                        onClose={close}
+                    />,
+                    document.body,
+                )}
         </article>
     );
 }
@@ -411,12 +537,9 @@ export function buildAct(
         p(ACT.entry[1]),
     );
 
-    /* Which slide each beat shows. Clamped, so a two-slide study (Ludex) holds
-       its second slide through the closing beat instead of repeating one to
-       pad the array out to three. */
-    const slideForBeat = ACT.beats.map((_, i) =>
-        Math.min(i, slides.length - 1),
-    );
+    /* Which slide each beat shows — the same mapping CaseStudyZone reads to
+       decide which clip may play. */
+    const slideOfBeat = ACT.beats.map((_, i) => slideForBeat(i, slides.length));
 
     /* Start state outside the timeline. The crossfades below are `fromTo` and
        therefore state their own start and end explicitly — a plain `.to()`
@@ -427,9 +550,9 @@ export function buildAct(
         gsap.set(slide, { autoAlpha: i === 0 ? 1 : 0, scale: 1 }),
     );
 
-    for (let i = 1; i < slideForBeat.length; i++) {
-        const prev = slideForBeat[i - 1];
-        const next = slideForBeat[i];
+    for (let i = 1; i < slideOfBeat.length; i++) {
+        const prev = slideOfBeat[i - 1];
+        const next = slideOfBeat[i];
         if (prev === next) continue;
 
         const { from, to } = hops[i];

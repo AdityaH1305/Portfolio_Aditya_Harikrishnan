@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, EASE } from "@/lib/motion";
+import LiveRings from "@/components/LiveRings";
 
 /* ══════════════════════════════════════════════════════
    Route enter transition
@@ -79,5 +80,13 @@ export default function Template({
         { scope: root },
     );
 
-    return <div ref={root}>{children}</div>;
+    return (
+        <div ref={root}>
+            {/* Mounted HERE rather than in layout.tsx: it scans the DOM once
+                for ringed elements, and layout persists across navigations so
+                it would never see the next route's media. Renders nothing. */}
+            <LiveRings />
+            {children}
+        </div>
+    );
 }

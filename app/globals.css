@@ -613,15 +613,24 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
-   Capability card — the one place an outline is drawn
+   The live ring
 
-   THIS IS A DELIBERATE EXCEPTION and it is scoped to
-   `#research`. Everywhere else on this site, hierarchy is
-   scale and whitespace and nothing is drawn around content;
-   that rule stands. These four cards carry a 1px ring with a
-   light source travelling around it, subtle on all four and
-   much stronger on the one under the cursor. It does not
-   license outlines coming back elsewhere.
+   A 1px outline with a light source travelling around it —
+   quiet at rest and much stronger under the cursor. Two
+   things wear it:
+
+   • `.capability-card`, the four "What I Build" blocks
+   • `.shell-bezel`, which IS the site's media mat — every
+     case-study slide, every project screenshot, every figure
+     panel. Coupling to that class rather than to a list of
+     components is the point: anything framed as media picks
+     the ring up, and nothing else can pick it up by accident.
+
+   THIS IS A DELIBERATE EXCEPTION to the rule that nothing is
+   drawn around content. Body copy, headings and list rows
+   still have no edges at all; what has one is a card that
+   invites a click and a mat that already existed to stop a
+   light screenshot bleeding into the page.
 
    ── How it is drawn ──
    A masked pseudo-element, not a border. `border-image`
@@ -653,12 +662,18 @@ body {
    class never lands and the rings are simply static, which
    is the safe direction to fail in.
    ══════════════════════════════════════════════════════ */
-.capability-card {
+/* `:is()` so the machinery is written once. Its specificity is that of its
+   most specific argument — (0,1,0) here — so these behave exactly as three
+   plain class selectors would. */
+:is(.live-ring, .shell-bezel) {
   position: relative;
+}
+
+.capability-card {
   border-radius: 1rem;
 }
 
-.capability-card::before {
+:is(.live-ring, .shell-bezel)::before {
   content: "";
   position: absolute;
   inset: 0;
@@ -709,8 +724,11 @@ body {
   }
 }
 
-/* Only while #research is actually on screen. */
-.ring-live .capability-card::before {
+/* Only while the element itself is on screen. SELF-toggled, not inherited
+   from a section: `components/LiveRings.tsx` puts `.ring-live` on each target
+   through one shared IntersectionObserver, so a media mat three routes away
+   needs nothing to know about it. */
+:is(.live-ring, .shell-bezel).ring-live::before {
   animation-play-state: running;
 }
 
@@ -723,7 +741,7 @@ body {
    so progress recomputes the instant it changes and the ring visibly jumps to
    a new angle. Brightness alone carries the emphasis, and it carries it
    without a glitch on every mouse-over. */
-.capability-card:hover::before {
+:is(.live-ring, .shell-bezel):hover::before {
   --ring-base: rgb(187 225 250 / 0.1);
   --ring-tint: rgb(var(--accent-rgb) / 0.95);
   --ring-head: rgb(187 225 250 / 1);
@@ -732,7 +750,7 @@ body {
 /* No sweep, but the hover still reads: the alphas are a colour change, not
    motion, so the ring simply brightens in place. */
 @media (prefers-reduced-motion: reduce) {
-  .capability-card::before {
+  :is(.live-ring, .shell-bezel)::before {
     animation: none;
   }
 }
