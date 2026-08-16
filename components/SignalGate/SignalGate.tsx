@@ -696,33 +696,42 @@ export default function SignalGate() {
                                 accessible name, and a screen reader should be
                                 offered ONE action here, not the same one
                                 twice. This is a label, not a second control. */}
-                            <p className="signal-gate-cta" aria-hidden="true">
-                                Restore signal
-                            </p>
+                            {/* ── The pointer lives IN the phrase ──
+                                Between the two words, which is the one place
+                                on this lockup that was always going to work
+                                and took three tries to find. Above the words
+                                and centred, it aimed at the space between
+                                them and read as a stray tick on the type;
+                                below them it was correct but detached, a
+                                third stacked element in an already tall
+                                column.
 
-                            {/* The pointer, below the words and aimed at the
-                                button. A shaft and a head rather than a bare
-                                chevron: at 26px a chevron alone reads as a
-                                punctuation mark, and this has to read as an
-                                instruction. It bobs on its own slow cycle
-                                rather than on the heartbeat — the trace above
-                                already carries the pulse, and two things
-                                beating in sync at different sizes looked like
-                                a glitch. */}
-                            <span
-                                className="signal-gate-aim"
-                                aria-hidden="true"
-                            >
-                                <svg viewBox="0 0 24 24" fill="none">
-                                    <path
-                                        d="M12 3.5v13.5M5.75 11.25 12 17.5l6.25-6.25"
-                                        stroke="currentColor"
-                                        strokeWidth="2.25"
-                                        strokeLinecap="round"
-                                        strokeLinejoin="round"
-                                    />
-                                </svg>
-                            </span>
+                                Set in the gap it is neither — it is part of
+                                the phrase, at the phrase's own scale, and it
+                                still hangs directly over the button because
+                                the middle of the lockup is the middle of the
+                                block. A shaft AND a head: at this size a bare
+                                chevron reads as punctuation, and this has to
+                                read as an instruction.
+
+                                The bob is small on purpose. It sits on a
+                                baseline with type either side, so a large
+                                travel would look like a glyph coming loose. */}
+                            <p className="signal-gate-cta" aria-hidden="true">
+                                <span>Restore</span>
+                                <span className="signal-gate-aim">
+                                    <svg viewBox="0 0 24 24" fill="none">
+                                        <path
+                                            d="M12 3.5v13.5M5.75 11.25 12 17.5l6.25-6.25"
+                                            stroke="currentColor"
+                                            strokeWidth="2.25"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+                                </span>
+                                <span>Signal</span>
+                            </p>
 
                             <button
                                 ref={buttonRef}

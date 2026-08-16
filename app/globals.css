@@ -1933,7 +1933,6 @@ html.zone-immersive .zone-bar {
 .signal-gate-body,
 .signal-gate-ecg,
 .signal-gate-cta,
-.signal-gate-aim,
 .signal-gate-action,
 .signal-gate-hint {
   animation: signal-rise 620ms var(--ease) both;
@@ -2058,16 +2057,32 @@ html.zone-immersive .zone-bar {
    type ladder. */
 .signal-gate-cta {
   animation-delay: 300ms;
-  margin-top: 0.6rem;
-  text-align: center;
+  margin-top: 0.75rem;
+  /* A flex ROW, because the arrow is one of the three things on this line.
+     Centred, so the middle of the lockup — which is the arrow — sits over the
+     middle of the button below. */
+  /* A GRID, not flex, and the distinction is load-bearing. `1fr auto 1fr`
+     makes the two word tracks equal BY DEFINITION, so the arrow in the middle
+     track sits exactly on the block's centre line.
+
+     Flex was tried first and cannot do this: `flex: 1 1 0` will not shrink an
+     item below its min-content, so "RESTORE" kept its natural width, "SIGNAL"
+     kept its narrower one, and the arrow stayed 14px right of centre. Under a
+     `fit-content` parent an `fr` track instead resolves to the larger word's
+     max-content and the other matches it. */
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 0.28em;
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
   font-size: clamp(1.375rem, 1.22rem + 0.66vw, 1.8125rem);
   font-weight: 500;
   letter-spacing: 0.2em;
-  /* The tracking is applied to the right of every glyph including the last,
-     which pushes the visual centre left. Half of it back as padding puts the
-     text back under the arrowhead. */
-  padding-left: 0.2em;
+  /* NO padding compensation for the trailing letter-space here. It was needed
+     when this line was `text-align: center` — tracking is applied to the right
+     of every glyph including the last, which shifted the centred text left.
+     Under the grid the last word's trailing space is inside its own track, so
+     the compensation only pushed the whole lockup 3px off the button. */
   text-transform: uppercase;
   line-height: 1.1;
   color: var(--gate-key);
@@ -2134,19 +2149,45 @@ html.zone-immersive .zone-bar {
   transition: color 520ms var(--ease);
 }
 
-/* ── The pointer ────────────────────────────────────────
-   Between the words and the control, because the control is what it is
-   pointing at. It sat above the words for one revision and had to move: the
-   optical centre of "RESTORE SIGNAL" is the gap between the two words, so a
-   centred arrow was aimed at nothing and read as a stray tick on the type.
+/* ── The pointer, set in the phrase ─────────────────────
+   Sized in `em`, so it scales with the call to action at every breakpoint
+   instead of needing its own clamp. 1.15em puts it a touch above the cap
+   height of the words either side — enough to carry as a symbol rather than
+   as a glyph, without breaking the line.
 
-   A button is a solid pill with a real centre. Nothing to miss. */
+   `flex: none` matters: it is a flex child now, and without it the SVG box
+   would shrink when the lockup is tight on a narrow screen. */
+/* ── EQUAL COLUMNS EITHER SIDE OF THE ARROW ─────────────
+   "RESTORE" is seven characters and "SIGNAL" is six, so simply setting the
+   arrow between them puts it right of centre — measured at 15px off the
+   button below, which is the width of the asymmetry halved.
+
+   Giving both words a `flex-basis: 0` column and letting them grow equally
+   makes the two sides the same width whatever the words are, so the arrow
+   sits exactly on the block's centre line and the phrase balances around it.
+   Aligning each word toward the arrow keeps the gaps even.
+
+   It also means the copy can change without the aim silently drifting. */
+.signal-gate-cta > span:not(.signal-gate-aim) {
+  white-space: nowrap;
+}
+
+.signal-gate-cta > span:first-child {
+  text-align: right;
+}
+
+.signal-gate-cta > span:last-child {
+  text-align: left;
+}
+
 .signal-gate-aim {
-  animation-delay: 340ms;
-  display: block;
-  width: 1.75rem;
-  height: 1.75rem;
-  margin: 0.55rem auto 0.15rem;
+  display: inline-flex;
+  width: 1.15em;
+  height: 1.15em;
+  /* Uppercase type has no descenders, so its optical centre sits above the
+     line box's. Nudging down puts the arrow on the same visual axis as the
+     words rather than floating over them. */
+  transform: translateY(0.06em);
   color: var(--gate-key);
   transition: color 520ms var(--ease);
 }
@@ -2157,15 +2198,15 @@ html.zone-immersive .zone-bar {
   animation: signal-aim 1.6s var(--ease) infinite;
 }
 
-/* Travels toward the button and eases back. Slow and small on purpose: a
-   fast or far bounce reads as a loading spinner, and this is a direction. */
+/* Small travel, deliberately. It is on a baseline with type either side, so a
+   large bounce would read as a glyph coming loose rather than as a direction. */
 @keyframes signal-aim {
   0%,
   100% {
-    transform: translateY(-2px);
+    transform: translateY(-1px);
   }
   50% {
-    transform: translateY(4px);
+    transform: translateY(3px);
   }
 }
 
@@ -2318,7 +2359,6 @@ html.zone-immersive .zone-bar {
   .signal-gate-body,
   .signal-gate-ecg,
   .signal-gate-cta,
-  .signal-gate-aim,
   .signal-gate-action,
   .signal-gate-hint,
   .signal-gate-row,
