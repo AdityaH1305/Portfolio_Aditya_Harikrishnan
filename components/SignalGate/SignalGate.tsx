@@ -20,8 +20,11 @@ import {
     BOOT_TOTAL_MS,
     BOOT_FADE_MS,
     BOOT_FADE_AT,
+    BOOT_CONFIRM_AT,
+    BOOT_CONFIRM_MS,
 } from "./gate";
 import { waveAt, WAVE_SAMPLES } from "./wave";
+import { ecgAt, sweepAt, ECG_SAMPLES } from "./ecg";
 
 /* ══════════════════════════════════════════════════════
    Signal Gate
@@ -142,14 +145,22 @@ export default function SignalGate() {
         getServerSnapshot,
     );
 
-    /* Three phases, not one flag. `lost` is the idle instrument, `booting`
-       plays the readout, `leaving` cross-fades into the site. */
-    const [phase, setPhase] = useState<"lost" | "booting" | "leaving">("lost");
+    /* FOUR phases, not one flag. `lost` is the alert, `booting` plays the
+       readout, `confirmed` is the verdict, `leaving` cross-fades into the
+       site.
+
+       `confirmed` was added because readers reported thinking the site was
+       down. A sequence that ends by quietly fading leaves them to infer that
+       it worked; this one says so, in green, in words, with a check. */
+    const [phase, setPhase] = useState<
+        "lost" | "booting" | "confirmed" | "leaving"
+    >("lost");
     const [dismissed, setDismissed] = useState(false);
     const [shown, setShown] = useState(0);
 
     const gateRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const ecgRef = useRef<HTMLCanvasElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const reducedRef = useRef(false);
     const timers = useRef<number[]>([]);
@@ -268,6 +279,129 @@ export default function SignalGate() {
         };
     }, [open]);
 
+    /* ── The ECG arrow ─────────────────────────────────
+       A heart monitor pointing at the button. `ecg.ts` holds the shape and is
+       unit-tested; this only plots it and draws the arrowhead.
+
+       Its own canvas rather than a second figure on the carrier above: they
+       are different instruments saying different things, and the carrier sits
+       under the title while this has to sit against the control it points at.
+
+       Colour comes from the live `--gate-key` token, re-read every frame. That
+       is what carries the trace from red through blue to green as the phases
+       change, without this file knowing any of those values. */
+    useEffect(() => {
+        if (!open) return;
+        const canvas = ecgRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let w = 0;
+        let h = 0;
+
+        const size = () => {
+            const r = canvas.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) return;
+            w = r.width;
+            h = r.height;
+            canvas.width = Math.round(w * dpr);
+            canvas.height = Math.round(h * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        size();
+
+        /* The arrowhead is drawn at the right end and points DOWN, at the
+           button directly beneath. Kept out of the trace's own width so the
+           waveform never runs underneath it. */
+        const HEAD = 16;
+
+        const draw = (seconds: number) => {
+            if (w < 1) size();
+            if (w < 1) return;
+
+            const key = getComputedStyle(canvas).color;
+            const live = liveRef.current;
+            const mid = h * 0.42;
+            const amp = h * 0.34;
+            const traceW = w - HEAD;
+
+            ctx.clearRect(0, 0, w, h);
+
+            // Baseline: the instrument, always on, under whatever it reads.
+            ctx.beginPath();
+            ctx.moveTo(0, mid);
+            ctx.lineTo(traceW, mid);
+            ctx.globalAlpha = 0.22;
+            ctx.strokeStyle = key;
+            ctx.lineWidth = 1;
+            ctx.stroke();
+
+            ctx.globalAlpha = 1;
+            ctx.beginPath();
+            for (let i = 0; i < ECG_SAMPLES; i++) {
+                const u = i / (ECG_SAMPLES - 1);
+                const x = u * traceW;
+                const y = mid - ecgAt(u, seconds, live) * amp;
+                if (i === 0) ctx.moveTo(x, y);
+                else ctx.lineTo(x, y);
+            }
+            ctx.strokeStyle = key;
+            ctx.lineWidth = 1.75;
+            ctx.lineJoin = "round";
+            ctx.stroke();
+
+            /* The sweep head. A monitor's write position — it is what makes
+               the strip read as paper coming out of a machine rather than as
+               a shape that pulses in place. */
+            if (!reducedRef.current) {
+                const hx = sweepAt(seconds) * traceW;
+                const hy = mid - ecgAt(hx / traceW, seconds, live) * amp;
+                ctx.beginPath();
+                ctx.arc(hx, hy, 2.5, 0, Math.PI * 2);
+                ctx.fillStyle = key;
+                ctx.fill();
+            }
+
+            /* The arrowhead, pointing down at the button. It pulses with the
+               beat, so the rhythm visibly pushes the eye onto the control —
+               which is the entire job of this element. */
+            const beatPulse = Math.max(0, ecgAt(1, seconds, live));
+            const scale = 1 + beatPulse * 0.35;
+            const cx = w - HEAD / 2;
+            const cy = mid;
+            const s = (HEAD / 2) * scale;
+
+            ctx.beginPath();
+            ctx.moveTo(cx - s * 0.62, cy - s * 0.34);
+            ctx.lineTo(cx, cy + s * 0.5);
+            ctx.lineTo(cx + s * 0.62, cy - s * 0.34);
+            ctx.strokeStyle = key;
+            ctx.lineWidth = 2;
+            ctx.lineCap = "round";
+            ctx.lineJoin = "round";
+            ctx.stroke();
+        };
+
+        if (reducedRef.current) {
+            // One still frame. The arrowhead survives — it is the pointer, and
+            // a pointer that only exists in motion is no pointer at all.
+            draw(0);
+            return;
+        }
+
+        const tick = (time: number) => draw(time);
+        gsap.ticker.add(tick);
+        const ro = new ResizeObserver(size);
+        ro.observe(canvas);
+
+        return () => {
+            gsap.ticker.remove(tick);
+            ro.disconnect();
+        };
+    }, [open]);
+
     /* Hold the atlas dormant while the gate is up, so reconnecting is what
        brings it to life. Reuses the quiet broadcast the case-study zone and
        the Stack field already use, keyed by source so the three cannot
@@ -365,8 +499,13 @@ export default function SignalGate() {
         commit();
 
         if (reducedRef.current) {
+            /* No animation, but the verdict is information rather than
+               decoration — it still gets its time on screen. Skipping it here
+               would take the reassurance away from exactly the readers most
+               likely to need an interface to be explicit. */
             setShown(lines.length);
-            close();
+            setPhase("confirmed");
+            timers.current.push(window.setTimeout(close, BOOT_CONFIRM_MS));
             return;
         }
 
@@ -379,6 +518,9 @@ export default function SignalGate() {
                 window.setTimeout(() => setShown(i + 1), line.at),
             );
         });
+        timers.current.push(
+            window.setTimeout(() => setPhase("confirmed"), BOOT_CONFIRM_AT),
+        );
         timers.current.push(
             window.setTimeout(() => setPhase("leaving"), BOOT_FADE_AT),
         );
@@ -439,10 +581,28 @@ export default function SignalGate() {
             <span className="signal-gate-frame" aria-hidden="true" />
 
             <div className="signal-gate-inner">
-                <p className="label-muted signal-gate-meta">
-                    {phase === "lost"
-                        ? "Uplink / no carrier"
-                        : "Uplink / carrier locked"}
+                {/* ── The eyebrow, with a glyph ──────────
+                    COLOUR IS NEVER THE ONLY SIGNAL. Red→green is the textbook
+                    red/green colour-blind failure, so the state is carried
+                    three independent ways: this glyph (triangle → check), the
+                    words below, and the palette. Any one of the three alone is
+                    enough to tell what is going on. */}
+                <p className="signal-gate-meta">
+                    <span className="signal-gate-glyph" aria-hidden="true">
+                        {phase === "lost" ? (
+                            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                <path d="M12 3.5 22 20.5H2z" stroke="currentColor" strokeLinejoin="round" />
+                                <path d="M12 10v4.5" stroke="currentColor" strokeLinecap="round" />
+                                <circle cx="12" cy="17.6" r="1.1" fill="currentColor" />
+                            </svg>
+                        ) : (
+                            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                <circle cx="12" cy="12" r="9.25" stroke="currentColor" />
+                                <path d="m7.6 12.3 3 3 5.8-6.4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+                            </svg>
+                        )}
+                    </span>
+                    {phase === "lost" ? "System alert" : "Uplink / carrier locked"}
                 </p>
 
                 <p id="signal-gate-title" className="signal-gate-title">
@@ -461,21 +621,43 @@ export default function SignalGate() {
                     <>
                         <p className="body-sm signal-gate-body">
                             Telemetry from this station stopped mid
-                            transmission. Everything is still down there.
+                            transmission. Everything is still down there —
+                            press below to bring it back.
                         </p>
 
-                        <button
-                            ref={buttonRef}
-                            type="button"
-                            onClick={reconnect}
-                            className="signal-gate-action"
-                        >
-                            <span
-                                className="signal-gate-caret"
+                        {/* ── The pointer and what it points at ──
+                            Wrapped together, and the wrapper is what makes the
+                            aim correct rather than approximate: it shrinks to
+                            the button's own width, so the canvas above it is
+                            exactly as wide and the arrowhead at its right end
+                            lands over the control instead of 24px past it.
+                            Measured before the wrapper existed — the trace was
+                            272px against a 248px button.
+
+                            A heart monitor: flatlined now, beating the moment
+                            it is pressed. Nothing previously connected the
+                            fault on this screen to the thing that fixes it,
+                            which is the whole reason this redesign exists. */}
+                        <div className="signal-gate-prompt">
+                            <canvas
+                                ref={ecgRef}
+                                className="signal-gate-ecg"
                                 aria-hidden="true"
                             />
-                            Reestablish connection
-                        </button>
+
+                            <button
+                                ref={buttonRef}
+                                type="button"
+                                onClick={reconnect}
+                                className="signal-gate-action"
+                            >
+                                <span
+                                    className="signal-gate-caret"
+                                    aria-hidden="true"
+                                />
+                                Reestablish connection
+                            </button>
+                        </div>
                     </>
                 ) : (
                     <ol className="signal-gate-log" aria-live="polite">
@@ -505,6 +687,38 @@ export default function SignalGate() {
                     </ol>
                 )}
             </div>
+
+            {/* ── The verdict ───────────────────────────
+                Across the bottom, full width, and impossible to miss. This is
+                the half of the redesign that answers the actual complaint:
+                the old sequence ended by fading out, so a reader who had just
+                been shown a fault had to INFER that it was fixed. Now it is
+                stated.
+
+                Its own `aria-live` rather than relying on the log's. That
+                region announces rows as they stream, and the verdict is a
+                different kind of message — it must be spoken as one, not as a
+                ninth log line.
+
+                Rendered from `booting` onward and revealed by CSS on
+                `confirmed`, so the strip's height is in the layout from the
+                start and the log above it does not shift when it arrives. */}
+            {phase !== "lost" && (
+                <div className="signal-gate-verdict" aria-live="polite">
+                    <span className="signal-gate-verdict-glyph" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.2">
+                            <circle cx="12" cy="12" r="9.25" stroke="currentColor" />
+                            <path
+                                d="m7.6 12.3 3 3 5.8-6.4"
+                                stroke="currentColor"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                            />
+                        </svg>
+                    </span>
+                    {phase === "booting" ? "" : "All systems operational"}
+                </div>
+            )}
         </div>
     );
 }

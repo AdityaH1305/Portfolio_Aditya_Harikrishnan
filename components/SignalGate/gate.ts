@@ -144,14 +144,28 @@ import { SECTION_IDS } from "../LivingArchitecture/stages.ts";
 import { SKILLS } from "../SkillOrbit/data.ts";
 import { CASE_STUDIES } from "../../lib/caseStudies.ts";
 
-/** Click to portfolio. Exactly two seconds, fade included, not added on top. */
-export const BOOT_TOTAL_MS = 2000;
+/* ── The schedule ──────────────────────────────────────
+   Every offset below is DERIVED from these three, never written twice. The
+   sequence has been retimed twice now and both times the thing that would
+   have broken silently is a hardcoded millisecond somewhere downstream.
+
+   It was 2000ms flat and ended by simply fading out. That is the half of the
+   entrance this redesign fixes: readers reported thinking the site was down,
+   and a sequence that never says "that worked" leaves them to infer it. The
+   confirmation beat is the answer, and it needs real time on screen — under a
+   second is exactly how a reassurance becomes missable. */
+
+/** Lines are emitted across this window. Unchanged pace: 7 rows, ~263ms apart. */
+export const BOOT_EMIT_MS = 1580;
+
+/** The green ALL SYSTEMS OPERATIONAL beat, after the log and before the fade. */
+export const BOOT_CONFIRM_MS = 900;
 
 /** The cross-fade, which OVERLAPS the tail rather than following it. */
 export const BOOT_FADE_MS = 420;
 
-/** Lines are emitted across this window; the last lands as the fade starts. */
-export const BOOT_EMIT_MS = BOOT_TOTAL_MS - BOOT_FADE_MS;
+/** Click to portfolio. Fade included, not added on top. */
+export const BOOT_TOTAL_MS = BOOT_EMIT_MS + BOOT_CONFIRM_MS + BOOT_FADE_MS;
 
 export interface BootLine {
     /** Left side of the row. */
@@ -187,6 +201,14 @@ export function bootSequence(): BootLine[] {
     }));
 }
 
-/** When the gate starts fading. Equal to the last line's time, by design. */
-export const BOOT_FADE_AT = BOOT_EMIT_MS;
+/**
+ * When the verdict lands — the instant the last log line does.
+ *
+ * The log stays on screen underneath it. A reader should see the checks AND
+ * the conclusion, not have the evidence swapped out for the summary.
+ */
+export const BOOT_CONFIRM_AT = BOOT_EMIT_MS;
+
+/** When the gate starts fading, i.e. once the confirmation has been read. */
+export const BOOT_FADE_AT = BOOT_CONFIRM_AT + BOOT_CONFIRM_MS;
 

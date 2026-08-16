@@ -103,6 +103,33 @@
   initial-value: rgb(187 225 250 / 0.55);
 }
 
+/* ── The signal gate's own palette ──────────────────────
+   Registered for the same reason everything else here is: a bare custom
+   property has no type, so a `transition` on it snaps. These three carry the
+   gate from red through the site's own blue to green as the phases advance,
+   and the whole point is that it READS AS A SYSTEM RECOVERING rather than as
+   three unrelated screens.
+
+   `inherits: true` — the gate sets them once on itself and every descendant
+   reads them. */
+@property --gate-bg {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #060708;
+}
+
+@property --gate-key {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #ff453a;
+}
+
+@property --gate-text {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #e8eaed;
+}
+
 :root {
   /* ── Surfaces ──
      Canvas and deep are supplied; the two between them are interpolated, so
@@ -1774,6 +1801,32 @@ html.zone-immersive .zone-bar {
    a no-JS visitor gets the site directly.
    ══════════════════════════════════════════════════════ */
 
+/* ══════════════════════════════════════════════════════
+   THE GATE IS THE ONE PLACE OFF THE ONE-ACCENT LOCK.
+
+   Red and green appear nowhere else on this site, and that
+   restriction still stands everywhere else. This overlay is
+   a different room that precedes the portfolio and hands
+   over to the real palette on the way out, and it earns the
+   exception for a measured reason: readers reported thinking
+   the site was DOWN. An entrance that opens in the site's own
+   calm blue, says "Signal lost", and offers a quiet accent
+   button does not read as a designed sequence — it reads as
+   an outage.
+
+   So the fault state is an alert, and the recovery is
+   confirmed out loud. Three phases, three palettes:
+
+     lost       near-black ground, alert red     — something is wrong
+     booting    the site's own surface + accent  — it is being fixed
+     confirmed  the same ground, operational green — it worked
+
+   Every value below is solved against AA rather than picked
+   by eye, measured on the ground it actually lands on:
+     #FF453A on #060708 → 5.92:1
+     #E8EAED on #060708 → 16.73:1
+     #30D158 on --surface-0 → 7.64:1
+   ══════════════════════════════════════════════════════ */
 .signal-gate {
   position: fixed;
   inset: 0;
@@ -1782,7 +1835,34 @@ html.zone-immersive .zone-bar {
   align-items: center;
   justify-content: center;
   padding: clamp(1.5rem, 6vw, 5rem);
-  background: var(--surface-0);
+
+  /* The alert palette is the DEFAULT, because `lost` is the first thing on
+     screen and a flash of the wrong ground would undo the whole point. */
+  --gate-bg: #060708;
+  --gate-key: #ff453a;
+  --gate-text: #e8eaed;
+
+  background: var(--gate-bg);
+  transition:
+    --gate-bg 520ms var(--ease),
+    --gate-key 520ms var(--ease),
+    --gate-text 520ms var(--ease);
+}
+
+/* Pressed: the site's own colours arrive while the readout runs, so the
+   recovery is visible before it is stated. */
+.signal-gate[data-phase="booting"],
+.signal-gate[data-phase="leaving"] {
+  --gate-bg: var(--surface-0);
+  --gate-key: var(--accent-text);
+  --gate-text: var(--text-secondary);
+}
+
+/* Confirmed: green, and the only place on the site it appears. */
+.signal-gate[data-phase="confirmed"] {
+  --gate-bg: var(--surface-0);
+  --gate-key: #30d158;
+  --gate-text: var(--text-secondary);
 }
 
 /* The whole panel leaves together, so the page is revealed rather than the
@@ -1802,27 +1882,32 @@ html.zone-immersive .zone-bar {
    Four corners drawn with gradients rather than four elements. Same motif
    the cursor draws on a locked target, which is what ties the entrance to
    the rest of the instrument language. */
+/* The brackets take the key colour, so the same target-lock motif reads as an
+   alert border while contact is lost and as instrument chrome once it is
+   back. Held at partial opacity: at full strength four red corners around a
+   black screen is a fire alarm, not an interface. */
 .signal-gate-frame {
   position: absolute;
   inset: clamp(0.75rem, 2.5vw, 1.75rem);
   pointer-events: none;
+  opacity: 0.55;
   --bracket: 22px;
   background:
-    linear-gradient(var(--border-strong), var(--border-strong)) 0 0 / 1px
+    linear-gradient(var(--gate-key), var(--gate-key)) 0 0 / 1px
       var(--bracket) no-repeat,
-    linear-gradient(90deg, var(--border-strong), var(--border-strong)) 0 0 /
+    linear-gradient(90deg, var(--gate-key), var(--gate-key)) 0 0 /
       var(--bracket) 1px no-repeat,
-    linear-gradient(var(--border-strong), var(--border-strong)) 100% 0 / 1px
+    linear-gradient(var(--gate-key), var(--gate-key)) 100% 0 / 1px
       var(--bracket) no-repeat,
-    linear-gradient(90deg, var(--border-strong), var(--border-strong)) 100% 0 /
+    linear-gradient(90deg, var(--gate-key), var(--gate-key)) 100% 0 /
       var(--bracket) 1px no-repeat,
-    linear-gradient(var(--border-strong), var(--border-strong)) 0 100% / 1px
+    linear-gradient(var(--gate-key), var(--gate-key)) 0 100% / 1px
       var(--bracket) no-repeat,
-    linear-gradient(90deg, var(--border-strong), var(--border-strong)) 0 100% /
+    linear-gradient(90deg, var(--gate-key), var(--gate-key)) 0 100% /
       var(--bracket) 1px no-repeat,
-    linear-gradient(var(--border-strong), var(--border-strong)) 100% 100% / 1px
+    linear-gradient(var(--gate-key), var(--gate-key)) 100% 100% / 1px
       var(--bracket) no-repeat,
-    linear-gradient(90deg, var(--border-strong), var(--border-strong)) 100% 100% /
+    linear-gradient(90deg, var(--gate-key), var(--gate-key)) 100% 100% /
       var(--bracket) 1px no-repeat;
   animation: signal-rise 700ms var(--ease) both;
 }
@@ -1846,24 +1931,39 @@ html.zone-immersive .zone-bar {
 .signal-gate-title,
 .signal-gate-wave,
 .signal-gate-body,
+.signal-gate-ecg,
 .signal-gate-action,
 .signal-gate-hint {
   animation: signal-rise 620ms var(--ease) both;
 }
 
+/* The eyebrow states the condition, and it takes the key colour in every
+   phase — it is the line that says what is wrong, so it should look it. */
 .signal-gate-meta {
   animation-delay: 60ms;
-  /* Tertiary, not quaternary. It reads "Uplink / no carrier" — it is the only
-     thing on the gate that says what state the page is in, which makes it
-     copy rather than decoration, and quaternary measures 2.86:1. */
-  color: var(--text-tertiary);
-  transition: color 420ms var(--ease);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--gate-key);
 }
 
-/* Carrier locked: the telemetry line is the first thing to admit it. */
-.signal-gate[data-phase="booting"] .signal-gate-meta,
-.signal-gate[data-phase="leaving"] .signal-gate-meta {
-  color: var(--accent-text);
+/* The warning triangle, and later the check. SHAPE IS A SIGNAL IN ITS OWN
+   RIGHT: red→green is the textbook red/green colour-blind failure, so the
+   glyph and the wording each carry the state independently of the palette. */
+.signal-gate-glyph {
+  display: inline-flex;
+  width: 1.05rem;
+  height: 1.05rem;
+}
+
+.signal-gate-glyph svg {
+  width: 100%;
+  height: 100%;
 }
 
 .signal-gate-title {
@@ -1872,8 +1972,17 @@ html.zone-immersive .zone-bar {
   font-weight: 400;
   letter-spacing: 0.004em;
   line-height: 1;
-  color: var(--text-primary);
+  /* The headline is the alarm while contact is lost, and the site's own
+     primary once it is back — see the phase override below. */
+  color: var(--gate-key);
+  transition: color 520ms var(--ease);
   margin-top: 0.9rem;
+}
+
+.signal-gate[data-phase="booting"] .signal-gate-title,
+.signal-gate[data-phase="confirmed"] .signal-gate-title,
+.signal-gate[data-phase="leaving"] .signal-gate-title {
+  color: var(--text-primary);
 }
 
 /* ── The instrument ──
@@ -1887,29 +1996,127 @@ html.zone-immersive .zone-bar {
   margin-top: 1.5rem;
 }
 
+/* OFF-WHITE, NOT RED, and this is the single most important restraint on the
+   screen. Red marks the fault; neutral text explains it. A paragraph set in
+   saturated red on black is hard to read and is itself a signal of amateur
+   work — which is precisely the impression this redesign exists to remove. */
+/* ── The ECG arrow ──────────────────────────────────────
+   A heart monitor whose trace runs into an arrowhead aimed at the button
+   directly beneath it. `ecg.ts` holds the shape and is unit-tested; the
+   canvas only plots it.
+
+   `color`, not a background — the canvas reads its own computed `color` every
+   frame and paints with it, which is how the trace follows the phase from red
+   to blue to green without the drawing code knowing any of those values.
+
+   Width is capped and the box is left-aligned with the button below it, so
+   the arrowhead lands over the control rather than somewhere along a
+   full-width strip. */
+/* Shrinks to the button's width so the canvas above can match it exactly.
+   `align-items: stretch` is doing the aiming: without it the canvas sizes to
+   its own `width` and the arrowhead lands wherever that happens to end. */
+.signal-gate-prompt {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: fit-content;
+  margin-top: 1.75rem;
+}
+
+.signal-gate-ecg {
+  animation-delay: 280ms;
+  display: block;
+  width: 100%;
+  height: 46px;
+  color: var(--gate-key);
+  transition: color 520ms var(--ease);
+}
+
+/* ── The verdict ────────────────────────────────────────
+   Across the bottom, full width, and impossible to miss. The old sequence
+   ended by fading out, so a reader who had just been shown a fault had to
+   infer that it was fixed — which is exactly what made people think the site
+   was down.
+
+   Present from `booting` so its height is already in the layout, and revealed
+   on `confirmed`. Reserving the space rather than inserting it stops the log
+   above from jumping at the moment the reader is meant to be reading it. */
+.signal-gate-verdict {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  padding: 1.15rem 1.5rem;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.875rem;
+  font-weight: 500;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--gate-key);
+  background: color-mix(in srgb, var(--gate-key) 10%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--gate-key) 38%, transparent);
+  opacity: 0;
+  transform: translateY(0.5rem);
+  transition:
+    opacity 420ms var(--ease),
+    transform 420ms var(--ease);
+  pointer-events: none;
+}
+
+.signal-gate[data-phase="confirmed"] .signal-gate-verdict,
+.signal-gate[data-phase="leaving"] .signal-gate-verdict {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.signal-gate-verdict-glyph {
+  display: inline-flex;
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.signal-gate-verdict-glyph svg {
+  width: 100%;
+  height: 100%;
+}
+
 .signal-gate-body {
   animation-delay: 240ms;
   margin-top: 1.5rem;
-  max-width: 36ch;
+  max-width: 38ch;
+  color: var(--gate-text);
+  transition: color 520ms var(--ease);
 }
 
 .signal-gate-action {
   animation-delay: 320ms;
-  margin-top: 2rem;
+  /* Close, deliberately: the arrowhead has to read as pointing INTO this, and
+     2rem of air between them broke the connection the pointer exists to make. */
+  margin-top: 0.35rem;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   padding: 0.75rem 1.75rem;
   border-radius: 9999px;
-  border: 1px solid var(--accent-border);
-  background: var(--accent-subtle);
+  /* Both derived from the phase key, so the control is red-edged while the
+     fault stands and accent-edged once it is being fixed — one rule instead
+     of a per-phase override. */
+  border: 1px solid color-mix(in srgb, var(--gate-key) 55%, transparent);
+  background: color-mix(in srgb, var(--gate-key) 12%, transparent);
   /* Primary, not the accent tint. `--accent-subtle` lifts the ground under
      this button to rgb(29 47 58), which drags #4D95C5 from 4.72:1 down to
      4.22:1 — the one place on the site where the tint is not sitting on the
      canvas. This is the single control the entire entrance depends on, so it
      takes the ice at 9.9:1 and the accent stays on the border and the caret,
      which is where it was doing the work anyway. */
-  color: var(--text-primary);
+  /* The label stays near-white in every phase. It is the one control the
+     entrance depends on and it must never be the thing that is hard to read;
+     the key colour does its work on the edge and the caret. */
+  color: var(--gate-text);
   font-size: 0.9375rem;
   font-weight: 500;
   letter-spacing: 0.02em;
@@ -2026,11 +2233,20 @@ html.zone-immersive .zone-bar {
   .signal-gate-title,
   .signal-gate-wave,
   .signal-gate-body,
+  .signal-gate-ecg,
   .signal-gate-action,
   .signal-gate-hint,
   .signal-gate-row,
   .signal-gate[data-phase="leaving"] {
     animation: none;
+  }
+
+  /* The verdict still ARRIVES, it just does not slide. It is the message the
+     whole sequence exists to deliver, and a reader who asked for less motion
+     is if anything more reliant on an interface being explicit. */
+  .signal-gate-verdict {
+    transform: none;
+    transition: opacity 200ms linear;
   }
 
   .signal-gate-caret {

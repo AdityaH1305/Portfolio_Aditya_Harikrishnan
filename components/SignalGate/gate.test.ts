@@ -14,6 +14,8 @@ import {
     BOOT_TOTAL_MS,
     BOOT_FADE_MS,
     BOOT_EMIT_MS,
+    BOOT_CONFIRM_MS,
+    BOOT_CONFIRM_AT,
     BOOT_FADE_AT,
 } from "./gate.ts";
 import { SECTION_IDS } from "../LivingArchitecture/stages.ts";
@@ -221,13 +223,25 @@ test("the storage key is namespaced", () => {
 
 /* ── The boot sequence ─────────────────────────────── */
 
-test("click to portfolio is exactly two seconds", () => {
-    // The number was specified, so it is asserted rather than trusted.
-    assert.equal(BOOT_TOTAL_MS, 2000);
-    // The fade OVERLAPS the tail. If it were added on top the entrance would
-    // silently become 2.42s, which is the mistake this guards.
-    assert.equal(BOOT_EMIT_MS + BOOT_FADE_MS, BOOT_TOTAL_MS);
-    assert.equal(BOOT_FADE_AT, BOOT_EMIT_MS);
+test("the sequence is three beats and they sum to the whole", () => {
+    /* Log, then verdict, then fade — and the fade is the tail of the
+       confirmation rather than an extra beat after it. Written as arithmetic
+       because every one of these has a downstream consumer: `close()` fires
+       at TOTAL, and lib/entrance.ts arms its failsafe at TOTAL + 400. A stray
+       hardcoded millisecond anywhere in that chain fails silently. */
+    assert.equal(BOOT_EMIT_MS + BOOT_CONFIRM_MS + BOOT_FADE_MS, BOOT_TOTAL_MS);
+    assert.equal(BOOT_FADE_AT + BOOT_FADE_MS, BOOT_TOTAL_MS);
+});
+
+test("the verdict lands as the log ends, and holds before the fade", () => {
+    // The confirmation is the whole point of the retime: readers thought the
+    // site was down, so "that worked" has to be on screen long enough to read.
+    assert.equal(BOOT_CONFIRM_AT, BOOT_EMIT_MS, "verdict follows the last line");
+    assert.equal(BOOT_FADE_AT, BOOT_CONFIRM_AT + BOOT_CONFIRM_MS);
+    assert.ok(
+        BOOT_CONFIRM_MS >= 700,
+        `${BOOT_CONFIRM_MS}ms is not long enough to read a verdict`,
+    );
 });
 
 test("lines are ordered, start at zero and end as the fade begins", () => {
@@ -236,8 +250,8 @@ test("lines are ordered, start at zero and end as the fade begins", () => {
     assert.equal(lines[0].at, 0, "first line should be immediate");
     assert.equal(
         lines[lines.length - 1].at,
-        BOOT_FADE_AT,
-        "last line should land exactly as the fade starts",
+        BOOT_CONFIRM_AT,
+        "last line should land exactly as the verdict appears",
     );
     for (let i = 1; i < lines.length; i++) {
         assert.ok(
