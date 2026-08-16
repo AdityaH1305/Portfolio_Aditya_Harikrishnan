@@ -21,10 +21,9 @@ const REPORT_URL = "/ludex-technical-report.pdf";
 /** Navigate entries mirror SideNav's `sections` array. */
 const NAV: { id: string; label: string; icon: string }[] = [
     { id: "intro", label: "Intro", icon: "↑" },
-    { id: "throughline", label: "Through-Line", icon: "→" },
+    { id: "research", label: "Approach", icon: "→" },
     { id: "work", label: "Projects", icon: "★" },
     { id: "projects", label: "Experiments", icon: "◆" },
-    { id: "research", label: "Approach", icon: "→" },
     { id: "stack", label: "Stack", icon: "→" },
     { id: "journey", label: "Journey", icon: "→" },
     { id: "contact", label: "Contact", icon: "✉" },

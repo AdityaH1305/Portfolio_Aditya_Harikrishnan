@@ -11,13 +11,12 @@ const RESUME_URL =
    growth stage per entry, in this order. */
 const sections = [
     { id: "intro", label: "Intro", number: "01" },
-    { id: "throughline", label: "Through-Line", number: "02" },
+    { id: "research", label: "Approach", number: "02" },
     { id: "work", label: "Projects", number: "03" },
     { id: "projects", label: "Experiments", number: "04" },
-    { id: "research", label: "Approach", number: "05" },
-    { id: "stack", label: "Stack", number: "06" },
-    { id: "journey", label: "Journey", number: "07" },
-    { id: "contact", label: "Contact", number: "08" },
+    { id: "stack", label: "Stack", number: "05" },
+    { id: "journey", label: "Journey", number: "06" },
+    { id: "contact", label: "Contact", number: "07" },
 ];
 
 /* ── Easter-egg config ── */
@@ -44,14 +43,15 @@ function MagneticResumeLink() {
                mobile island below was fixed for exactly this and this one was
                missed — it is desktop, which is also where the case-study
                choreography runs. The heavier fill holds the same legibility
-               with less blur behind it. */
-            className="fixed top-6 right-6 z-50 hidden md:inline-block
-                       px-5 py-2 label-muted rounded-full
-                       bg-surface-1/85 backdrop-blur-md
-                       hover:border-accent hover:text-accent
-                       transition-colors duration-300"
+               with less blur behind it.
+
+               `.resume-pill` carries the hairline and the sweep — see
+               globals.css. The old classes here included `hover:border-accent`
+               with no border utility to give it a width, so the hover had been
+               colouring a 0px edge since the day it was written. */
+            className="resume-pill hidden md:inline-flex"
         >
-            Resume
+            <span className="resume-pill-label">Resume</span>
         </a>
     );
 }

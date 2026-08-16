@@ -1627,6 +1627,126 @@ html.zone-immersive .zone-bar {
   gap: 0.5rem;
 }
 
+/* ══════════════════════════════════════════════════════
+   Resume pill — the one control that has to be found
+
+   Everything else on this site can wait to be scrolled to.
+   This is the single action a hiring manager arrives wanting,
+   and it was a muted 12px label on a blurred fill in the
+   corner: correct, quiet, and completely unnoticeable. Its
+   `hover:border-accent` had never done anything either —
+   there was no border utility on the element, so the width
+   was 0 and the hover coloured nothing.
+
+   ── A sweep, not a shimmer ──
+   A narrow highlight crosses the pill and then the animation
+   RESTS for most of its cycle. That ratio is the whole
+   design: something that glints every few seconds reads as
+   an object catching the light, and the eye goes to it.
+   Something that glints continuously reads as a loading
+   skeleton, and the eye learns to ignore it.
+
+   `transform` only, so it composites — no repaint, unlike
+   the conic rings elsewhere in this file, which is why this
+   one needs no viewport gating. It is a single element in
+   the corner and it is always on screen anyway.
+   ══════════════════════════════════════════════════════ */
+.resume-pill {
+  /* POSITIONED HERE, not by `fixed top-6 right-6` utilities in the markup.
+     This rule is declared after Tailwind's utilities, so the `position` it
+     sets wins at equal specificity — the first version said `relative` for
+     the ::after's sake and silently knocked the pill out of `fixed` and into
+     the document flow, where it rendered at the top LEFT of the page. Same
+     trap as `.section-container` killing `mt-*`. Owning the position outright
+     also matches `.side-nav` and `.kbd-hint`, the site's other fixed chrome.
+
+     `fixed` establishes a containing block for the ::after by itself, so
+     nothing is lost. */
+  position: fixed;
+  top: 1.5rem;
+  right: 1.5rem;
+  z-index: 50;
+  align-items: center;
+  padding: 0.5rem 1.25rem;
+  border-radius: 999px;
+  /* A real edge, at last. The accent hover below now has a width to colour. */
+  border: 1px solid var(--border-default);
+  background: color-mix(in srgb, var(--surface-1) 85%, transparent);
+  backdrop-filter: blur(8px);
+  /* Clips the sweep to the rounded shape. */
+  overflow: hidden;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  /* Secondary, not tertiary: this is an action, not a caption. 7.41:1. */
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition:
+    color 300ms var(--ease),
+    border-color 300ms var(--ease);
+}
+
+.resume-pill:hover {
+  color: var(--accent-text);
+  border-color: var(--accent-border);
+}
+
+.resume-pill-label {
+  /* Above the sweep, which is painted over the fill behind it. */
+  position: relative;
+  z-index: 1;
+}
+
+.resume-pill::after {
+  content: "";
+  position: absolute;
+  top: -50%;
+  /* Wider and taller than the pill so the skewed band still covers the full
+     height at both ends of its travel. */
+  bottom: -50%;
+  left: 0;
+  width: 45%;
+  background: linear-gradient(
+    100deg,
+    transparent 0%,
+    rgb(187 225 250 / 0.14) 45%,
+    rgb(187 225 250 / 0.28) 50%,
+    rgb(187 225 250 / 0.14) 55%,
+    transparent 100%
+  );
+  transform: translateX(-160%) skewX(-18deg);
+  animation: resume-sweep 5.5s var(--ease) infinite;
+  pointer-events: none;
+}
+
+/* 0 → 18% is the pass; the remaining 82% is the rest. Both keyframes at the
+   end hold it off-screen rather than letting it ease back across, which would
+   read as two sweeps in opposite directions. */
+@keyframes resume-sweep {
+  0% {
+    transform: translateX(-160%) skewX(-18deg);
+  }
+  18%,
+  100% {
+    transform: translateX(340%) skewX(-18deg);
+  }
+}
+
+/* NO `animation-duration` CHANGE ON HOVER, deliberately — the same rule the
+   live ring follows. Duration is applied against elapsed time, so progress is
+   recomputed the instant it changes and the band teleports. It is invisible
+   for the 82% of the cycle the sweep is parked off-screen and very obvious
+   for the other 18%, which is the worst kind of bug: it only shows sometimes.
+   The colour and the border carry the hover. */
+
+@media (prefers-reduced-motion: reduce) {
+  .resume-pill::after {
+    animation: none;
+  }
+}
+
 /* Under the nav rail, which is centred at 50% and grows from there. */
 .kbd-hint {
   position: fixed;

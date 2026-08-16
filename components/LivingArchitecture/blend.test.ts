@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import test from "node:test";
 import { blendStages, bracket } from "./blend.ts";
-import { STAGES } from "./stages.ts";
+import { SECTION_IDS, STAGES } from "./stages.ts";
 import { type StageConfig } from "./stages.ts";
 
 /* Run with:  node --experimental-strip-types --test components/LivingArchitecture/blend.test.ts
@@ -21,6 +21,33 @@ const scalars = (s: StageConfig): number[] => [
 function normalized(s: StageConfig): StageConfig {
     return blendStages(s, s, 0);
 }
+
+test("THE INDEX CONTRACT — one stage per section, and no spares", () => {
+    /* SECTION_IDS[i] is drawn by STAGES[i]. Break the alignment and the atlas
+       animates the wrong stage for the wrong section — silently, because
+       nothing throws and every stage is a valid config on its own.
+
+       This exists because the arrays have already moved together twice: once
+       when the case studies were folded into a single `#work`, and once when
+       `throughline` was removed and Approach was promoted to second. Both
+       times the failure mode would have been a page that merely looked a bit
+       off. The nav rail and the command palette carry their own copies of the
+       order and are checked in the browser; this is the pair that can be
+       proved here. */
+    assert.equal(
+        STAGES.length,
+        SECTION_IDS.length,
+        `${STAGES.length} stages for ${SECTION_IDS.length} sections`,
+    );
+
+    // And the growth curve still opens dormant and ends fully lit.
+    assert.ok(
+        STAGES[0].coreOpacity < STAGES[STAGES.length - 1].coreOpacity,
+        "the atlas should end brighter than it starts",
+    );
+    assert.equal(SECTION_IDS[0], "intro");
+    assert.equal(SECTION_IDS[SECTION_IDS.length - 1], "contact");
+});
 
 test("t=0 reproduces the first stage; branches it lacks start at zero", () => {
     for (let i = 0; i < STAGES.length - 1; i++) {

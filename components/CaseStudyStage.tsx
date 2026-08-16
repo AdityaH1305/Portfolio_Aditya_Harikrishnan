@@ -5,6 +5,7 @@ import { createPortal } from "react-dom";
 import Image from "next/image";
 import CtaRow from "@/components/CtaRow";
 import VideoPlayer from "@/components/VideoPlayer";
+import Lightbox, { type LightboxImage } from "@/components/Lightbox";
 import { gsap, EASE } from "@/lib/motion";
 import type { CaseStudy } from "@/lib/caseStudies";
 
@@ -172,12 +173,32 @@ export default function CaseStudyStage({
     study: CaseStudy;
     index: number;
 }) {
-    /* Index of the slide open in the expanded player; null = closed. Same
-       affordance the full write-up has — the concise stage autoplays a clip
-       muted and silent, and there was no way to actually watch one without
-       leaving for /work/<slug>. */
+    /* Index into `study.media` of the slide currently open, or null.
+       ONE piece of state for both overlays, dispatched by the slide's own
+       type below — two independent flags could both be set and would stack a
+       lightbox on a video player.
+
+       The affordance matches the full write-up's. The concise stage plays a
+       clip muted and silent and renders a figure at ~560px, and until this
+       existed there was no way to look properly at either without leaving for
+       /work/<slug>. */
     const [expanded, setExpanded] = useState<number | null>(null);
     const mediaRef = useRef<HTMLDivElement>(null);
+
+    /* The still slides, in DOM order, with a lookup from their position in
+       `study.media`.
+
+       Built as its own list because Lightbox indexes ITS OWN array — passing
+       a `study.media` index into a list that skipped the videos is an
+       off-by-one that opens the wrong picture. No study mixes types today;
+       Ludex proves the schema allows it. */
+    const stills: LightboxImage[] = [];
+    const stillIndexOf = new Map<number, number>();
+    study.media.forEach((m, i) => {
+        if (m.type !== "image") return;
+        stillIndexOf.set(i, stills.length);
+        stills.push({ src: m.src, alt: m.alt, caption: m.caption, w: m.w, h: m.h });
+    });
 
     /** The inline <video> and its poster cover, for one slide. */
     const slideParts = useCallback((i: number) => {
@@ -216,6 +237,8 @@ export default function CaseStudyStage({
     }, [expanded, slideParts]);
 
     const expandedMedia = expanded === null ? null : study.media[expanded];
+    const expandedStill =
+        expanded === null ? undefined : stillIndexOf.get(expanded);
 
     return (
         <article data-act className="zone-act">
@@ -354,13 +377,53 @@ export default function CaseStudyStage({
                                                 </button>
                                             </>
                                         ) : (
-                                            <Image
-                                                src={m.src}
-                                                alt={m.alt}
-                                                fill
-                                                sizes="(max-width: 1023px) 100vw, 560px"
-                                                className="object-contain"
-                                            />
+                                            <>
+                                                <Image
+                                                    src={m.src}
+                                                    alt={m.alt}
+                                                    fill
+                                                    sizes="(max-width: 1023px) 100vw, 560px"
+                                                    className="object-contain"
+                                                />
+
+                                                {/* The same control the video
+                                                    slides carry. A figure
+                                                    rendered at 560px inside a
+                                                    fixed panel is a thumbnail
+                                                    of a diagram, and Gait's
+                                                    and Double U-Net's slides
+                                                    had no way to be read at
+                                                    all — the asymmetry only
+                                                    became obvious once Ludex
+                                                    next to them could open. */}
+                                                <button
+                                                    type="button"
+                                                    data-cursor="zoom"
+                                                    onClick={() => open(i)}
+                                                    aria-label={`Expand ${m.caption}`}
+                                                    className="absolute top-3 right-3 z-10 flex items-center gap-2
+                                                               px-3 py-2 rounded-full
+                                                               bg-surface-0/90 backdrop-blur-sm border border-edge-strong
+                                                               text-secondary hover:text-accent hover:border-accent
+                                                               opacity-0 group-hover/media:opacity-100 focus-visible:opacity-100
+                                                               transition-all duration-200"
+                                                >
+                                                    <svg
+                                                        width="13"
+                                                        height="13"
+                                                        viewBox="0 0 24 24"
+                                                        fill="none"
+                                                        stroke="currentColor"
+                                                        strokeWidth="2"
+                                                        aria-hidden="true"
+                                                    >
+                                                        <path d="M8 3H3v5M16 3h5v5M8 21H3v-5M16 21h5v-5" />
+                                                    </svg>
+                                                    <span className="mono text-xs tracking-widest uppercase">
+                                                        Expand
+                                                    </span>
+                                                </button>
+                                            </>
                                         )}
                                     </div>
                                 </div>
@@ -384,20 +447,45 @@ export default function CaseStudyStage({
                 </div>
             </div>
 
-            {/* PORTALLED, and this is not optional. The player is
+            {/* BOTH OVERLAYS ARE PORTALLED, and this is not optional. They are
                 `position: fixed`, but `html.zone-immersive` puts
                 `will-change: transform` on `.zone-act` — which makes that act
                 the containing block for any fixed descendant. Rendered in
-                place, the player would be laid out inside the 100vh sticky
-                stage and then clipped by its `overflow: hidden`, i.e. a
-                full-screen modal trapped in a panel. */}
-            {expandedMedia &&
+                place, either would be laid out inside the 100vh sticky stage
+                and then clipped by its `overflow: hidden`: a full-screen
+                overlay trapped in a panel.
+
+                One `expanded` index picks which of the two opens, by the
+                slide's own type, so they are mutually exclusive by
+                construction rather than by two flags agreeing. */}
+            {expandedMedia?.type === "video" &&
                 typeof document !== "undefined" &&
                 createPortal(
                     <VideoPlayer
                         src={expandedMedia.src}
                         poster={expandedMedia.poster}
                         label={expandedMedia.caption}
+                        onClose={close}
+                    />,
+                    document.body,
+                )}
+
+            {expandedMedia?.type === "image" &&
+                expandedStill !== undefined &&
+                typeof document !== "undefined" &&
+                createPortal(
+                    <Lightbox
+                        images={stills}
+                        index={expandedStill}
+                        /* Navigating inside the lightbox maps back to a
+                           `study.media` index, so `close()` still hands the
+                           right slide back to the zone. */
+                        onNavigate={(next) => {
+                            const back = study.media.findIndex(
+                                (m) => m.src === stills[next].src,
+                            );
+                            if (back !== -1) setExpanded(back);
+                        }}
                         onClose={close}
                     />,
                     document.body,

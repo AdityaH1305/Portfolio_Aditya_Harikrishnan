@@ -10,14 +10,21 @@
    index-aligned by contract — SECTION_IDS[i] is drawn by
    STAGES[i], so adding a section means adding a stage.
 
-     0  intro       Dormant core, incomplete trunk
-     1  throughline First light — the core wakes, trunk begins
-     2  work        Trunk establishes, primaries activate
-     3  projects    Visual peak — broad network blooms
-     4  research    Refinement — weak paths fade, key routes sharpen
-     5  stack       Consolidation — the network settles into shape
-     6  journey     Stable maturity + upward aspiration branch
-     7  contact     Full canopy / equilibrium — spacious and complete
+     0  intro     Dormant core, incomplete trunk
+     1  research  Trunk establishes, primaries activate
+     2  work      Visual peak — broad network blooms
+     3  projects  Refinement — weak paths fade, key routes sharpen
+     4  stack     Consolidation — the network settles into shape
+     5  journey   Stable maturity + upward aspiration branch
+     6  contact   Full canopy / equilibrium — spacious and complete
+
+   SEVEN, not eight. `throughline` was removed from the site
+   and its stage — "First Light", a deliberate near-copy of
+   stage 0 that existed only as a runway into the case-study
+   zone — went with it. Deleting exactly that entry left the
+   remaining seven already in ascending-intensity order and
+   already matching the new section order, so no stage body
+   needed rewriting; only these labels moved.
    ══════════════════════════════════════════════════════ */
 
 import { type BranchDef } from "./config.ts";
@@ -26,10 +33,9 @@ import { type BranchDef } from "./config.ts";
 
 export const SECTION_IDS = [
   "intro",
-  "throughline",
+  "research",
   "work",
   "projects",
-  "research",
   "stack",
   "journey",
   "contact",
@@ -213,36 +219,7 @@ export const STAGES: StageConfig[] = [
     branchOpacityOverrides: {},
   },
 
-  /* ── Stage 1: First Light (throughline) ─────────────
-     A bridge, not a destination. The core brightens out of
-     dormancy and the trunk starts extending, but nothing
-     new activates: no secondary branch, no conduits, and
-     a single tentative signal.
-
-     Deliberately close to stage 0 — this section is the
-     runway into the case-study zone, so the atlas should
-     read as gathering itself rather than arriving.
-     ─────────────────────────────────────────────────── */
-  {
-    coreOpacity: 0.6,
-    coreGlowScale: 1.1,
-    coreBreathePeriod: 3.8,
-    branches: [
-      { ...TRUNK, length: 170, opacity: 0.08 },
-      { ...PRIMARY_EAST, length: 100, opacity: 0.045 },
-      { ...PRIMARY_WEST, length: 85, opacity: 0.035 },
-    ],
-    clusterSegRange: [1, 2],
-    clusterOpacity: 0.15,
-    signalMax: 1,
-    signalSpawnRange: [3.2, 5.5],
-    signalSpeedRange: [24, 42],
-    conduitCount: 0,
-    systemPulseAmplitude: 0,
-    branchOpacityOverrides: {},
-  },
-
-  /* ── Stage 2: Trunk Establishes (work) ──────────────
+  /* ── Stage 1: Trunk Establishes (research) ──────────
      The trunk reaches full structure. Primary branches
      activate and carry occasional signals.
      ─────────────────────────────────────────────────── */
@@ -266,7 +243,7 @@ export const STAGES: StageConfig[] = [
     branchOpacityOverrides: {},
   },
 
-  /* ── Stage 3: Visual Peak (projects) ────────────────
+  /* ── Stage 2: Visual Peak (work) ────────────────────
      A broad network blooms across the right side.
      Multiple branch families, dense clusters, cross-
      connections, and active signal traffic.
@@ -295,7 +272,7 @@ export const STAGES: StageConfig[] = [
     branchOpacityOverrides: {},
   },
 
-  /* ── Stage 4: Refinement (research) ─────────────────
+  /* ── Stage 3: Refinement (projects) ─────────────────
      Weak paths fade, key routes sharpen, and selected
      connections become more deliberate. The network
      tightens and clarifies.
@@ -324,7 +301,7 @@ export const STAGES: StageConfig[] = [
     branchOpacityOverrides: {},
   },
 
-  /* ── Stage 5: Consolidation (stack) ─────────────────
+  /* ── Stage 4: Consolidation (stack) ─────────────────
      The refined network holds its shape while the reader
      scans the toolset. Slightly denser than refinement,
      not yet reaching upward — that belongs to journey.
@@ -353,7 +330,7 @@ export const STAGES: StageConfig[] = [
     branchOpacityOverrides: {},
   },
 
-  /* ── Stage 6: Stable Maturity (journey) ─────────────
+  /* ── Stage 5: Stable Maturity (journey) ─────────────
      The system stabilises. A distinct upward-reaching
      aspiration branch grows, suggesting direction.
      ─────────────────────────────────────────────────── */
@@ -381,7 +358,7 @@ export const STAGES: StageConfig[] = [
     branchOpacityOverrides: {},
   },
 
-  /* ── Stage 7: Full Equilibrium (contact) ────────────
+  /* ── Stage 6: Full Equilibrium (contact) ────────────
      A spacious mature canopy frames the contact section.
      Gentle heartbeat pulse. Complete and calm.
      ─────────────────────────────────────────────────── */
