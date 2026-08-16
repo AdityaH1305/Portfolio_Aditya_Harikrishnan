@@ -1933,6 +1933,7 @@ html.zone-immersive .zone-bar {
 .signal-gate-body,
 .signal-gate-ecg,
 .signal-gate-cta,
+.signal-gate-aim,
 .signal-gate-action,
 .signal-gate-hint {
   animation: signal-rise 620ms var(--ease) both;
@@ -1995,6 +1996,13 @@ html.zone-immersive .zone-bar {
   width: 100%;
   height: 68px;
   margin-top: 1.5rem;
+  /* The carrier canvas reads its own computed `color` per frame, same as the
+     ECG. It used to read `--accent-rgb` directly and so rendered SITE BLUE on
+     the alert screen — one calm blue line across an otherwise red warning,
+     which is exactly the kind of detail that makes a designed screen look
+     accidental. */
+  color: var(--gate-key);
+  transition: color 520ms var(--ease);
 }
 
 /* OFF-WHITE, NOT RED, and this is the single most important restraint on the
@@ -2028,9 +2036,9 @@ html.zone-immersive .zone-bar {
   animation-delay: 280ms;
   display: block;
   width: 100%;
-  /* Taller than the trace needs, because the arrowhead now hangs below it on
-     a descender rather than sitting at the end of the line. */
-  height: 64px;
+  /* No descender to make room for any more — the pointer is its own element
+     below the words now. This is the trace and nothing else. */
+  height: 54px;
   color: var(--gate-key);
   transition: color 520ms var(--ease);
 }
@@ -2050,7 +2058,7 @@ html.zone-immersive .zone-bar {
    type ladder. */
 .signal-gate-cta {
   animation-delay: 300ms;
-  margin-top: 0.15rem;
+  margin-top: 0.6rem;
   text-align: center;
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
   font-size: clamp(1.375rem, 1.22rem + 0.66vw, 1.8125rem);
@@ -2126,8 +2134,43 @@ html.zone-immersive .zone-bar {
   transition: color 520ms var(--ease);
 }
 
+/* ── The pointer ────────────────────────────────────────
+   Between the words and the control, because the control is what it is
+   pointing at. It sat above the words for one revision and had to move: the
+   optical centre of "RESTORE SIGNAL" is the gap between the two words, so a
+   centred arrow was aimed at nothing and read as a stray tick on the type.
+
+   A button is a solid pill with a real centre. Nothing to miss. */
+.signal-gate-aim {
+  animation-delay: 340ms;
+  display: block;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: 0.55rem auto 0.15rem;
+  color: var(--gate-key);
+  transition: color 520ms var(--ease);
+}
+
+.signal-gate-aim svg {
+  width: 100%;
+  height: 100%;
+  animation: signal-aim 1.6s var(--ease) infinite;
+}
+
+/* Travels toward the button and eases back. Slow and small on purpose: a
+   fast or far bounce reads as a loading spinner, and this is a direction. */
+@keyframes signal-aim {
+  0%,
+  100% {
+    transform: translateY(-2px);
+  }
+  50% {
+    transform: translateY(4px);
+  }
+}
+
 .signal-gate-action {
-  animation-delay: 320ms;
+  animation-delay: 360ms;
   /* Close, deliberately: the arrowhead has to read as pointing INTO this, and
      2rem of air between them broke the connection the pointer exists to make. */
   margin-top: 0.9rem;
@@ -2249,7 +2292,9 @@ html.zone-immersive .zone-bar {
   display: inline-block;
   width: 0.55em;
   height: 1em;
-  background: var(--accent);
+  /* `--gate-key`, not `--accent`: this was a site-blue block sitting inside a
+     red-edged button on a red screen. */
+  background: var(--gate-key);
   animation: signal-blink 1.1s steps(1, end) infinite;
   transform: translateY(0.12em);
 }
@@ -2273,11 +2318,20 @@ html.zone-immersive .zone-bar {
   .signal-gate-body,
   .signal-gate-ecg,
   .signal-gate-cta,
+  .signal-gate-aim,
   .signal-gate-action,
   .signal-gate-hint,
   .signal-gate-row,
   .signal-gate[data-phase="leaving"] {
     animation: none;
+  }
+
+  /* The arrow stops bobbing but stays put and stays visible. It is the
+     instruction, not an ornament — a reader who asked for less motion still
+     needs to be told where to press. */
+  .signal-gate-aim svg {
+    animation: none;
+    transform: none;
   }
 
   /* The verdict still ARRIVES, it just does not slide. It is the message the

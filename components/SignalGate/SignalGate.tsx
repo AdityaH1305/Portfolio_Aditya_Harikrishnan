@@ -266,21 +266,20 @@ export default function SignalGate() {
         };
         size();
 
-        /* Read the accent from CSS rather than hardcoding it, the same rule
-           the atlas and the orbit field follow. */
-        const raw = getComputedStyle(document.documentElement)
-            .getPropertyValue("--accent-rgb")
-            .trim();
-        const parsed = raw.split(/[\s,/]+/).map(Number);
-        const [ar, ag, ab] =
-            parsed.length >= 3 && parsed.every(Number.isFinite)
-                ? parsed
-                : [232, 163, 61];
+        /* ── The colour comes from the canvas, per frame ──
+           This read `--accent-rgb` off the document ONCE, so the carrier
+           rendered site-blue on the red alert screen — one calm blue line
+           across a warning, which is precisely the kind of detail that makes
+           a designed screen look accidental.
 
+           It now reads its own computed `color`, which CSS points at
+           `--gate-key`, exactly as the ECG canvas does. Same mechanism, one
+           less thing that can drift from the palette. */
         const draw = (seconds: number) => {
             if (w < 1) size();
             if (w < 1) return;
 
+            const key = getComputedStyle(canvas).color;
             const live = liveRef.current;
             const mid = h / 2;
             const amp = h * 0.42;
@@ -292,7 +291,8 @@ export default function SignalGate() {
             ctx.beginPath();
             ctx.moveTo(0, mid);
             ctx.lineTo(w, mid);
-            ctx.strokeStyle = `rgba(${ar},${ag},${ab},${0.1 + live * 0.12})`;
+            ctx.globalAlpha = 0.1 + live * 0.12;
+            ctx.strokeStyle = key;
             ctx.lineWidth = 1;
             ctx.stroke();
 
@@ -303,9 +303,11 @@ export default function SignalGate() {
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
             }
-            ctx.strokeStyle = `rgba(${ar},${ag},${ab},${0.34 + live * 0.62})`;
+            ctx.globalAlpha = 0.34 + live * 0.62;
+            ctx.strokeStyle = key;
             ctx.lineWidth = 1.5;
             ctx.stroke();
+            ctx.globalAlpha = 1;
         };
 
         if (reducedRef.current) {
@@ -358,18 +360,20 @@ export default function SignalGate() {
         };
         size();
 
-        /* ── The arrowhead is CENTRED, on its own descender ──
-           It used to sit at the right end of the trace, which was correct
-           while the button was the only thing below it. With a line of text
-           underneath, a right-end arrowhead points at the last letter of
-           "SIGNAL" — the exact near-miss this pointer exists to avoid.
+        /* ── NO ARROW ON THIS CANVAS ──────────────────
+           Two attempts at drawing the pointer here both failed, and for the
+           same underlying reason: the strip is as wide as the button, so
+           wherever the head lands it is competing with the trace.
 
-           A stem dropping from the middle of the strip into a centred head is
-           unambiguous, and it leaves the trace running edge to edge so the
-           monitor still reads as a monitor rather than as an arrow that
-           happens to wiggle. */
-        const HEAD_H = 9;
-        const STEM_GAP = 6;
+           At the right end it pointed past the button. Centred on a
+           descender it was worse — the horizontal centre of "RESTORE SIGNAL"
+           is the SPACE BETWEEN THE TWO WORDS, so a perfectly centred arrow
+           was aimed at a gap, and it read as a stray tick sitting on top of
+           the type.
+
+           So the canvas is the instrument and nothing else. The pointer is
+           its own element below the words, aimed at the button — which is a
+           solid pill with a real centre to point at. */
 
         const draw = (seconds: number) => {
             if (w < 1) size();
@@ -377,8 +381,13 @@ export default function SignalGate() {
 
             const key = getComputedStyle(canvas).color;
             const live = liveRef.current;
-            const mid = h * 0.3;
-            const amp = h * 0.22;
+            const mid = h * 0.5;
+            /* Was 0.22 of a 64px box — a 14px spike on a 331px strip, which
+               rendered as a hairline rule with a nick in it rather than as a
+               heart monitor. The trace has to be legible as a beat from
+               across the room or it is just another horizontal line on a
+               screen that already has too many. */
+            const amp = h * 0.38;
 
             ctx.clearRect(0, 0, w, h);
 
@@ -416,39 +425,7 @@ export default function SignalGate() {
                 ctx.fill();
             }
 
-            /* The pointer: a stem from the middle of the strip into a head
-               aimed at the words below. Both pulse with the beat, so the
-               rhythm visibly pushes the eye down onto the call to action —
-               which is the entire job of this element.
-
-               `ecgAt(0.5, …)` rather than a separate clock: the pulse is the
-               beat passing the centre, the same instant the trace spikes
-               there, so the two cannot drift apart. */
-            const beat = Math.max(0, ecgAt(0.5, seconds, live));
-            const cx = w / 2;
-            const stemTop = mid + amp + STEM_GAP;
-            const tip = h - 1;
-            const headTop = tip - HEAD_H * (1 + beat * 0.3);
-
-            ctx.strokeStyle = key;
-            ctx.lineCap = "round";
-            ctx.lineJoin = "round";
-
-            ctx.globalAlpha = 0.45 + beat * 0.55;
-            ctx.beginPath();
-            ctx.moveTo(cx, stemTop);
-            ctx.lineTo(cx, headTop);
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-
             ctx.globalAlpha = 1;
-            const half = HEAD_H * 0.78 * (1 + beat * 0.3);
-            ctx.beginPath();
-            ctx.moveTo(cx - half, headTop);
-            ctx.lineTo(cx, tip);
-            ctx.lineTo(cx + half, headTop);
-            ctx.lineWidth = 2.25;
-            ctx.stroke();
         };
 
         if (reducedRef.current) {
@@ -722,6 +699,30 @@ export default function SignalGate() {
                             <p className="signal-gate-cta" aria-hidden="true">
                                 Restore signal
                             </p>
+
+                            {/* The pointer, below the words and aimed at the
+                                button. A shaft and a head rather than a bare
+                                chevron: at 26px a chevron alone reads as a
+                                punctuation mark, and this has to read as an
+                                instruction. It bobs on its own slow cycle
+                                rather than on the heartbeat — the trace above
+                                already carries the pulse, and two things
+                                beating in sync at different sizes looked like
+                                a glitch. */}
+                            <span
+                                className="signal-gate-aim"
+                                aria-hidden="true"
+                            >
+                                <svg viewBox="0 0 24 24" fill="none">
+                                    <path
+                                        d="M12 3.5v13.5M5.75 11.25 12 17.5l6.25-6.25"
+                                        stroke="currentColor"
+                                        strokeWidth="2.25"
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                    />
+                                </svg>
+                            </span>
 
                             <button
                                 ref={buttonRef}
