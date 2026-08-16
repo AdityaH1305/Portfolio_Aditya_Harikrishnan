@@ -37,6 +37,26 @@ export const ZONE_EVENT = "zone:immersive";
 export const ATLAS_QUIET_EVENT = "atlas:quiet";
 
 /**
+ * "Paint the cursor this colour."
+ *
+ * `detail: { rgb: [number, number, number] | null }` — a triple to tint with,
+ * or `null` to fall back to `--accent-rgb`.
+ *
+ * The signal gate dispatches it so the cursor participates in the alert
+ * instead of being the one element still site-blue on a red screen, and it
+ * follows the gate's phases from there: red, then blue, then green. Reverting
+ * on unmount is the case that matters — a cursor left red over the portfolio
+ * would read as a fault that never cleared.
+ *
+ * Named here rather than typed as a bare string at each end, for the same
+ * reason ATLAS_QUIET_EVENT is: a typo in either half fails silently as a
+ * listener that never fires. (`cursor:charge` predates this module and is
+ * still a bare string in two files — it should move here next time it is
+ * touched.)
+ */
+export const CURSOR_TINT_EVENT = "cursor:tint";
+
+/**
  * Length of the chrome fade in globals.css.
  *
  * Consumers that stop work entirely — the atlas pauses its draw loop — defer

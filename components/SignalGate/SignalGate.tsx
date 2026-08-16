@@ -10,7 +10,7 @@ import {
 import { gsap } from "@/lib/motion";
 import { lockScroll, unlockScroll } from "@/lib/lenis";
 import { claimEntrance, releaseEntrance } from "@/lib/entrance";
-import { ATLAS_QUIET_EVENT } from "@/lib/zone";
+import { ATLAS_QUIET_EVENT, CURSOR_TINT_EVENT } from "@/lib/zone";
 import {
     GATE_KEY,
     encodeClearance,
@@ -176,6 +176,52 @@ export default function SignalGate() {
         ).matches;
     }, []);
 
+    /* ── The cursor joins the alert ────────────────────
+       Without this it is the one element still site-blue on a red screen,
+       which undercuts the whole point of the palette.
+
+       Read from the live `--gate-key` rather than hardcoded, so the cursor
+       tracks whatever the phase rules resolve to and this file never holds a
+       second copy of the red, the blue or the green.
+
+       ONE frame later. The token is transitioned, and reading it in the same
+       tick as the phase change returns the value it is transitioning FROM —
+       the cursor would trail a phase behind all the way through.
+
+       TWO EFFECTS, not one, and the split is the point. A single effect
+       keyed on `[open, phase]` would revert in its cleanup on every phase
+       change — so each transition would flash the cursor back to site blue
+       for a frame before the new colour landed. This one only ever sets. */
+    useEffect(() => {
+        if (!open) return;
+
+        const id = requestAnimationFrame(() => {
+            const node = gateRef.current;
+            if (!node) return;
+            const key = getComputedStyle(node).getPropertyValue("--gate-key");
+            const p = key.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+            if (p?.length !== 3 || !p.every(Number.isFinite)) return;
+            window.dispatchEvent(
+                new CustomEvent(CURSOR_TINT_EVENT, { detail: { rgb: p } }),
+            );
+        });
+
+        return () => cancelAnimationFrame(id);
+    }, [open, phase]);
+
+    /* And this one only ever reverts, exactly once, when the gate is done.
+       THE REVERT IS THE CASE THAT MATTERS: a gate torn down mid-sequence must
+       not strand a red cursor over the portfolio, so it lives in a cleanup
+       rather than in `close()` — which a crash or an unmount could skip. */
+    useEffect(() => {
+        if (!open) return;
+        return () => {
+            window.dispatchEvent(
+                new CustomEvent(CURSOR_TINT_EVENT, { detail: { rgb: null } }),
+            );
+        };
+    }, [open]);
+
     /* ── Who reveals the page ──────────────────────────
        Claim it if this gate is going to render, so app/template.tsx stands
        down and nothing behind the overlay starts moving. Release it here and
@@ -312,10 +358,18 @@ export default function SignalGate() {
         };
         size();
 
-        /* The arrowhead is drawn at the right end and points DOWN, at the
-           button directly beneath. Kept out of the trace's own width so the
-           waveform never runs underneath it. */
-        const HEAD = 16;
+        /* ── The arrowhead is CENTRED, on its own descender ──
+           It used to sit at the right end of the trace, which was correct
+           while the button was the only thing below it. With a line of text
+           underneath, a right-end arrowhead points at the last letter of
+           "SIGNAL" — the exact near-miss this pointer exists to avoid.
+
+           A stem dropping from the middle of the strip into a centred head is
+           unambiguous, and it leaves the trace running edge to edge so the
+           monitor still reads as a monitor rather than as an arrow that
+           happens to wiggle. */
+        const HEAD_H = 9;
+        const STEM_GAP = 6;
 
         const draw = (seconds: number) => {
             if (w < 1) size();
@@ -323,16 +377,15 @@ export default function SignalGate() {
 
             const key = getComputedStyle(canvas).color;
             const live = liveRef.current;
-            const mid = h * 0.42;
-            const amp = h * 0.34;
-            const traceW = w - HEAD;
+            const mid = h * 0.3;
+            const amp = h * 0.22;
 
             ctx.clearRect(0, 0, w, h);
 
             // Baseline: the instrument, always on, under whatever it reads.
             ctx.beginPath();
             ctx.moveTo(0, mid);
-            ctx.lineTo(traceW, mid);
+            ctx.lineTo(w, mid);
             ctx.globalAlpha = 0.22;
             ctx.strokeStyle = key;
             ctx.lineWidth = 1;
@@ -342,7 +395,7 @@ export default function SignalGate() {
             ctx.beginPath();
             for (let i = 0; i < ECG_SAMPLES; i++) {
                 const u = i / (ECG_SAMPLES - 1);
-                const x = u * traceW;
+                const x = u * w;
                 const y = mid - ecgAt(u, seconds, live) * amp;
                 if (i === 0) ctx.moveTo(x, y);
                 else ctx.lineTo(x, y);
@@ -356,31 +409,45 @@ export default function SignalGate() {
                the strip read as paper coming out of a machine rather than as
                a shape that pulses in place. */
             if (!reducedRef.current) {
-                const hx = sweepAt(seconds) * traceW;
-                const hy = mid - ecgAt(hx / traceW, seconds, live) * amp;
+                const u = sweepAt(seconds);
                 ctx.beginPath();
-                ctx.arc(hx, hy, 2.5, 0, Math.PI * 2);
+                ctx.arc(u * w, mid - ecgAt(u, seconds, live) * amp, 2.5, 0, Math.PI * 2);
                 ctx.fillStyle = key;
                 ctx.fill();
             }
 
-            /* The arrowhead, pointing down at the button. It pulses with the
-               beat, so the rhythm visibly pushes the eye onto the control —
-               which is the entire job of this element. */
-            const beatPulse = Math.max(0, ecgAt(1, seconds, live));
-            const scale = 1 + beatPulse * 0.35;
-            const cx = w - HEAD / 2;
-            const cy = mid;
-            const s = (HEAD / 2) * scale;
+            /* The pointer: a stem from the middle of the strip into a head
+               aimed at the words below. Both pulse with the beat, so the
+               rhythm visibly pushes the eye down onto the call to action —
+               which is the entire job of this element.
 
-            ctx.beginPath();
-            ctx.moveTo(cx - s * 0.62, cy - s * 0.34);
-            ctx.lineTo(cx, cy + s * 0.5);
-            ctx.lineTo(cx + s * 0.62, cy - s * 0.34);
+               `ecgAt(0.5, …)` rather than a separate clock: the pulse is the
+               beat passing the centre, the same instant the trace spikes
+               there, so the two cannot drift apart. */
+            const beat = Math.max(0, ecgAt(0.5, seconds, live));
+            const cx = w / 2;
+            const stemTop = mid + amp + STEM_GAP;
+            const tip = h - 1;
+            const headTop = tip - HEAD_H * (1 + beat * 0.3);
+
             ctx.strokeStyle = key;
-            ctx.lineWidth = 2;
             ctx.lineCap = "round";
             ctx.lineJoin = "round";
+
+            ctx.globalAlpha = 0.45 + beat * 0.55;
+            ctx.beginPath();
+            ctx.moveTo(cx, stemTop);
+            ctx.lineTo(cx, headTop);
+            ctx.lineWidth = 1.5;
+            ctx.stroke();
+
+            ctx.globalAlpha = 1;
+            const half = HEAD_H * 0.78 * (1 + beat * 0.3);
+            ctx.beginPath();
+            ctx.moveTo(cx - half, headTop);
+            ctx.lineTo(cx, tip);
+            ctx.lineTo(cx + half, headTop);
+            ctx.lineWidth = 2.25;
             ctx.stroke();
         };
 
@@ -644,6 +711,17 @@ export default function SignalGate() {
                                 className="signal-gate-ecg"
                                 aria-hidden="true"
                             />
+
+                            {/* The action in the reader's own words, between
+                                the pointer and the control it names.
+
+                                `aria-hidden` — the button below already has an
+                                accessible name, and a screen reader should be
+                                offered ONE action here, not the same one
+                                twice. This is a label, not a second control. */}
+                            <p className="signal-gate-cta" aria-hidden="true">
+                                Restore signal
+                            </p>
 
                             <button
                                 ref={buttonRef}

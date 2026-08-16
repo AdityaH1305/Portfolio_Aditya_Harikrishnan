@@ -1932,6 +1932,7 @@ html.zone-immersive .zone-bar {
 .signal-gate-wave,
 .signal-gate-body,
 .signal-gate-ecg,
+.signal-gate-cta,
 .signal-gate-action,
 .signal-gate-hint {
   animation: signal-rise 620ms var(--ease) both;
@@ -2027,7 +2028,40 @@ html.zone-immersive .zone-bar {
   animation-delay: 280ms;
   display: block;
   width: 100%;
-  height: 46px;
+  /* Taller than the trace needs, because the arrowhead now hangs below it on
+     a descender rather than sitting at the end of the line. */
+  height: 64px;
+  color: var(--gate-key);
+  transition: color 520ms var(--ease);
+}
+
+/* ── The call to action ─────────────────────────────────
+   JETBRAINS MONO, NOT INTER, and that is the whole point of it. It sits
+   between an Inter title and an Inter-labelled button, so a different face is
+   what makes it read as an instruction rather than as more of the same
+   chrome. Reusing the site's existing complement to Inter — the instrument
+   voice already carrying every label, the boot log and the countdown — rather
+   than loading a third family for one line on the first screen anyone sees.
+
+   Same family as the 12px SYSTEM ALERT eyebrow above, which is fine: at 29px
+   with 0.2em of tracking the two are not remotely the same object.
+
+   29px is `heading-md`'s desktop rung, so this introduces nothing new to the
+   type ladder. */
+.signal-gate-cta {
+  animation-delay: 300ms;
+  margin-top: 0.15rem;
+  text-align: center;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: clamp(1.375rem, 1.22rem + 0.66vw, 1.8125rem);
+  font-weight: 500;
+  letter-spacing: 0.2em;
+  /* The tracking is applied to the right of every glyph including the last,
+     which pushes the visual centre left. Half of it back as padding puts the
+     text back under the arrowhead. */
+  padding-left: 0.2em;
+  text-transform: uppercase;
+  line-height: 1.1;
   color: var(--gate-key);
   transition: color 520ms var(--ease);
 }
@@ -2096,11 +2130,15 @@ html.zone-immersive .zone-bar {
   animation-delay: 320ms;
   /* Close, deliberately: the arrowhead has to read as pointing INTO this, and
      2rem of air between them broke the connection the pointer exists to make. */
-  margin-top: 0.35rem;
+  margin-top: 0.9rem;
   display: inline-flex;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1.75rem;
+  justify-content: center;
+  gap: 0.6rem;
+  /* The only action on the screen, so it is the largest control on it. It was
+     0.75/1.75rem at 15px, which on a page whose entire job is to stop people
+     thinking the site is broken made the fix the quietest thing present. */
+  padding: 1.05rem 2.75rem;
   border-radius: 9999px;
   /* Both derived from the phase key, so the control is red-edged while the
      fault stands and accent-edged once it is being fixed — one rule instead
@@ -2117,7 +2155,7 @@ html.zone-immersive .zone-bar {
      entrance depends on and it must never be the thing that is hard to read;
      the key colour does its work on the edge and the caret. */
   color: var(--gate-text);
-  font-size: 0.9375rem;
+  font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -2234,6 +2272,7 @@ html.zone-immersive .zone-bar {
   .signal-gate-wave,
   .signal-gate-body,
   .signal-gate-ecg,
+  .signal-gate-cta,
   .signal-gate-action,
   .signal-gate-hint,
   .signal-gate-row,

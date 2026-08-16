@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { gsap } from "@/lib/motion";
+import { CURSOR_TINT_EVENT } from "@/lib/zone";
 
 /* ══════════════════════════════════════════════════════
    Cursor — reticle core, oscilloscope ring, target lock
@@ -152,17 +153,28 @@ export default function Cursor() {
         canvas.width = BOX * dpr;
         canvas.height = BOX * dpr;
 
-        let accent: [number, number, number] = [50, 130, 184];
-        const raw = getComputedStyle(html)
-            .getPropertyValue("--accent-rgb")
-            .trim();
-        if (raw) {
-            const p = raw.split(/[\s,]+/).map(Number);
-            if (p.length === 3 && p.every((v) => !Number.isNaN(v)))
-                accent = p as [number, number, number];
-        }
-        const [ar, ag, ab] = accent;
-        const A = (a: number) => `rgba(${ar}, ${ag}, ${ab}, ${a})`;
+        /* ── The tint is MUTABLE, and that is the change ──
+           This used to destructure into `const [ar, ag, ab]`, which `A()`
+           closed over — so the colour was fixed at mount and there was no way
+           for anything to change it. The signal gate needs the cursor red on
+           its alert screen, so the triple stays in a `let` and `A()` reads it
+           per call. A retint then takes effect on the next frame with no
+           remount and no reallocation. */
+        const siteAccent: [number, number, number] = (() => {
+            const raw = getComputedStyle(html)
+                .getPropertyValue("--accent-rgb")
+                .trim();
+            if (raw) {
+                const p = raw.split(/[\s,]+/).map(Number);
+                if (p.length === 3 && p.every((v) => !Number.isNaN(v)))
+                    return p as [number, number, number];
+            }
+            return [50, 130, 184];
+        })();
+
+        let accent: [number, number, number] = siteAccent;
+        const A = (a: number) =>
+            `rgba(${accent[0]}, ${accent[1]}, ${accent[2]}, ${a})`;
 
         // ── Live state ──────────────────────────────────
         const pointer = { x: -9999, y: -9999 }; // raw, never eased
@@ -692,6 +704,16 @@ export default function Cursor() {
         document.addEventListener("mouseenter", onEnter);
         window.addEventListener("cursor:charge", onCharge);
 
+        /* `null` reverts to the site accent rather than to the hardcoded
+           fallback, so a gate that unmounts mid-sequence cannot strand a red
+           cursor over the portfolio. */
+        const onTint = (e: Event) => {
+            const rgb = (e as CustomEvent<{ rgb: [number, number, number] | null }>)
+                .detail?.rgb;
+            accent = rgb ?? siteAccent;
+        };
+        window.addEventListener(CURSOR_TINT_EVENT, onTint);
+
         /* Driven by gsap.ticker rather than its own requestAnimationFrame.
            This revises the earlier "plain rAF, never GSAP" note above: the
            concern there was coupling the cursor to SCROLL, and gsap.ticker is
@@ -712,6 +734,7 @@ export default function Cursor() {
             document.removeEventListener("mouseleave", onLeave);
             document.removeEventListener("mouseenter", onEnter);
             window.removeEventListener("cursor:charge", onCharge);
+            window.removeEventListener(CURSOR_TINT_EVENT, onTint);
         };
     }, []);
 
