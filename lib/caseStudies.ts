@@ -9,7 +9,7 @@
      • the three showcases — the /work/* route bodies
      • CaseStudyChrome — the route header, which only knows a
        pathname and has to recover the title from it
-     • CredibilityBand · CommandPalette
+     • CommandPalette — the ⌘K jump list
 
    Every number here is copied from the case study it links
    to. If one changes there, change it here: two numbers that

@@ -4,7 +4,6 @@ import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import SideNav from "@/components/SideNav";
 import Hero from "@/components/Hero";
-import CredibilityBand from "@/components/CredibilityBand";
 import FeaturedWork from "@/components/FeaturedWork";
 import ProjectsEnhanced from "@/components/ProjectsEnhanced";
 import ResearchMindset from "@/components/ResearchMindset";
@@ -64,7 +63,6 @@ export default function Home() {
                 LivingArchitecture/stages.ts and `sections` in SideNav.tsx,
                 which index the atlas growth stage and the nav rail. */}
             <Hero />
-            <CredibilityBand />
             <ResearchMindset />
             <FeaturedWork />
             <ProjectsEnhanced />
