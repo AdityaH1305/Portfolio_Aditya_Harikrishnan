@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import ScrollProvider from "@/components/ScrollProvider";
+import { OG_IMAGE } from "@/lib/socialCard";
 import RouteScrollReset from "@/components/RouteScrollReset";
 import Cursor from "@/components/Cursor";
 
@@ -54,11 +55,19 @@ export const metadata: Metadata = {
     title: TITLE,
     description: DESCRIPTION,
     locale: "en_US",
+    images: [OG_IMAGE],
   },
   twitter: {
     card: "summary_large_image",
-    title: TITLE,
-    description: DESCRIPTION,
+    /* `images` stated explicitly rather than left to fall back on `og:image`.
+       Most scrapers do fall back; not all of them do, and the tag costs a
+       line.
+
+       NO `title` or `description` here on purpose. Pinning them meant every
+       case study served the site's title as its `twitter:title` — the routes
+       do not declare `twitter`, so they inherited these verbatim. Left out,
+       Next resolves them from each route's own `title` and `description`. */
+    images: [OG_IMAGE],
   },
   robots: {
     index: true,

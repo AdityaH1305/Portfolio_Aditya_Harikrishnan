@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_IMAGE } from "@/lib/socialCard";
 import CaseStudyHero from "@/components/CaseStudyHero";
 import DoubleUNetShowcase from "@/components/DoubleUNetShowcase";
 
@@ -13,6 +14,10 @@ export const metadata: Metadata = {
         title: "Modified Double U-Net — ternary lesion segmentation",
         description:
             "95.94% mean IoU on BUSI, 1.58 points above the Double U-Net baseline with fewer parameters.",
+        /* Next replaces `openGraph` wholesale rather than merging it, so
+           the root layout's image does NOT carry over — it has to be
+           restated here or this route serves no og:image at all. */
+        images: [OG_IMAGE],
     },
 };
 

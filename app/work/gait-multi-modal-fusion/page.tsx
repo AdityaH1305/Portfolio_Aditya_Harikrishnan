@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { OG_IMAGE } from "@/lib/socialCard";
 import CaseStudyHero from "@/components/CaseStudyHero";
 import GaitShowcase from "@/components/GaitShowcase";
 
@@ -13,6 +14,10 @@ export const metadata: Metadata = {
         title: "Gait Recognition via Multi-Modal Fusion",
         description:
             "98.00% Rank-1 cross-view gait recognition on CASIA-B, built at ISRO / LPSC.",
+        /* Next replaces `openGraph` wholesale rather than merging it, so
+           the root layout's image does NOT carry over — it has to be
+           restated here or this route serves no og:image at all. */
+        images: [OG_IMAGE],
     },
 };
 
