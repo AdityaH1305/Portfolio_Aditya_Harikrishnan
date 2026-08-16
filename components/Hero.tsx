@@ -220,18 +220,49 @@ export default function Hero() {
                         platforms.
                     </p>
 
+                    {/* A GRID, not `flex flex-wrap`. Flex sizes each block to
+                        its own content, so the four measured 172 / 104 / 99 /
+                        129px against a uniform 48px gap — four ragged clumps
+                        rather than a spec row, ending 24px short of the measure
+                        with nothing aligned down the left edge but the first.
+
+                        It wrapped badly too. Below ~672px the items reflowed by
+                        whatever happened to fit, so the split moved between 2+2
+                        and 3+1 with the row heights changing to match: measured
+                        row tops of [0, 114] at one width and [0, 92, 206] at
+                        another, because "Focus" carries three lines and the
+                        others two.
+
+                        Equal columns fix both — the labels line up, the rows
+                        are one height, and the wrap point is a breakpoint
+                        rather than an accident.
+
+                        FOUR COLUMNS IN 672px MEANS ONE ENTRY WRAPS, and that is
+                        the deliberate trade. A column is (672 − 3×24) / 4 =
+                        150px, and "B.Tech Computer Science" needs 172. Fitting
+                        it would take a negative gutter. Two columns of 320px
+                        would fit every line as authored, but at ~118px more
+                        height — and the hero content already measures 642px
+                        against a 700px screen, so that pushes the CTAs off the
+                        first viewport. One wrapped line in a spec column costs
+                        nothing; a hero that no longer fits costs the CTA. */}
                     <div
                         data-hero="facts"
                         style={hidden(16)}
-                        className="mt-12 flex flex-wrap gap-x-12 gap-y-5"
+                        className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4"
                     >
                         {facts.map((fact) => (
                             <div key={fact.label}>
                                 <p className="label-muted mb-2">{fact.label}</p>
                                 {fact.lines.map((line) => (
+                                    /* text-balance for the one line that has
+                                       to wrap: it splits "B.Tech Computer
+                                       Science" evenly instead of leaving a
+                                       single orphaned word under a full
+                                       one. */
                                     <p
                                         key={line}
-                                        className="text-sm text-secondary leading-relaxed"
+                                        className="text-sm text-secondary leading-relaxed text-balance"
                                     >
                                         {line}
                                     </p>
