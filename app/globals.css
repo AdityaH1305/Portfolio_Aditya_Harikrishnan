@@ -2322,6 +2322,25 @@ html.zone-immersive .zone-bar {
   }
 }
 
+/* ── The control, and it is THE control ─────────────────
+   SOLID, NOT A TINT. This was a 12%-key wash behind a 1px border with a 16px
+   Inter label — a ghost button, on a screen whose entire job is to stop people
+   thinking the site is broken. It read as the quietest thing present, which is
+   the exact opposite of what it is. Filled with the key colour and the label
+   punched out of the ground, it is unmistakably the one thing to press.
+
+   `color: var(--gate-bg)` rather than a literal near-black: the label is the
+   ground showing through, so the pair moves together and can never drift into
+   dark-on-dark. Measured on the alert screen — #060708 on #FF453A is 5.98:1.
+
+   JETBRAINS MONO AND UPPERCASE, matching the pointer lockup above rather than
+   the Inter body around it, so the arrow, the words and the button read as one
+   object instead of three stacked ones. 15 → 18.5px are both rungs of the type
+   ladder; nothing new is introduced.
+
+   The halo is the one place a glow is allowed on this site, and this overlay
+   already holds that exception — see the red room above. It ends when the
+   button is pressed, along with everything else here. */
 .signal-gate-action {
   animation-delay: 360ms;
   /* Close, deliberately: the arrowhead has to read as pointing INTO this, and
@@ -2331,44 +2350,37 @@ html.zone-immersive .zone-bar {
   align-items: center;
   justify-content: center;
   gap: 0.6rem;
-  /* The only action on the screen, so it is the largest control on it. It was
-     0.75/1.75rem at 15px, which on a page whose entire job is to stop people
-     thinking the site is broken made the fix the quietest thing present. */
-  padding: 1.05rem 2.75rem;
+  padding: 1.15rem 2.5rem;
   border-radius: 9999px;
-  /* Both derived from the phase key, so the control is red-edged while the
-     fault stands and accent-edged once it is being fixed — one rule instead
-     of a per-phase override. */
-  border: 1px solid color-mix(in srgb, var(--gate-key) 55%, transparent);
-  background: color-mix(in srgb, var(--gate-key) 12%, transparent);
-  /* Primary, not the accent tint. `--accent-subtle` lifts the ground under
-     this button to rgb(29 47 58), which drags #4D95C5 from 4.72:1 down to
-     4.22:1 — the one place on the site where the tint is not sitting on the
-     canvas. This is the single control the entire entrance depends on, so it
-     takes the ice at 9.9:1 and the accent stays on the border and the caret,
-     which is where it was doing the work anyway. */
-  /* The label stays near-white in every phase. It is the one control the
-     entrance depends on and it must never be the thing that is hard to read;
-     the key colour does its work on the edge and the caret. */
-  color: var(--gate-text);
-  font-size: 1rem;
+  border: 1px solid var(--gate-key);
+  background: var(--gate-key);
+  color: var(--gate-bg);
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: clamp(0.9375rem, 0.86rem + 0.33vw, 1.15625rem);
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.14em;
+  /* Tracking is applied to the RIGHT of every glyph including the last, so a
+     centred label sits half a space left of true centre. Half of it back as
+     padding, the same correction the eyebrow and the boot rows carry. */
+  padding-left: calc(2.5rem + 0.07em);
+  text-transform: uppercase;
+  line-height: 1;
   cursor: pointer;
+  box-shadow: 0 18px 46px -14px color-mix(in srgb, var(--gate-key) 62%, transparent);
   transition:
     background 0.35s var(--ease),
     border-color 0.35s var(--ease),
-    color 0.35s var(--ease),
+    box-shadow 0.35s var(--ease),
     transform 0.35s var(--ease);
 }
 
 .signal-gate-action:hover {
-  background: var(--accent-muted);
-  border-color: var(--accent-text);
-  /* Stays ice on hover for the same reason it is ice at rest — the ground
-     under it gets lighter still, not darker. */
-  color: var(--text-primary);
-  transform: translateY(-1px);
+  /* Brighter, not different. A hover that changes the fill colour on a solid
+     control reads as a second state rather than as the same button lit. */
+  background: color-mix(in srgb, var(--gate-key) 82%, white);
+  border-color: color-mix(in srgb, var(--gate-key) 82%, white);
+  box-shadow: 0 22px 56px -12px color-mix(in srgb, var(--gate-key) 78%, transparent);
+  transform: translateY(-2px);
 }
 
 .signal-gate-action:active {
@@ -2376,8 +2388,14 @@ html.zone-immersive .zone-bar {
 }
 
 .signal-gate-action:focus-visible {
-  outline: 2px solid var(--accent-text);
-  outline-offset: 3px;
+  outline: 2px solid var(--gate-text);
+  outline-offset: 4px;
+}
+
+/* On the filled control the caret has to be the label's colour — as
+   `--gate-key` it was a red block on a red button, i.e. invisible. */
+.signal-gate-action .signal-gate-caret {
+  background: currentColor;
 }
 
 .signal-gate-hint {

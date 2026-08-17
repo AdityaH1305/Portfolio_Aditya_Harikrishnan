@@ -397,9 +397,12 @@ export default function SignalGate() {
             ctx.beginPath();
             ctx.moveTo(0, mid);
             ctx.lineTo(w, mid);
-            ctx.globalAlpha = 0.22;
+            /* Was 0.22 at 1px, which on the red room simply vanished — a
+               flatline that cannot be seen is not reading as a flatline, it is
+               reading as nothing being there. */
+            ctx.globalAlpha = 0.34;
             ctx.strokeStyle = key;
-            ctx.lineWidth = 1;
+            ctx.lineWidth = 1.25;
             ctx.stroke();
 
             ctx.globalAlpha = 1;
@@ -412,7 +415,7 @@ export default function SignalGate() {
                 else ctx.lineTo(x, y);
             }
             ctx.strokeStyle = key;
-            ctx.lineWidth = 1.75;
+            ctx.lineWidth = 2.1;
             ctx.lineJoin = "round";
             ctx.stroke();
 
@@ -483,13 +486,16 @@ export default function SignalGate() {
         };
         size();
 
-        /* Fewer on a phone: the same field at 375px is the same number of
-           solids over a fifth of the area, which stops being a room and
-           becomes a texture. */
-        const field = spawnField(
-            window.innerWidth < 768 ? 14 : 30,
-            Math.random,
-        );
+        /* SIX. The first version drew thirty and it buried the screen — the
+           headline, the trace and the button each had a block behind them and
+           the whole thing read as noise rather than as a room.
+
+           Both counts are EVEN, and that is a requirement rather than a
+           preference: `spawnField` deals bearings on half-slice offsets, which
+           only keeps the ring clear of the copy's own axis when the count
+           divides the circle evenly either side of it. `cubes.test.ts`
+           asserts it. */
+        const field = spawnField(window.innerWidth < 768 ? 4 : 6, Math.random);
 
         const draw = (seconds: number) => {
             if (w < 1) size();
@@ -517,11 +523,9 @@ export default function SignalGate() {
                than as a bug. */
             const solids = field
                 .map((c) => renderCube(c, seconds, w, h))
-                .filter((s) => s.fade > 0.005)
                 .sort((a, z) => a.near - z.near);
 
             for (const solid of solids) {
-                const lit = solid.fade;
                 for (const f of solid.faces) {
                     ctx.beginPath();
                     ctx.moveTo(f.pts[0].x, f.pts[0].y);
@@ -541,9 +545,9 @@ export default function SignalGate() {
                        1-(1-0.3)² ≈ 0.51 — which is what the contrast maths
                        was checked against, with headroom for three of them
                        stacked. */
-                    ctx.fillStyle = `rgba(${face},${lit * (0.1 + solid.near * 0.2)})`;
+                    ctx.fillStyle = `rgba(${face},${0.1 + solid.near * 0.2})`;
                     ctx.fill();
-                    ctx.strokeStyle = `rgba(${edge},${lit * (0.14 + solid.near * 0.26)})`;
+                    ctx.strokeStyle = `rgba(${edge},${0.14 + solid.near * 0.26})`;
                     ctx.stroke();
                 }
             }

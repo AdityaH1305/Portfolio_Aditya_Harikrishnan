@@ -1,17 +1,37 @@
 /* ══════════════════════════════════════════════════════
    The cube field
 
-   Translucent blocks tumbling through the alert screen, after
-   the PlayStation 2's red screen of death. That reference is
-   a good one precisely because nobody has ever mistaken it
-   for a browser error: it is unmistakably a designed screen,
-   which is the whole problem this entrance has been solving.
+   A handful of translucent blocks drifting around the alert
+   screen, after the PlayStation 2's red screen of death.
+   That reference is a good one precisely because nobody has
+   ever mistaken it for a browser error: it is unmistakably a
+   designed screen, which is the whole problem this entrance
+   has been solving.
 
-   ── Canvas 2D and a hand-rolled projection ──
-   Not a 3D library. Every other moving thing in this repo is
-   drawn the same way — the atlas, the orbit field, and this
-   gate's own carrier and ECG — and a WebGL dependency on the
-   first screen anyone loads is not worth one backdrop.
+   ── SIX BLOCKS, AND THEY ORBIT THE COPY ──
+   The first version spawned thirty at uniformly random world
+   positions, which put most of them in the middle of the
+   screen: the headline, the trace and the button all had a
+   block behind them and the whole thing read as noise. The
+   count came down to six and the placement stopped being
+   random.
+
+   Each cube holds a BEARING and a RADIUS on a ring drawn
+   around the content column, and it drifts slowly around
+   that ring. The ring is expressed in fractions of the
+   viewport, so `anchorAt` is pure and viewport-free and the
+   keep-out is provable at every screen size at once — see
+   `KEEP_X` / `KEEP_Y`.
+
+   ── Screen-anchored, not world-anchored ──
+   The consequence of the above, and it is the part that is
+   easy to get wrong. Depth is divided out when the anchor is
+   converted to world space, so a cube keeps its place on
+   screen as it moves toward and away from the camera. Anchor
+   it in world space instead and the projection pulls it
+   toward the centre of the frame as it recedes — every cube
+   ends up crossing the copy eventually, which is exactly the
+   problem the ring was introduced to fix.
 
    ── Pure, so a frame is reproducible ──
    Nothing accumulates. A cube's pose is a function of its
@@ -31,10 +51,21 @@ export interface Vec3 {
 }
 
 export interface Cube {
-    /** Home position. X and Y sway around this; Z drifts away from it. */
-    readonly ox: number;
-    readonly oy: number;
-    readonly oz: number;
+    /** Bearing around the content column at t = 0, radians. */
+    readonly theta: number;
+    /** Angular drift, radians per second. Signed, and very small. */
+    readonly omega: number;
+    /** Mean distance from centre, in units of the keep-out ellipse. */
+    readonly radius: number;
+    /** Radial breathing, so the ring is not a rigid circle. */
+    readonly swing: number;
+    readonly swingRate: number;
+    readonly swingPhase: number;
+    /** Depth OSCILLATES between two bounds rather than drifting and wrapping. */
+    readonly zMid: number;
+    readonly zAmp: number;
+    readonly zRate: number;
+    readonly zPhase: number;
     /** Half-extent, in world units. */
     readonly size: number;
     /** Rotation at t = 0, so the field does not start axis-aligned. */
@@ -43,13 +74,16 @@ export interface Cube {
     /** Rotation rates, radians per second. */
     readonly rrx: number;
     readonly rry: number;
-    /** Depth drift, world units per second. Signed. */
-    readonly dz: number;
-    /** Sway phases. Four of them, so no two cubes share a path. */
-    readonly ax1: number;
-    readonly ax2: number;
-    readonly ay1: number;
-    readonly ay2: number;
+}
+
+/** Where a cube sits on screen, as a signed fraction of the viewport. */
+export interface Anchor {
+    /** −0.5 is the left edge, +0.5 the right. */
+    readonly fx: number;
+    /** −0.5 is the top edge, +0.5 the bottom. Down-positive, like the canvas. */
+    readonly fy: number;
+    /** Distance in keep-out-ellipse units. Always ≥ 1. */
+    readonly r: number;
 }
 
 export interface Pose {
@@ -75,66 +109,47 @@ export interface Face {
 
 export interface Rendered {
     readonly faces: readonly Face[];
-    /** 0…1. Alpha multiplier. Zero at both depth planes — see `depthFade`. */
-    readonly fade: number;
     /** 0…1, far → near. Drives how lit a block reads. */
     readonly near: number;
 }
 
-/* ── The world ─────────────────────────────────────────
-   X and Y are world units either side of the centre line; how much of the
-   screen that covers depends on depth, which is the point — a block sweeps
-   out of frame as it comes toward the camera and drifts back into it as it
-   recedes.
-
-   Z is distance from the camera and is the only axis that travels. NEAR is
-   deliberately well clear of 0: a face crossing the camera plane projects to
-   infinity, and clamping after the fact leaves a visible smear as it goes. */
-export const NEAR = 1.8;
+/* ── The camera ──────────────────────────────────────── */
+export const NEAR = 2.2;
 export const FAR = 7;
 export const FOV = 1.15;
 
-/** Half-extents of the spawn box. */
-export const SPREAD_X = 1.8;
-export const SPREAD_Y = 1.3;
+/**
+ * The keep-out ellipse: semi-axes as fractions of the viewport, measured from
+ * its centre. NOTHING IS EVER DRAWN INSIDE THIS.
+ *
+ * Sized to the content column — 34rem wide and about 490px tall on a desktop,
+ * which is 0.19 × 0.27 of a 1440 × 900 viewport — with margin on both axes.
+ * Fractions rather than pixels, so one assertion covers every screen size.
+ *
+ * On a phone the column fills the width and no ring can clear it sideways.
+ * That is what the scrim is for, and the composited contrast is measured with
+ * a block sitting directly behind the type.
+ */
+export const KEEP_X = 0.32;
+export const KEEP_Y = 0.33;
+
+/** Ring radii, in units of the keep-out ellipse. 1 IS the ellipse. */
+export const RING_MIN = 1.0;
+export const RING_MAX = 1.4;
 
 /**
- * Size range. Independent of depth — perspective does the sorting for us.
+ * Size range. See the "wall" test — this and `NEAR` are what it measures.
  *
- * The ceiling is not a taste call. A block that fills the frame stops being a
- * backdrop and becomes a wall behind the headline, and the two numbers that
- * decide it are this and `NEAR`; there is a test that measures the largest
- * span any *legible* block ever reaches and holds it under 62% of the short
- * edge. Raise either and that is what fails.
+ * The keep-out constrains a cube's CENTRE, not its extent, so a block sitting
+ * on the ellipse still reaches inward by its own half-span. Shrinking this is
+ * the lever that buys the copy air; pushing the ring further out is not,
+ * because past `RING_MAX` the blocks leave the frame.
  */
-export const SIZE_MIN = 0.12;
-export const SIZE_MAX = 0.28;
+export const SIZE_MIN = 0.14;
+export const SIZE_MAX = 0.26;
 
-/* Sway amplitudes, per axis, for the two components. Two incommensurate
-   frequencies rather than one: a single sine is a pendulum, and a pendulum is
-   the one motion the eye reads as a screensaver. */
-const SWAY_A = 0.16;
-const SWAY_B = 0.09;
-/** The most a cube can ever be displaced from its home X or Y. */
-export const SWAY_MAX = SWAY_A + SWAY_B;
-
-/**
- * Width of the fade band at each depth plane.
- *
- * THIS IS WHAT MAKES THE WRAP INVISIBLE. Depth wraps so the field never
- * empties and never respawns, but a wrap is a teleport, and a block winking
- * out at one plane and in at the other is exactly the sort of thing the eye
- * catches on a screen the reader is supposed to be reading past. Alpha
- * therefore reaches zero at BOTH planes, so the jump happens while there is
- * nothing on screen to jump.
- *
- * At the fastest drift (0.06/s) crossing this band takes ~23 seconds.
- */
-export const FADE_BAND = 1.4;
-
-/** Depth drift, world units per second. */
-const DZ_MIN = 0.02;
-const DZ_MAX = 0.06;
+/** Clearance kept between the depth planes and the field. */
+const Z_MARGIN = 0.4;
 
 const TAU = Math.PI * 2;
 
@@ -169,19 +184,22 @@ export const CUBE_FACES: readonly (readonly number[])[] = [
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
-/** Smoothstep. Used for the depth fades, so neither end has a corner in it. */
-const smooth = (v: number) => {
-    const t = clamp01(v);
-    return t * t * (3 - 2 * t);
-};
-
-const wrapDepth = (z: number): number => {
-    const span = FAR - NEAR;
-    return NEAR + ((((z - NEAR) % span) + span) % span);
-};
-
 /**
  * Lay out a field.
+ *
+ * BEARINGS ARE DEALT, NOT ROLLED. Each cube gets its own slice of the circle
+ * and may wander a little inside it, so six blocks are always spread around
+ * the frame. Six independent random bearings clump — that is what random
+ * does, and with a field this small one clump is the whole composition.
+ *
+ * The half-slice offset matters too: at `i / n` a six-cube field puts blocks
+ * at 0 and π, dead level with the middle of the copy on both sides. At
+ * `(i + 0.5) / n` the nearest bearings are 30° off that line.
+ *
+ * THAT ONLY WORKS FOR AN EVEN `n`, and the callers are 6 and 4 for exactly
+ * that reason. Five slices offset by a half still lands one bearing on 180°,
+ * which is the worst place on the ring — level with the headline. There is a
+ * test for it, and it caught a five-cube phone field doing precisely this.
  *
  * `rand` is injected rather than read off `Math.random`, so a test can seed it
  * and assert against an exact field — the same reason `randomTtl` takes one in
@@ -189,28 +207,33 @@ const wrapDepth = (z: number): number => {
  */
 export function spawnField(n: number, rand: () => number): Cube[] {
     const out: Cube[] = [];
+    const slice = TAU / Math.max(n, 1);
 
     for (let i = 0; i < n; i++) {
-        /* Spread through the middle of the depth range rather than uniformly.
-           Spawning onto a fade plane means opening the screen on a block that
-           is already invisible. */
-        const oz = NEAR + FADE_BAND + rand() * (FAR - NEAR - FADE_BAND * 2);
+        const swing = 0.04 + rand() * 0.06;
+        const zAmp = 0.3 + rand() * 0.6;
+        const lo = NEAR + Z_MARGIN + zAmp;
+        const hi = FAR - Z_MARGIN - zAmp;
 
         out.push({
-            ox: (rand() * 2 - 1) * SPREAD_X,
-            oy: (rand() * 2 - 1) * SPREAD_Y,
-            oz,
+            // Own slice, with up to a quarter-slice of wander either way.
+            theta: (i + 0.5) * slice + (rand() - 0.5) * slice * 0.5,
+            // A lap takes between three and ten minutes. This is a room, not
+            // a screensaver.
+            omega: (rand() < 0.5 ? -1 : 1) * (0.01 + rand() * 0.02),
+            radius: RING_MIN + swing + rand() * (RING_MAX - RING_MIN - swing * 2),
+            swing,
+            swingRate: 0.09 + rand() * 0.1,
+            swingPhase: rand() * TAU,
+            zAmp,
+            zMid: lo + rand() * (hi - lo),
+            zRate: (rand() < 0.5 ? -1 : 1) * (0.03 + rand() * 0.05),
+            zPhase: rand() * TAU,
             size: SIZE_MIN + rand() * (SIZE_MAX - SIZE_MIN),
             rox: rand() * TAU,
             roy: rand() * TAU,
-            // Slow. This is a room, not a screensaver.
-            rrx: (rand() * 2 - 1) * 0.14,
-            rry: (rand() * 2 - 1) * 0.14,
-            dz: (rand() < 0.5 ? -1 : 1) * (DZ_MIN + rand() * (DZ_MAX - DZ_MIN)),
-            ax1: rand() * TAU,
-            ax2: rand() * TAU,
-            ay1: rand() * TAU,
-            ay2: rand() * TAU,
+            rrx: (rand() * 2 - 1) * 0.11,
+            rry: (rand() * 2 - 1) * 0.11,
         });
     }
 
@@ -218,28 +241,47 @@ export function spawnField(n: number, rand: () => number): Cube[] {
 }
 
 /**
- * Where a cube is, and how it is turned, at time `t` seconds.
+ * Where a cube sits on screen at time `t`, in viewport fractions.
  *
- * X AND Y SWAY; ONLY Z TRAVELS. An earlier version drifted linearly on all
- * three axes and wrapped each one, which cannot work: how far off-screen a
- * given X sits depends entirely on depth, so a wrap bound that hides the jump
- * for a near block puts it in plain view in the middle of the frame for a far
- * one. Bounded sway needs no wrap at all, and depth — the one axis whose wrap
- * *can* be hidden, because alpha goes to zero at both planes — carries the
- * travel.
+ * Viewport-free on purpose: the keep-out is an assertion about fractions, so
+ * one test covers 375px and 1440px and everything between at once.
  */
-export function poseAt(cube: Cube, t: number): Pose {
-    const sway =
-        Math.sin(t * 0.19 + cube.ax1) * SWAY_A +
-        Math.sin(t * 0.31 + cube.ax2) * SWAY_B;
-    const bob =
-        Math.sin(t * 0.23 + cube.ay1) * SWAY_A +
-        Math.sin(t * 0.13 + cube.ay2) * SWAY_B;
+export function anchorAt(cube: Cube, t: number): Anchor {
+    const th = cube.theta + cube.omega * t;
+    const r =
+        cube.radius + Math.sin(t * cube.swingRate + cube.swingPhase) * cube.swing;
+
+    return { fx: r * KEEP_X * Math.cos(th), fy: r * KEEP_Y * Math.sin(th), r };
+}
+
+/** Depth at time `t`. Bounded oscillation — see `poseAt`. */
+export function depthAt(cube: Cube, t: number): number {
+    return cube.zMid + cube.zAmp * Math.sin(t * cube.zRate + cube.zPhase);
+}
+
+/**
+ * Where a cube is in world space, and how it is turned, at time `t` seconds.
+ *
+ * DEPTH OSCILLATES; IT DOES NOT WRAP. An earlier version drifted linearly in
+ * depth and wrapped at the planes, which needed an alpha envelope closing to
+ * zero at both ends to hide the teleport — and with only six blocks on screen
+ * that envelope was taking one or two of them out of the picture at a time.
+ * Bounded oscillation has no seam to hide, so every cube is visible for as
+ * long as the screen is up.
+ *
+ * The anchor is divided by the projection's own depth scale, which is what
+ * pins the cube to its place on screen as it moves in and out.
+ */
+export function poseAt(cube: Cube, t: number, w: number, h: number): Pose {
+    const { fx, fy } = anchorAt(cube, t);
+    const z = depthAt(cube, t);
+    const k = z / (Math.min(w, h) * FOV);
 
     return {
-        x: cube.ox + sway,
-        y: cube.oy + bob,
-        z: wrapDepth(cube.oz + cube.dz * t),
+        x: fx * w * k,
+        // Negated: world Y is up, the anchor's is down.
+        y: -fy * h * k,
+        z,
         rx: cube.rox + cube.rrx * t,
         ry: cube.roy + cube.rry * t,
         size: cube.size,
@@ -254,16 +296,6 @@ export function poseAt(cube: Cube, t: number): Pose {
  */
 export function nearness(z: number): number {
     return clamp01((FAR - z) / (FAR - NEAR));
-}
-
-/**
- * Alpha envelope: 0 at BOTH planes, 1 through the middle.
- *
- * See `FADE_BAND`. This is the wrap concealer, and the test that matters here
- * asserts it — whenever depth jumps, this is already at zero.
- */
-export function depthFade(z: number): number {
-    return smooth((z - NEAR) / FADE_BAND) * smooth((FAR - z) / FADE_BAND);
 }
 
 /**
@@ -291,9 +323,9 @@ export function project(v: Vec3, pose: Pose, w: number, h: number): Pt2 {
     const wx = pose.x + x1 * size;
     const wy = pose.y + y2 * size;
     /* Floored. The CENTRE can never reach the camera, but a corner of the
-       largest cube at the near plane comes 0.49 closer than the centre does,
-       and a small divisor throws the vertex thousands of pixels out. Belt and
-       braces: the geometry already keeps this positive, and a test says so. */
+       largest cube reaches 0.52 closer than the centre does, and a small
+       divisor throws the vertex thousands of pixels out. Belt and braces: the
+       geometry already keeps this well clear, and a test says so. */
     const wz = Math.max(NEAR * 0.5, pose.z + z2 * size);
 
     const scale = (Math.min(w, h) * FOV) / wz;
@@ -317,14 +349,14 @@ export function faceDepth(pts: readonly Pt2[]): number {
 
 /**
  * Everything the canvas needs for one cube in one frame: its six faces sorted
- * back to front, plus the two shading scalars.
+ * back to front, plus the shading scalar.
  *
  * Assembled here rather than in the component so the draw loop is a `fill()`
  * and a `stroke()` per face and nothing else — and so the sort order, which
  * is the part that goes wrong, is testable.
  */
 export function renderCube(cube: Cube, t: number, w: number, h: number): Rendered {
-    const pose = poseAt(cube, t);
+    const pose = poseAt(cube, t, w, h);
     const pts = CUBE_VERTS.map((v) => project(v, pose, w, h));
 
     const faces = CUBE_FACES
@@ -336,5 +368,5 @@ export function renderCube(cube: Cube, t: number, w: number, h: number): Rendere
         // last, so translucency stacks in the order the eye expects.
         .sort((a, b) => b.depth - a.depth);
 
-    return { faces, fade: depthFade(pose.z), near: nearness(pose.z) };
+    return { faces, near: nearness(pose.z) };
 }

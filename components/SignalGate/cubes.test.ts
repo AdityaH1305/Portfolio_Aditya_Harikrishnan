@@ -2,17 +2,18 @@ import test from "node:test";
 import assert from "node:assert/strict";
 
 import {
-    CUBE_VERTS,
     CUBE_FACES,
-    FADE_BAND,
+    CUBE_VERTS,
     FAR,
+    KEEP_X,
+    KEEP_Y,
     NEAR,
+    RING_MAX,
+    RING_MIN,
     SIZE_MAX,
     SIZE_MIN,
-    SPREAD_X,
-    SPREAD_Y,
-    SWAY_MAX,
-    depthFade,
+    anchorAt,
+    depthAt,
     faceDepth,
     nearness,
     poseAt,
@@ -37,10 +38,12 @@ function seeded(seed: number): () => number {
     };
 }
 
-const FIELD = spawnField(48, seeded(7));
+/** The two counts the component actually ships: desktop and phone. */
+const FIELDS = [spawnField(6, seeded(7)), spawnField(4, seeded(31))];
+const ALL = FIELDS.flat();
 
-/** Two minutes at 6 fps. Long enough that every cube has crossed a plane. */
-const TIMES = Array.from({ length: 720 }, (_, i) => i * 0.1667);
+/** Ten minutes at 5 fps — well past a full lap of the ring. */
+const TIMES = Array.from({ length: 3000 }, (_, i) => i * 0.2);
 
 const VIEWPORTS: readonly [number, number][] = [
     [1440, 900],
@@ -71,125 +74,148 @@ test("the face table is a closed cube", () => {
 });
 
 test("a field is reproducible from its seed", () => {
-    assert.deepEqual(spawnField(12, seeded(99)), spawnField(12, seeded(99)));
-    assert.notDeepEqual(spawnField(12, seeded(99)), spawnField(12, seeded(100)));
+    assert.deepEqual(spawnField(6, seeded(99)), spawnField(6, seeded(99)));
+    assert.notDeepEqual(spawnField(6, seeded(99)), spawnField(6, seeded(100)));
     assert.equal(spawnField(0, seeded(1)).length, 0);
 });
 
-test("nothing spawns onto a fade plane", () => {
-    /* Opening the screen on a block that is already invisible wastes it, and
-       the first frame is the one frame everybody sees. */
-    for (const c of FIELD) {
-        assert.ok(
-            c.oz >= NEAR + FADE_BAND - 1e-9 && c.oz <= FAR - FADE_BAND + 1e-9,
-            `spawned at z=${c.oz}, inside a fade band`,
-        );
-        assert.ok(Math.abs(c.ox) <= SPREAD_X, `ox=${c.ox}`);
-        assert.ok(Math.abs(c.oy) <= SPREAD_Y, `oy=${c.oy}`);
-        assert.ok(c.size >= SIZE_MIN && c.size <= SIZE_MAX, `size=${c.size}`);
-        assert.ok(Math.abs(c.dz) > 0, "a cube that never travels");
-    }
-});
+test("NOTHING IS EVER DRAWN ON THE COPY", () => {
+    /* The headline complaint about the first version, and the reason the ring
+       exists: thirty cubes at uniformly random world positions put most of
+       them across the middle of the screen, so the title, the trace and the
+       button each had a block behind them.
 
-test("the field stays inside the world at every instant", () => {
-    for (const c of FIELD) {
+       Stated in viewport FRACTIONS, so this one assertion holds at 375px and
+       at 1920px and everywhere between. */
+    for (const c of ALL) {
         for (const t of TIMES) {
-            const p = poseAt(c, t);
-            assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y) && Number.isFinite(p.z));
-            assert.ok(
-                Math.abs(p.x) <= SPREAD_X + SWAY_MAX + 1e-9,
-                `x=${p.x} beyond ${SPREAD_X + SWAY_MAX}`,
-            );
-            assert.ok(
-                Math.abs(p.y) <= SPREAD_Y + SWAY_MAX + 1e-9,
-                `y=${p.y} beyond ${SPREAD_Y + SWAY_MAX}`,
-            );
-            assert.ok(p.z >= NEAR - 1e-9 && p.z <= FAR + 1e-9, `z=${p.z} outside the range`);
+            const { fx, fy } = anchorAt(c, t);
+            const d = Math.hypot(fx / KEEP_X, fy / KEEP_Y);
+            assert.ok(d >= 1 - 1e-9, `a cube reached ${d.toFixed(3)} of the keep-out at t=${t}`);
         }
     }
 });
 
-test("X AND Y NEVER JUMP — only depth wraps", () => {
-    /* An earlier version drifted and wrapped all three axes. That cannot work:
-       how far off-screen a given X sits depends on depth, so one wrap bound
-       hides the jump for a near block and puts it in the middle of the frame
-       for a far one. */
-    const dt = 1 / 60;
-    for (const c of FIELD) {
-        for (let i = 0; i < 2000; i++) {
-            const a = poseAt(c, i * dt);
-            const b = poseAt(c, (i + 1) * dt);
-            assert.ok(Math.abs(b.x - a.x) < 0.01, `x jumped ${Math.abs(b.x - a.x)}`);
-            assert.ok(Math.abs(b.y - a.y) < 0.01, `y jumped ${Math.abs(b.y - a.y)}`);
+test("…and nothing wanders off the screen either", () => {
+    /* The other half. A ring pushed far enough out to clear the copy is a
+       ring whose blocks are outside the frame, and six cubes is few enough
+       that losing one to the margin is a visible hole. */
+    const limX = RING_MAX * KEEP_X;
+    const limY = RING_MAX * KEEP_Y;
+    assert.ok(limX < 0.5 && limY < 0.5, "the ring itself reaches past the frame");
+
+    for (const c of ALL) {
+        for (const t of TIMES) {
+            const { fx, fy, r } = anchorAt(c, t);
+            assert.ok(r >= RING_MIN - 1e-9 && r <= RING_MAX + 1e-9, `radius ${r}`);
+            assert.ok(Math.abs(fx) <= limX + 1e-9, `fx=${fx}`);
+            assert.ok(Math.abs(fy) <= limY + 1e-9, `fy=${fy}`);
         }
     }
 });
 
-test("EVERY DEPTH WRAP HAPPENS WHILE THE CUBE IS INVISIBLE", () => {
-    /* The whole reason `depthFade` exists. Depth wraps so the field never
-       empties and never respawns — but a wrap is a teleport, and a block
-       winking out at one plane and in at the other is exactly what the eye
-       catches on a screen the reader is meant to be reading past. */
-    const dt = 1 / 60;
-    let wraps = 0;
+test("BEARINGS ARE DEALT, NOT ROLLED", () => {
+    /* Six independent random bearings clump — that is what random does, and
+       with a field this small one clump is the whole composition. Each cube
+       gets its own slice and may only wander inside it. */
+    for (const field of FIELDS) {
+        const n = field.length;
+        const slice = (Math.PI * 2) / n;
+        const angles = field
+            .map((c) => ((c.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2))
+            .sort((a, b) => a - b);
 
-    for (const c of FIELD) {
-        for (let i = 0; i < 4000; i++) {
-            const a = poseAt(c, i * dt);
-            const b = poseAt(c, (i + 1) * dt);
-            if (Math.abs(b.z - a.z) > 1) {
-                wraps++;
+        for (let i = 0; i < n; i++) {
+            const gap = i === n - 1
+                ? angles[0] + Math.PI * 2 - angles[i]
+                : angles[i + 1] - angles[i];
+            assert.ok(
+                gap >= slice * 0.5 - 1e-9,
+                `two of ${n} cubes sat ${((gap * 180) / Math.PI).toFixed(1)}° apart`,
+            );
+        }
+    }
+});
+
+test("no cube starts level with the middle of the copy", () => {
+    /* The half-slice offset. At `i / n` a six-cube field puts blocks at 0 and
+       π — dead level with the headline, one either side.
+
+       AND THE COUNT HAS TO BE EVEN for the offset to do that. This test was
+       written against 6 and 5, and the five-cube phone field failed it
+       immediately: five slices offset by a half still puts a bearing on 180°.
+       The phone count is 4. */
+    for (const field of FIELDS) {
+        assert.equal(field.length % 2, 0, "an odd count defeats the half-slice offset");
+        for (const c of field) {
+            const th = ((c.theta % Math.PI) + Math.PI) % Math.PI;
+            assert.ok(
+                Math.min(th, Math.PI - th) > 0.25,
+                `a cube opened at ${((th * 180) / Math.PI).toFixed(1)}° off the copy's axis`,
+            );
+        }
+    }
+});
+
+test("DEPTH OSCILLATES AND NEVER WRAPS", () => {
+    /* No seam, so no alpha envelope is needed to hide one — which matters at
+       six cubes, where an envelope closing to zero takes a sixth of the
+       composition off the screen at a time. */
+    const dt = 1 / 60;
+    for (const c of ALL) {
+        let prev = depthAt(c, 0);
+        for (let i = 1; i <= 6000; i++) {
+            const z = depthAt(c, i * dt);
+            assert.ok(z > NEAR && z < FAR, `z=${z} outside the planes`);
+            assert.ok(Math.abs(z - prev) < 0.01, `depth jumped ${Math.abs(z - prev)}`);
+            prev = z;
+        }
+    }
+});
+
+test("every cube stays lit — none fades to nothing", () => {
+    for (const c of ALL) {
+        for (const t of TIMES) {
+            const n = nearness(depthAt(c, t));
+            assert.ok(n > 0.05 && n <= 1, `nearness ${n} at t=${t}`);
+        }
+    }
+});
+
+test("sizes stay inside their range", () => {
+    for (const c of ALL) {
+        assert.ok(c.size >= SIZE_MIN && c.size <= SIZE_MAX, `size=${c.size}`);
+    }
+});
+
+test("the anchor is what decides where a cube lands, at any viewport", () => {
+    /* Screen-anchored, not world-anchored. Anchor in world space instead and
+       the projection pulls a cube toward the middle of the frame as it
+       recedes — every one of them ends up crossing the copy eventually, which
+       is the exact problem the ring was introduced to fix. */
+    for (const [w, h] of VIEWPORTS) {
+        for (const c of ALL) {
+            for (const t of [0, 7.3, 61, 400]) {
+                const a = anchorAt(c, t);
+                const p = project({ x: 0, y: 0, z: 0 }, poseAt(c, t, w, h), w, h);
                 assert.ok(
-                    depthFade(a.z) < 1e-3 && depthFade(b.z) < 1e-3,
-                    `wrapped at fade ${depthFade(a.z)} → ${depthFade(b.z)}`,
+                    Math.abs(p.x - (w / 2 + a.fx * w)) < 1e-6,
+                    `x drifted from its anchor: ${p.x} vs ${w / 2 + a.fx * w}`,
+                );
+                assert.ok(
+                    Math.abs(p.y - (h / 2 + a.fy * h)) < 1e-6,
+                    `y drifted from its anchor: ${p.y} vs ${h / 2 + a.fy * h}`,
                 );
             }
         }
     }
-    assert.ok(wraps > 0, "no cube ever wrapped, so the guard proved nothing");
-});
-
-test("the fade envelope closes at both planes and opens between them", () => {
-    assert.equal(depthFade(NEAR), 0);
-    assert.equal(depthFade(FAR), 0);
-    assert.ok(depthFade((NEAR + FAR) / 2) > 0.99);
-    for (let z = NEAR; z <= FAR; z += 0.01) {
-        const f = depthFade(z);
-        assert.ok(f >= 0 && f <= 1, `fade ${f} out of range at z=${z}`);
-    }
-    // Out of range is clamped, not propagated — the same rule as ecgAt's live.
-    assert.equal(depthFade(NEAR - 5), 0);
-    assert.equal(depthFade(FAR + 5), 0);
-});
-
-test("nearness runs far → near across the range and clamps outside it", () => {
-    assert.equal(nearness(FAR), 0);
-    assert.equal(nearness(NEAR), 1);
-    assert.ok(nearness(3) > nearness(5));
-    assert.equal(nearness(FAR + 9), 0);
-    assert.equal(nearness(NEAR - 9), 1);
-});
-
-test("the field is never mostly invisible", () => {
-    /* The fade bands cost screen time. If they ate most of it the backdrop
-       would be a nearly empty room with occasional blocks, which is a
-       different — and worse — design than the one that was agreed. */
-    let lit = 0;
-    let total = 0;
-    for (const c of FIELD) {
-        for (const t of TIMES) {
-            if (depthFade(poseAt(c, t).z) > 0.5) lit++;
-            total++;
-        }
-    }
-    assert.ok(lit / total > 0.6, `only ${((lit / total) * 100).toFixed(1)}% of cube-time is lit`);
 });
 
 test("projection stays finite and in front of the camera", () => {
     for (const [w, h] of VIEWPORTS) {
-        for (const c of FIELD) {
+        for (const c of ALL) {
             for (const t of TIMES) {
-                const pose = poseAt(c, t);
+                const pose = poseAt(c, t, w, h);
                 for (const v of CUBE_VERTS) {
                     const p = project(v, pose, w, h);
                     assert.ok(Number.isFinite(p.x) && Number.isFinite(p.y), "NaN vertex");
@@ -200,38 +226,35 @@ test("projection stays finite and in front of the camera", () => {
     }
 });
 
-test("no visible block ever becomes a wall", () => {
-    /* A cube filling the frame behind the headline stops being a backdrop.
-       Only measured while the block is actually legible — the near fade band
-       exists precisely so the monsters are the invisible ones.
-
-       The bound is a fraction of min(w, h) because `project` scales by that,
-       so this one number holds at every viewport. */
+test("no block ever becomes a wall", () => {
+    /* A cube filling the frame stops being a backdrop. The bound is a
+       fraction of min(w, h) because `project` scales by that, so this one
+       number holds at every viewport. `SIZE_MAX` and `NEAR` are what it is
+       measuring; raising either is what fails it. */
     let worst = 0;
     for (const [w, h] of VIEWPORTS) {
         const lim = Math.min(w, h);
-        for (const c of FIELD) {
+        for (const c of ALL) {
             for (const t of TIMES) {
-                const pose = poseAt(c, t);
-                if (depthFade(pose.z) < 0.5) continue;
+                const pose = poseAt(c, t, w, h);
                 const pts = CUBE_VERTS.map((v) => project(v, pose, w, h));
                 const xs = pts.map((p) => p.x);
                 const ys = pts.map((p) => p.y);
-                const span = Math.max(
-                    Math.max(...xs) - Math.min(...xs),
-                    Math.max(...ys) - Math.min(...ys),
+                worst = Math.max(
+                    worst,
+                    (Math.max(...xs) - Math.min(...xs)) / lim,
+                    (Math.max(...ys) - Math.min(...ys)) / lim,
                 );
-                worst = Math.max(worst, span / lim);
             }
         }
     }
-    assert.ok(worst < 0.62, `a lit block spanned ${(worst * 100).toFixed(1)}% of the short edge`);
+    assert.ok(worst < 0.55, `a block spanned ${(worst * 100).toFixed(1)}% of the short edge`);
 });
 
 test("faces come back sorted back to front", () => {
     /* Painter's algorithm, and translucent fills make an out-of-order stack
        read as a cube turned inside out rather than as a bug. */
-    for (const c of FIELD.slice(0, 12)) {
+    for (const c of ALL) {
         for (const t of [0, 3.7, 41.2, 300.9]) {
             const { faces } = renderCube(c, t, 1440, 900);
             assert.equal(faces.length, 6);
@@ -257,10 +280,18 @@ test("faceDepth is the mean, and survives an empty quad", () => {
     );
 });
 
+test("nearness runs far → near and clamps outside the range", () => {
+    assert.equal(nearness(FAR), 0);
+    assert.equal(nearness(NEAR), 1);
+    assert.ok(nearness(3) > nearness(5));
+    assert.equal(nearness(FAR + 9), 0);
+    assert.equal(nearness(NEAR - 9), 1);
+});
+
 test("a frame is reproducible", () => {
     // No accumulated state anywhere. Same t, same picture — which is what
     // makes every assertion above mean something.
-    const a = FIELD.map((c) => renderCube(c, 12.5, 1440, 900));
-    const b = FIELD.map((c) => renderCube(c, 12.5, 1440, 900));
+    const a = ALL.map((c) => renderCube(c, 12.5, 1440, 900));
+    const b = ALL.map((c) => renderCube(c, 12.5, 1440, 900));
     assert.deepEqual(a, b);
 });
