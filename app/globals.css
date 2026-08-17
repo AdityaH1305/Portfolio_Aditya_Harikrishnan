@@ -1878,6 +1878,112 @@ html.zone-immersive .zone-bar {
   }
 }
 
+/* ══════════════════════════════════════════════════════
+   The red room — `lost` only
+
+   Translucent blocks tumbling through a deep red glow, after
+   the PlayStation 2's red screen of death. The alert screen
+   was a headline, a paragraph and a control on flat black
+   with a lot of nothing around them; this gives the fault
+   somewhere to happen.
+
+   ── THIS IS THE SITE'S ONLY GLOW, AND IT IS RATIONED ──
+   Everything above about the one-accent lock applies here
+   too. The page proper has no glow at all — three atmosphere
+   radials, the Ludex bloom and the zone's violet field were
+   all deleted, and only the two canvases emit light, which is
+   what makes them read as instruments. The gate is already
+   the documented exception to the palette; this extends that
+   exception to light, and to nothing else. Do not take it as
+   licence for a decorative radial anywhere on the page.
+
+   ── THE AURA IS SHAPED AROUND THE COPY, NOT UNDER IT ──
+   Every element on this screen currently clears AA on
+   #060708 — the red eyebrow and title at 5.92:1, the body at
+   16.73, the button label at 16.82 — and the eyebrow is 12px,
+   so it has the least to give. Red light behind type eats
+   straight into that margin.
+
+   So the colour is pooled AWAY from the content column, into
+   the lower-right and upper-left, and a near-black scrim sits
+   over the middle, above the cubes and below the text. The
+   room glows around the reader rather than behind them. The
+   acceptance test for this whole feature is the composited
+   contrast at each text element, not a look-over.
+   ══════════════════════════════════════════════════════ */
+.signal-gate-backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+  /* Matches the token transition above, so the room resolves into the site's
+     surface along with everything else rather than being switched off. */
+  transition: opacity 520ms var(--ease);
+}
+
+/* Belongs to the fault. The instant the button is pressed the room goes with
+   it — and the draw loop is detached in JS at the same moment, so this is the
+   visual half of a stand-down, not a canvas painting behind an opacity of 0. */
+.signal-gate:not([data-phase="lost"]) .signal-gate-backdrop {
+  opacity: 0;
+}
+
+/* The aura. Two pools, both off the content column, both well short of the
+   corners so the target-lock brackets still read against black.
+
+   Literal reds rather than `--gate-key`, and deliberately: this element only
+   ever exists during `lost`, while that token travels red → blue → green. A
+   derived aura would flash blue for the length of its own fade-out. */
+.signal-gate-backdrop::before,
+.signal-gate-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.signal-gate-backdrop::before {
+  background:
+    radial-gradient(
+      58% 66% at 84% 80%,
+      rgba(190, 26, 22, 0.5),
+      rgba(190, 26, 22, 0.18) 46%,
+      transparent 72%
+    ),
+    radial-gradient(
+      52% 62% at 13% 15%,
+      rgba(146, 20, 18, 0.32),
+      rgba(146, 20, 18, 0.1) 48%,
+      transparent 74%
+    );
+}
+
+/* The scrim, painted over the cubes. Sized with `max()` so it still covers
+   the 34rem column on a 375px screen — a percentage alone collapses to
+   narrower than the text it is protecting, which is the one width where the
+   contrast actually needs it. */
+.signal-gate-backdrop::after {
+  z-index: 1;
+  background: radial-gradient(
+    max(22rem, 44%) max(22rem, 62%) at 50% 50%,
+    rgba(6, 7, 8, 0.94),
+    rgba(6, 7, 8, 0.94) 62%,
+    transparent 100%
+  );
+}
+
+.signal-gate-cubes {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  /* The draw loop reads this, not a hardcoded value — the same rule the
+     carrier and the ECG follow, so the field cannot hold a second copy of
+     the red. Face fills are derived from it inside the loop. */
+  color: var(--gate-key);
+}
+
 /* ── Target-lock brackets ──
    Four corners drawn with gradients rather than four elements. Same motif
    the cursor draws on a locked target, which is what ties the entrance to
@@ -1889,6 +1995,7 @@ html.zone-immersive .zone-bar {
 .signal-gate-frame {
   position: absolute;
   inset: clamp(0.75rem, 2.5vw, 1.75rem);
+  z-index: 1;
   pointer-events: none;
   opacity: 0.55;
   --bracket: 22px;
@@ -1912,7 +2019,12 @@ html.zone-immersive .zone-bar {
   animation: signal-rise 700ms var(--ease) both;
 }
 
+/* POSITIONED, and that is not cosmetic. This was `static`, which paints it
+   BELOW every absolutely-positioned sibling — so the backdrop canvas would
+   have rendered on top of the headline, the copy and the button. */
 .signal-gate-inner {
+  position: relative;
+  z-index: 1;
   width: min(34rem, 100%);
 }
 

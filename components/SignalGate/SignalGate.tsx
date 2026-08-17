@@ -25,6 +25,7 @@ import {
 } from "./gate";
 import { waveAt, WAVE_SAMPLES } from "./wave";
 import { ecgAt, sweepAt, ECG_SAMPLES } from "./ecg";
+import { renderCube, spawnField } from "./cubes";
 
 /* ══════════════════════════════════════════════════════
    Signal Gate
@@ -161,6 +162,7 @@ export default function SignalGate() {
     const gateRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const ecgRef = useRef<HTMLCanvasElement>(null);
+    const cubesRef = useRef<HTMLCanvasElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
     const reducedRef = useRef(false);
     const timers = useRef<number[]>([]);
@@ -446,6 +448,126 @@ export default function SignalGate() {
         };
     }, [open]);
 
+    /* ── The red room ─────────────────────────────────
+       Translucent blocks tumbling behind the alert, after the PlayStation 2's
+       red screen of death. `cubes.ts` holds the field and the projection and
+       is unit-tested; this only paints what it returns.
+
+       ── IT BELONGS TO `lost` ALONE ──
+       Keyed on the phase, not just on `open`, and the ticker callback is
+       therefore REMOVED the instant the button is pressed rather than left
+       running behind an opacity of 0. A full-viewport canvas redrawing thirty
+       solids every frame is not something to keep paying for through a
+       reconnect sequence that also has two other canvases and a boot log in
+       it. The element stays mounted so CSS can fade it, and the last frame
+       painted is what fades — hence no `clearRect` on the way out. */
+    useEffect(() => {
+        if (!open || phase !== "lost") return;
+        const canvas = cubesRef.current;
+        if (!canvas) return;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        let w = 0;
+        let h = 0;
+
+        const size = () => {
+            const r = canvas.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) return;
+            w = r.width;
+            h = r.height;
+            canvas.width = Math.round(w * dpr);
+            canvas.height = Math.round(h * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+        size();
+
+        /* Fewer on a phone: the same field at 375px is the same number of
+           solids over a fifth of the area, which stops being a room and
+           becomes a texture. */
+        const field = spawnField(
+            window.innerWidth < 768 ? 14 : 30,
+            Math.random,
+        );
+
+        const draw = (seconds: number) => {
+            if (w < 1) size();
+            if (w < 1) return;
+
+            /* One source for the red, and it is the canvas's own computed
+               `color` — the rule the carrier and the ECG already follow. The
+               face fill is DERIVED from it here rather than written down,
+               so there is no second copy of the palette in this file. */
+            const key = getComputedStyle(canvas).color;
+            const rgb = key.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+            if (rgb?.length !== 3) return;
+            const [r, g, b] = rgb;
+            const face = `${Math.round(r * 0.6)},${Math.round(g * 0.35)},${Math.round(b * 0.32)}`;
+            const edge = `${r},${g},${b}`;
+
+            ctx.clearRect(0, 0, w, h);
+            ctx.lineJoin = "round";
+            ctx.lineWidth = 1;
+
+            /* Sorted far to near ACROSS the field, not just within each cube.
+               Six faces sorted inside a solid that is itself drawn in array
+               order still stacks a distant block over a near one, and with
+               translucent fills that reads as the depth being wrong rather
+               than as a bug. */
+            const solids = field
+                .map((c) => renderCube(c, seconds, w, h))
+                .filter((s) => s.fade > 0.005)
+                .sort((a, z) => a.near - z.near);
+
+            for (const solid of solids) {
+                const lit = solid.fade;
+                for (const f of solid.faces) {
+                    ctx.beginPath();
+                    ctx.moveTo(f.pts[0].x, f.pts[0].y);
+                    for (let i = 1; i < f.pts.length; i++) {
+                        ctx.lineTo(f.pts[i].x, f.pts[i].y);
+                    }
+                    ctx.closePath();
+
+                    /* Faces carry the volume, edges carry the light, and the
+                       balance between them is the difference between a solid
+                       and a wireframe. The first pass had the fills at half
+                       this and the edges brighter, and the field read as line
+                       art rather than as blocks with something inside them.
+
+                       A convex solid puts exactly TWO faces over any given
+                       pixel, not six, so the ceiling a cube can add is
+                       1-(1-0.3)² ≈ 0.51 — which is what the contrast maths
+                       was checked against, with headroom for three of them
+                       stacked. */
+                    ctx.fillStyle = `rgba(${face},${lit * (0.1 + solid.near * 0.2)})`;
+                    ctx.fill();
+                    ctx.strokeStyle = `rgba(${edge},${lit * (0.14 + solid.near * 0.26)})`;
+                    ctx.stroke();
+                }
+            }
+        };
+
+        if (reducedRef.current) {
+            /* One still frame. The room is colour and composition before it is
+               motion, and there is no reason to take the composition away from
+               someone who asked for less of the movement. */
+            draw(0);
+            return;
+        }
+
+        const tick = (time: number) => draw(time);
+        gsap.ticker.add(tick);
+        const ro = new ResizeObserver(size);
+        ro.observe(canvas);
+
+        return () => {
+            gsap.ticker.remove(tick);
+            ro.disconnect();
+        };
+    }, [open, phase]);
+
     /* Hold the atlas dormant while the gate is up, so reconnecting is what
        brings it to life. Reuses the quiet broadcast the case-study zone and
        the Stack field already use, keyed by source so the three cannot
@@ -621,6 +743,17 @@ export default function SignalGate() {
             aria-modal="true"
             aria-labelledby="signal-gate-title"
         >
+            {/* ── The red room ──────────────────────────
+                The aura and the scrim are the ::before and ::after of this
+                element; the canvas paints between them. Ordering is the whole
+                job: colour, then blocks, then a near-black scrim over the
+                content column, then the copy on top of all three. The glow
+                pools AROUND the reader rather than behind them, which is what
+                keeps every ratio on this screen where it was. */}
+            <div className="signal-gate-backdrop" aria-hidden="true">
+                <canvas ref={cubesRef} className="signal-gate-cubes" />
+            </div>
+
             {/* Target-lock brackets, the same motif the cursor draws. */}
             <span className="signal-gate-frame" aria-hidden="true" />
 
