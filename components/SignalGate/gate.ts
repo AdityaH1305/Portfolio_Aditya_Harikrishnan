@@ -15,37 +15,25 @@
 
 export const GATE_KEY = "signal:cleared";
 
-/* ── The clearance is short, and its length is rolled ──
-   It used to be a flat hour. It is now 30–60 seconds, drawn once per
-   clearance, and the visitor is shown the countdown — an uplink that visibly
-   decays is a different object from a cookie banner that remembers you.
+/* ── The clearance is one minute ────────────────────────
+   It was a flat hour, then a 30–60 second roll, and it is now exactly a
+   minute. The roll bought nothing a reader could perceive — a countdown they
+   watch is already a different object from a cookie banner that remembers
+   them, and a number that varies per visit only makes the rule harder to
+   state. `TTL_MS` is now the whole rule.
 
-   THE TTL IS STORED ALONGSIDE THE TIMESTAMP, and that is not incidental. With
-   a constant, "how long is left" is derivable from the timestamp alone; with a
-   roll, it is not. Storing only the timestamp would leave the countdown and
-   the gate decision each guessing a different number, and they would disagree
-   by up to 30 seconds — the visible timer would hit zero while the gate stayed
-   away, or the reverse. */
-export const TTL_MIN_MS = 30_000;
-export const TTL_MAX_MS = 60_000;
-
-/**
- * Roll a clearance length.
- *
- * `rand` is injected rather than read from `Math.random` so the bounds are
- * assertable. Anything outside 0…1 — including NaN from a broken caller — is
- * clamped rather than propagated, because a NaN TTL stored here becomes a
- * value that never expires.
- */
-export function randomTtl(rand: number): number {
-    const r = Number.isFinite(rand) ? Math.min(1, Math.max(0, rand)) : 0;
-    return Math.round(TTL_MIN_MS + r * (TTL_MAX_MS - TTL_MIN_MS));
-}
+   THE TTL IS STILL STORED ALONGSIDE THE TIMESTAMP. It is derivable from the
+   constant now, so this looks redundant — it is not. The stored pair is what
+   lets an old value be recognised and clamped, it is the format the pre-paint
+   script in `app/layout.tsx` already parses, and it means changing this
+   constant can never leave clearances written by a previous deploy running to
+   a length nothing on the page agrees with. */
+export const TTL_MS = 60_000;
 
 export interface Clearance {
     /** When it was granted, in epoch ms. */
     at: number;
-    /** How long it lasts, in ms. Rolled at grant time. */
+    /** How long it lasts, in ms. Stored, not inferred — see above. */
     ttl: number;
 }
 
@@ -69,9 +57,11 @@ export function encodeClearance(at: number, ttl: number): string {
  * all of which cost at most one unexpected trip through the entrance, against
  * the alternative of being locked out of it permanently.
  *
- * A stored TTL is clamped to `TTL_MAX_MS`. Rejecting an over-long one outright
+ * A stored TTL is clamped to `TTL_MS`. Rejecting an over-long one outright
  * would work too, but clamping also covers the case worth actually worrying
  * about: someone writing `"…:1e12"` by hand and never seeing the gate again.
+ * It is also what makes a clearance from the old 30–60 second roll behave —
+ * a shorter stored TTL is honoured as written and simply runs out sooner.
  */
 export function parseClearance(raw: string | null): Clearance | null {
     if (raw === null) return null;
@@ -84,7 +74,28 @@ export function parseClearance(raw: string | null): Clearance | null {
     if (!Number.isFinite(at) || !Number.isFinite(ttl)) return null;
     if (ttl <= 0) return null;
 
-    return { at, ttl: Math.min(ttl, TTL_MAX_MS) };
+    return { at, ttl: Math.min(ttl, TTL_MS) };
+}
+
+/**
+ * A clearance that has ALREADY run out, for the reader who chooses to end
+ * theirs early from the countdown chip.
+ *
+ * BACKDATED, NOT DELETED, and that distinction is the whole reason this
+ * exists. Removing the key would make `parseClearance` return null — "no
+ * clearance was ever granted" — and the chip, which keys off exactly that,
+ * would vanish from the corner at the moment the reader pressed it instead of
+ * flipping to "expired". Someone who just pressed something has to see what it
+ * did.
+ *
+ * DATED TO THE EPOCH, not to `now - TTL_MS`. A clearance one TTL old is
+ * expired at the current clock but comes back to life if the clock then moves
+ * BACKWARDS by less than a minute — travel, DST, a corrected NTP sync — which
+ * is the one case `shouldShowGate` already goes out of its way to handle in the
+ * other direction. 1970 is expired under any clock a browser can report.
+ */
+export function expiredClearance(): string {
+    return encodeClearance(0, TTL_MS);
 }
 
 /**

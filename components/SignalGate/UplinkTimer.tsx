@@ -1,24 +1,37 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
-import { GATE_KEY, msRemaining, parseClearance } from "./gate";
+import { useCallback, useSyncExternalStore } from "react";
+import { GATE_KEY, expiredClearance, msRemaining, parseClearance } from "./gate";
 
 /* ══════════════════════════════════════════════════════
    UplinkTimer — the clearance, counting down
 
-   Passing the gate buys 30–60 seconds. This is the only
-   place that says so. Without it the rule is invisible: the
-   gate simply reappears one day and reads as a bug rather
-   than as a link that went stale.
+   Passing the gate buys one minute. This is the only place
+   that says so. Without it the rule is invisible: the gate
+   simply reappears one day and reads as a bug rather than as
+   a link that went stale.
 
-   ── It never re-gates anyone ──
-   This component only READS. The decision to show the gate
-   is resolved once per page load inside SignalGate, so a
-   clearance running out while someone is halfway down the
-   page changes exactly one thing on screen — this readout —
-   and nothing else until they choose to reload. That is the
-   requirement, and it holds because the countdown and the
-   gate are deliberately not wired to each other.
+   ── It reads the clearance, and it can END one ──
+   It used to only read. It can now also expire the clearance
+   on demand, because the entrance is the piece of this site
+   people most want to see twice and the only way to get back
+   to it was to wait a minute out. Hovering the chip explains
+   what pressing it does; pressing it backdates the stored
+   clearance so the next load runs the entrance again.
+
+   ── It still never re-gates anyone mid-session ──
+   The important invariant survives that, and it survives it
+   for the original reason: the decision to show the gate is
+   resolved ONCE per page load inside SignalGate. So ending a
+   clearance — by pressing this, or by letting it run out —
+   changes exactly one thing on screen, this readout, and
+   nothing else until the reader chooses to reload.
+
+   ── The control exists only while the clearance does ──
+   Once it has expired, by either route, there is nothing left
+   to end and the chip stops being a button until the next
+   load. That is not a special case: "expired" simply has no
+   action attached to it.
 
    ── Why it is not inside SignalGate ──
    SignalGate unmounts the moment the boot finishes. This has
@@ -102,7 +115,7 @@ const getSnapshot = (): Snapshot => snapshot;
 /** Nothing on the server: there is no storage to have read. */
 const getServerSnapshot = (): Snapshot => "none";
 
-/** `m:ss`, so 30–60 seconds reads as 0:47 rather than as a bare number. */
+/** `m:ss`, so a minute reads as 1:00 → 0:47 rather than as a bare number. */
 function clock(seconds: number): string {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -116,15 +129,30 @@ export default function UplinkTimer() {
         getServerSnapshot,
     );
 
+    /* Backdate the stored clearance and let the poll above notice, rather than
+       setting local state. One source of truth, and the chip then flips to
+       "expired" through exactly the same path a natural expiry takes — so
+       there is no second code path that could disagree with the first. */
+    const revoke = useCallback(() => {
+        try {
+            window.localStorage.setItem(GATE_KEY, expiredClearance());
+        } catch {
+            /* Storage unavailable. Nothing to end, and nothing to report — the
+               chip cannot have been rendered from a value we could not read. */
+        }
+        tick();
+    }, []);
+
     if (state === "none") return null;
 
     const expired = state === "expired";
     const seconds = expired ? 0 : Number(state.slice("live:".length));
 
-    /* The full sentence, which no longer fits on screen. It reaches a mouse
-       through `title` and a screen reader through the sr-only span below. */
+    /* The full sentence, which no longer fits on screen. It reaches a screen
+       reader through the sr-only span below, and a mouse through the hover
+       panel while the clearance is live or `title` once it is not. */
     const full = expired
-        ? "Uplink clearance expired — refresh to reconnect"
+        ? "Uplink clearance expired — reload to reconnect"
         : `Uplink clearance — ${clock(seconds)} remaining`;
 
     /* ── Why this is a chip and not a pill ──
@@ -137,22 +165,79 @@ export default function UplinkTimer() {
 
        So the wording goes and the data stays: `● 0:36` is ~70px and
        `● expired` is ~94px, both inside the gutter at every width. */
+    const inner = (
+        <>
+            <span className="uplink-timer-dot" aria-hidden="true" />
+            <span className="uplink-timer-value" aria-hidden="true">
+                {expired ? "expired" : clock(seconds)}
+            </span>
+        </>
+    );
+
     return (
+        /* The live region and the control are separate elements on purpose. A
+           <button> that is also an aria-live region is muddled: assistive tech
+           has to decide whether it is announcing a status or describing an
+           action. So the wrapper is the status and the chip inside it is the
+           control. */
         <div
             className="uplink-timer"
             data-state={expired ? "expired" : "live"}
-            title={full}
             /* Polite, not assertive, and the announced string is the sr-only
                sentence rather than the digits. A countdown that re-announces
                every second is unusable with a screen reader on, which is why
                the visible value is aria-hidden. */
             aria-live="polite"
         >
-            <span className="uplink-timer-dot" aria-hidden="true" />
             <span className="sr-only">{full}</span>
-            <span className="uplink-timer-value" aria-hidden="true">
-                {expired ? "expired" : clock(seconds)}
-            </span>
+
+            {expired ? (
+                /* Nothing left to end. `title` carries the sentence for a
+                   mouse, as it did before the panel existed — there is no
+                   panel in this state because there is no action to explain. */
+                <span className="uplink-timer-chip" title={full}>
+                    {inner}
+                </span>
+            ) : (
+                <button
+                    type="button"
+                    className="uplink-timer-chip"
+                    onClick={revoke}
+                    /* An explicit label rather than name-from-content, and that
+                       is what makes the panel below safe to nest here: as a
+                       descendant it would otherwise be concatenated into the
+                       button's accessible name. Labelled explicitly, it is
+                       free to be the description instead. */
+                    aria-label="End uplink clearance now"
+                    aria-describedby="uplink-timer-hint"
+                >
+                    {inner}
+
+                    {/* ── The explanation, on hover and on focus ──
+                        Anchored BELOW the chip and left-aligned to it, which
+                        is the one position that cannot cover the thing it
+                        describes or leave the viewport at any width.
+
+                        `pointer-events: none` in CSS, and that is not a
+                        detail: nested inside the button, a panel that took the
+                        pointer would make its own area a click target — so
+                        moving the mouse down to read it would expire the
+                        clearance the reader was still deciding about. */}
+                    <span
+                        className="uplink-timer-hint"
+                        id="uplink-timer-hint"
+                        role="tooltip"
+                    >
+                        <span className="uplink-timer-hint-head">
+                            End clearance
+                        </span>
+                        <span className="uplink-timer-hint-body">
+                            Expires the uplink now. Reload to see the entrance
+                            again.
+                        </span>
+                    </span>
+                </button>
+            )}
         </div>
     );
 }

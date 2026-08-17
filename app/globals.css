@@ -2553,11 +2553,19 @@ html.signal-connected .signal-gate {
    would spoil the reveal and put two live readouts on screen
    at once.
    ══════════════════════════════════════════════════════ */
+/* The wrapper does the positioning and nothing else. Splitting it from the
+   chip is what lets the chip be a <button> in one state and a <span> in the
+   other without either of them owning `position: fixed`. */
 .uplink-timer {
   position: fixed;
   top: 1.5rem;
   left: 1.5rem;
   z-index: 60;
+  animation: uplink-in 600ms var(--ease) both;
+}
+
+.uplink-timer-chip {
+  position: relative;
   display: inline-flex;
   align-items: center;
   gap: 0.45rem;
@@ -2567,19 +2575,150 @@ html.signal-connected .signal-gate {
      enough headroom to survive that. */
   padding: 0.4rem 0.7rem;
   border-radius: 999px;
+  border: 1px solid transparent;
   background: color-mix(in srgb, var(--surface-1) 85%, transparent);
   backdrop-filter: blur(8px);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 0.75rem;
   letter-spacing: 0.06em;
   color: var(--text-tertiary);
-  /* Auto, not none: the chip no longer says what it means, so the native
-     tooltip is now the only place the full sentence exists for a mouse. It
-     is ~90px of chrome in a gutter and covers nothing clickable. */
+  /* Auto, not none: the chip no longer says what it means, so the hover panel
+     and the native tooltip are the only places the full sentence exists for a
+     mouse. It is ~90px of chrome in a gutter and covers nothing clickable. */
   pointer-events: auto;
   cursor: default;
   user-select: none;
-  animation: uplink-in 600ms var(--ease) both;
+  transition:
+    border-color 0.3s var(--ease),
+    background 0.3s var(--ease);
+}
+
+/* Live: it is a control, so it says so — but quietly. This sits in the corner
+   of every screen for a minute after the entrance, and a chip that announces
+   itself as pressable would be the loudest thing on a page it is not part of. */
+.uplink-timer[data-state="live"] .uplink-timer-chip {
+  cursor: pointer;
+}
+
+.uplink-timer[data-state="live"] .uplink-timer-chip:hover,
+.uplink-timer[data-state="live"] .uplink-timer-chip:focus-visible {
+  border-color: color-mix(in srgb, var(--accent-text) 45%, transparent);
+  background: color-mix(in srgb, var(--surface-2) 88%, transparent);
+}
+
+.uplink-timer-chip:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+}
+
+/* ══════════════════════════════════════════════════════
+   The hover panel — what pressing the chip does
+
+   ── BELOW the chip, left-aligned to it ──
+   Not beside it and not above it. Above would leave the
+   viewport (the chip is 24px from the top); beside it would
+   cover the chip's own right edge at the moment the reader is
+   aiming at it. Below and flush left is the only anchor that
+   is safe at every width, and it needs no JavaScript to place.
+
+   ── 11rem, AND THAT NUMBER IS MEASURED ──
+   The panel's right edge lands at x = 201. The content column
+   starts at 203 on a 1440 desktop, so at the width most people
+   read this on it covers NOTHING — verified against every
+   painting element in the document, at every scroll position.
+
+   It is not free of overlap at every width, and it cannot be:
+   `.section-container` drops to `padding-left: 8rem` between
+   1024 and 1290, which leaves a 104px gutter, and a legible
+   sentence at the 12px floor does not fit in 104px — the
+   alternative is a ten-line sliver. Two things make the
+   residual acceptable. It is TRANSIENT: it exists only while
+   the pointer is on a 68px chip or that chip has focus. And it
+   is OPAQUE: floating chrome with a solid ground, a hairline
+   and a shadow, so what it does reach is cleanly covered
+   rather than showing through and muddling.
+
+   Widening this past 11rem is what starts costing the desktop
+   case its clean result, so treat it as measured rather than
+   as taste.
+
+   `pointer-events: none` is load-bearing — see the component.
+   ══════════════════════════════════════════════════════ */
+.uplink-timer-hint {
+  position: absolute;
+  top: calc(100% + 0.6rem);
+  left: 0;
+  width: 11rem;
+  /* Never wider than the viewport allows, so it cannot be clipped on a phone
+     however narrow the screen is. */
+  max-width: calc(100vw - 2.5rem);
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  padding: 0.7rem 0.85rem;
+  border-radius: 0.6rem;
+  /* A hairline, which the design system allows on floating chrome for exactly
+     this reason: it needs a defined edge against whatever it lands on. */
+  border: 1px solid var(--surface-3);
+  background: color-mix(in srgb, var(--surface-1) 97%, transparent);
+  backdrop-filter: blur(10px);
+  box-shadow: 0 16px 34px -18px rgb(0 0 0 / 0.75);
+  text-align: left;
+  white-space: normal;
+  letter-spacing: 0;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(-4px);
+  transition:
+    opacity 0.22s var(--ease),
+    transform 0.22s var(--ease);
+}
+
+/* The tail. A rotated square showing two of its borders, so it takes the
+   panel's own hairline and ground and cannot drift out of step with them.
+   Sat under the chip's centre — 34px in from a 68px chip — which is what makes
+   the panel read as belonging to the chip rather than as a notice that
+   happened to appear nearby. */
+.uplink-timer-hint::before {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: 30px;
+  width: 8px;
+  height: 8px;
+  border-left: 1px solid var(--surface-3);
+  border-top: 1px solid var(--surface-3);
+  background: var(--surface-1);
+  transform: rotate(45deg);
+}
+
+/* `:focus` as well as `:focus-visible`. Keyboard focus is covered by either;
+   plain `:focus` is what also catches a TOUCH tap, where there is no hover at
+   all and the panel would otherwise be the one thing a phone never sees. */
+.uplink-timer-chip:hover .uplink-timer-hint,
+.uplink-timer-chip:focus .uplink-timer-hint,
+.uplink-timer-chip:focus-visible .uplink-timer-hint {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.uplink-timer-hint-head {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--accent-text);
+}
+
+.uplink-timer-hint-body {
+  /* Inter, not the mono the chip is set in. The chip is a readout and reads as
+     an instrument; this is a sentence and should read as one. Inherited mono
+     is why this has to be stated — the chip above sets it. */
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
 }
 
 @keyframes uplink-in {
@@ -2643,6 +2782,14 @@ html.signal-connected .signal-gate {
   .uplink-timer,
   .uplink-timer-dot {
     animation: none;
+  }
+
+  /* The panel still ARRIVES — it is the only explanation of what pressing the
+     chip does, and a reader who asked for less motion needs that as much as
+     anyone. It just stops sliding. */
+  .uplink-timer-hint {
+    transform: none;
+    transition: opacity 150ms linear;
   }
 }
 

@@ -13,8 +13,8 @@ import { claimEntrance, releaseEntrance } from "@/lib/entrance";
 import { ATLAS_QUIET_EVENT, CURSOR_TINT_EVENT } from "@/lib/zone";
 import {
     GATE_KEY,
+    TTL_MS,
     encodeClearance,
-    randomTtl,
     shouldShowGate,
     bootSequence,
     BOOT_TOTAL_MS,
@@ -627,12 +627,13 @@ export default function SignalGate() {
         /* Written at the CLICK, not at the end, so a reload part way through
            the boot does not gate the visitor again. */
         try {
-            /* The TTL is rolled HERE and stored with the timestamp. Rolling it
-               at read time instead would give a different answer on every
-               render, and the countdown would jitter between 30 and 60. */
+            /* The TTL goes in alongside the timestamp even though it is a
+               constant now. That is what lets a clearance written by an
+               earlier deploy be recognised and clamped rather than
+               misinterpreted — see gate.ts. */
             window.localStorage.setItem(
                 GATE_KEY,
-                encodeClearance(Date.now(), randomTtl(Math.random())),
+                encodeClearance(Date.now(), TTL_MS),
             );
         } catch {
             /* Storage unavailable. The gate will show again next load, which

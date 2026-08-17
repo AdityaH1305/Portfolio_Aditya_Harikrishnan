@@ -4,12 +4,11 @@ import assert from "node:assert/strict";
 import {
     shouldShowGate,
     msRemaining,
-    randomTtl,
+    expiredClearance,
     encodeClearance,
     parseClearance,
     bootSequence,
-    TTL_MIN_MS,
-    TTL_MAX_MS,
+    TTL_MS,
     GATE_KEY,
     BOOT_TOTAL_MS,
     BOOT_FADE_MS,
@@ -28,50 +27,23 @@ import { CASE_STUDIES } from "../../lib/caseStudies.ts";
 const NOW = 1_700_000_000_000;
 
 /** A clearance granted `msAgo` ago, lasting `ttl`. */
-const at = (msAgo: number, ttl = TTL_MIN_MS) =>
-    encodeClearance(NOW - msAgo, ttl);
+const at = (msAgo: number, ttl = TTL_MS) => encodeClearance(NOW - msAgo, ttl);
 
-/* ── The roll ─────────────────────────────────────────
-   The length is now drawn per visit, so the bounds are the thing to assert;
-   `rand` is injected precisely so this can be done without stubbing
-   Math.random. */
+/* ── The length ───────────────────────────────────────
+   One minute, flat. It was an hour, then a 30–60s roll; the roll bought
+   nothing anyone could perceive and made the rule harder to state. */
 
-test("a rolled clearance is always 30-60 seconds", () => {
-    assert.equal(TTL_MIN_MS, 30_000);
-    assert.equal(TTL_MAX_MS, 60_000);
-
-    for (let i = 0; i <= 1000; i++) {
-        const ttl = randomTtl(i / 1000);
-        assert.ok(
-            ttl >= TTL_MIN_MS && ttl <= TTL_MAX_MS,
-            `rand ${i / 1000} gave ${ttl}`,
-        );
-    }
-
-    // Both ends are actually reachable — a roll that never hits its bounds is
-    // a narrower range than the one being claimed.
-    assert.equal(randomTtl(0), TTL_MIN_MS);
-    assert.equal(randomTtl(1), TTL_MAX_MS);
-});
-
-test("a broken caller cannot produce a clearance that never expires", () => {
-    // NaN stored as a TTL would compare false against everything and suppress
-    // the gate permanently. Every one of these must land back in range.
-    for (const r of [NaN, Infinity, -Infinity, -5, 7]) {
-        const ttl = randomTtl(r);
-        assert.ok(
-            ttl >= TTL_MIN_MS && ttl <= TTL_MAX_MS,
-            `rand ${r} gave ${ttl}`,
-        );
-    }
+test("a clearance is one minute", () => {
+    assert.equal(TTL_MS, 60_000);
 });
 
 /* ── The stored form ──────────────────────────────────
-   Both the timestamp and that visit's TTL, because with a rolled length the
-   remaining time is not derivable from the timestamp alone. */
+   Still the timestamp AND the TTL, even though the TTL is now derivable from
+   the constant. That is what lets a value written by an earlier deploy — a 30s
+   or 45s roll — be honoured as written rather than reinterpreted as a minute. */
 
 test("encode and parse round-trip", () => {
-    for (const ttl of [TTL_MIN_MS, 45_000, TTL_MAX_MS]) {
+    for (const ttl of [15_000, 45_000, TTL_MS]) {
         const c = parseClearance(encodeClearance(NOW, ttl));
         assert.deepEqual(c, { at: NOW, ttl });
     }
@@ -102,7 +74,7 @@ test("a first-time visitor sees the gate", () => {
 test("a visitor who just cleared it does not see it again", () => {
     assert.equal(shouldShowGate(NOW, at(0)), false);
     assert.equal(shouldShowGate(NOW, at(10_000)), false);
-    assert.equal(shouldShowGate(NOW, at(TTL_MIN_MS - 1)), false);
+    assert.equal(shouldShowGate(NOW, at(TTL_MS - 1)), false);
 });
 
 test("the gate returns once THAT VISIT'S clearance is up, not a constant", () => {
@@ -111,15 +83,61 @@ test("the gate returns once THAT VISIT'S clearance is up, not a constant", () =>
     assert.equal(shouldShowGate(NOW, at(45_000, 30_000)), true);
     assert.equal(shouldShowGate(NOW, at(45_000, 60_000)), false);
 
-    assert.equal(shouldShowGate(NOW, at(TTL_MIN_MS, TTL_MIN_MS)), true);
-    assert.equal(shouldShowGate(NOW, at(TTL_MAX_MS, TTL_MAX_MS)), true);
+    assert.equal(shouldShowGate(NOW, at(TTL_MS, TTL_MS)), true);
     assert.equal(shouldShowGate(NOW, at(24 * 60 * 60 * 1000)), true);
+});
+
+/* ── Ending a clearance on purpose ────────────────────
+   The countdown chip can now expire its own clearance, so someone who wants to
+   see the entrance again does not have to wait a minute out. */
+
+test("an ended clearance re-gates the next load and reads as expired", () => {
+    const ended = expiredClearance();
+
+    // Both halves, because the chip and the gate read different functions and
+    // a disagreement between them is the bug this pair keeps having.
+    assert.equal(shouldShowGate(NOW, ended), true);
+    assert.equal(msRemaining(NOW, ended), 0);
+});
+
+test("AN ENDED CLEARANCE CANNOT BE REVIVED BY THE CLOCK", () => {
+    /* `now - TTL_MS` was the obvious way to write this and it is wrong: it is
+       expired at the current clock but comes back to life the moment the clock
+       moves BACKWARDS by less than a minute — travel, DST, a corrected NTP
+       sync. Dating it to the epoch holds for any clock at least a minute past
+       1970, in either direction — which is every clock a browser can plausibly
+       report. */
+    const ended = expiredClearance();
+    for (const clock of [
+        TTL_MS, // the exact floor
+        946_684_800_000, // a clock stuck in 2000
+        NOW - 5 * TTL_MS,
+        NOW - 1,
+        NOW,
+        NOW + 5 * TTL_MS,
+    ]) {
+        assert.equal(
+            shouldShowGate(clock, ended),
+            true,
+            `revived at a clock of ${clock}`,
+        );
+    }
+});
+
+test("an ended clearance is still a clearance, not an absence of one", () => {
+    /* The chip renders only when `parseClearance` returns something — it keys
+       off that to decide whether any clearance exists at all. Deleting the key
+       instead of backdating it would make the chip vanish from the corner at
+       the exact moment the reader pressed it, with nothing left on screen to
+       show what they had just done. */
+    assert.notEqual(parseClearance(expiredClearance()), null);
+    assert.match(expiredClearance(), /^\d+:\d+$/);
 });
 
 test("reloading inside the clearance never re-gates", () => {
     // The specific complaint this rule exists to prevent, swept a second at a
     // time across both ends of the range.
-    for (const ttl of [TTL_MIN_MS, 45_000, TTL_MAX_MS]) {
+    for (const ttl of [15_000, 45_000, TTL_MS]) {
         for (let s = 0; s * 1000 < ttl; s++) {
             assert.equal(
                 shouldShowGate(NOW, at(s * 1000, ttl)),
@@ -147,8 +165,8 @@ test("a corrupt stored value shows the gate rather than throwing", () => {
         ":",
         "abc:def",
         `${NOW}:`,
-        `:${TTL_MIN_MS}`,
-        `${NOW}:${TTL_MIN_MS}:extra`,
+        `:${TTL_MS}`,
+        `${NOW}:${TTL_MS}:extra`,
         `${NOW}:0`,
         `${NOW}:-30000`,
         `${NOW}:Infinity`,
@@ -165,9 +183,9 @@ test("a corrupt stored value shows the gate rather than throwing", () => {
 test("a stored time in the future shows the gate", () => {
     // Clock moved backwards: travel, DST, a corrected NTP sync. Otherwise the
     // clearance outlives its window by however far the clock jumped.
-    assert.equal(shouldShowGate(NOW, encodeClearance(NOW + 5_000, TTL_MIN_MS)), true);
+    assert.equal(shouldShowGate(NOW, encodeClearance(NOW + 5_000, TTL_MS)), true);
     assert.equal(
-        shouldShowGate(NOW, encodeClearance(NOW + 10 * TTL_MAX_MS, TTL_MAX_MS)),
+        shouldShowGate(NOW, encodeClearance(NOW + 10 * TTL_MS, TTL_MS)),
         true,
     );
 });
@@ -176,19 +194,19 @@ test("a hand-edited TTL cannot hide the gate forever", () => {
     /* The failure mode worth guarding is a value that silently suppresses the
        gate, not one that shows it. An over-long TTL is clamped to the maximum,
        so a clearance written by hand still expires on schedule. */
-    const forever = encodeClearance(NOW - TTL_MAX_MS, 1e12);
-    assert.equal(parseClearance(forever)?.ttl, TTL_MAX_MS);
+    const forever = encodeClearance(NOW - TTL_MS, 1e12);
+    assert.equal(parseClearance(forever)?.ttl, TTL_MS);
     assert.equal(shouldShowGate(NOW, forever), true);
 
     assert.equal(shouldShowGate(NOW, at(0, Number.MAX_SAFE_INTEGER)), false);
-    assert.equal(shouldShowGate(NOW, at(TTL_MAX_MS, Number.MAX_SAFE_INTEGER)), true);
+    assert.equal(shouldShowGate(NOW, at(TTL_MS, Number.MAX_SAFE_INTEGER)), true);
 });
 
 test("absurd timestamps do not lock anyone out", () => {
     assert.equal(shouldShowGate(NOW, at(NOW)), true); // epoch, long past
-    assert.equal(shouldShowGate(NOW, encodeClearance(-1, TTL_MIN_MS)), true);
+    assert.equal(shouldShowGate(NOW, encodeClearance(-1, TTL_MS)), true);
     assert.equal(
-        shouldShowGate(NOW, encodeClearance(Number.MAX_SAFE_INTEGER, TTL_MIN_MS)),
+        shouldShowGate(NOW, encodeClearance(Number.MAX_SAFE_INTEGER, TTL_MS)),
         true,
     );
 });
@@ -200,11 +218,11 @@ test("absurd timestamps do not lock anyone out", () => {
 
 test("the countdown agrees with the decision", () => {
     assert.equal(msRemaining(NOW, null), 0);
-    assert.equal(msRemaining(NOW, at(TTL_MIN_MS)), 0);
-    assert.equal(msRemaining(NOW, at(0)), TTL_MIN_MS);
+    assert.equal(msRemaining(NOW, at(TTL_MS)), 0);
+    assert.equal(msRemaining(NOW, at(0)), TTL_MS);
     assert.equal(msRemaining(NOW, at(10_000, 45_000)), 35_000);
 
-    for (const ttl of [TTL_MIN_MS, 45_000, TTL_MAX_MS]) {
+    for (const ttl of [15_000, 45_000, TTL_MS]) {
         for (const ago of [0, 1, 1_000, ttl - 1, ttl, ttl + 1, ttl * 3]) {
             const left = msRemaining(NOW, at(ago, ttl));
             assert.ok(left >= 0 && left <= ttl, `${left} out of range at ${ago}`);
