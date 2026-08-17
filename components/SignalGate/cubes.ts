@@ -37,7 +37,7 @@
    Nothing accumulates. A cube's pose is a function of its
    seed and the clock, so the same `t` always gives the same
    frame and the shape of the field is provable in node like
-   ecg.ts, wave.ts, blend.ts, layout.ts and flight.ts. That
+   ecg.ts, blend.ts, layout.ts and flight.ts. That
    matters more than usual here: this paints BEHIND text that
    has to stay readable, and "a cube went somewhere it should
    not have" is otherwise only findable by sitting and

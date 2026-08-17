@@ -40,7 +40,7 @@ test("LOST IS A FLATLINE — that is the whole message", () => {
 
 test("dead is not PERFECTLY flat", () => {
     // An occasional tick reads as "listening and finding nothing"; a true flat
-    // line reads as "this element is broken too". Same call as wave.ts.
+    // line reads as "this element is broken too".
     const moved = times.some((t) => peakAt(ECG_SAMPLES, t, 0) > 0);
     assert.ok(moved, "the dead trace never ticks at all");
 });

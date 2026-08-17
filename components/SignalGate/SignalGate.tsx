@@ -23,7 +23,6 @@ import {
     BOOT_CONFIRM_AT,
     BOOT_CONFIRM_MS,
 } from "./gate";
-import { waveAt, WAVE_SAMPLES } from "./wave";
 import { ecgAt, sweepAt, ECG_SAMPLES } from "./ecg";
 import { renderCube, spawnField } from "./cubes";
 
@@ -160,7 +159,6 @@ export default function SignalGate() {
     const [shown, setShown] = useState(0);
 
     const gateRef = useRef<HTMLDivElement>(null);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
     const ecgRef = useRef<HTMLCanvasElement>(null);
     const cubesRef = useRef<HTMLCanvasElement>(null);
     const buttonRef = useRef<HTMLButtonElement>(null);
@@ -242,100 +240,29 @@ export default function SignalGate() {
         }
     }, [wanted]);
 
-    /* ── The carrier ───────────────────────────────────
+    /* ── The instrument ────────────────────────────────
+       ONE trace, and it is the only moving figure on the screen.
+
+       There were two. A radio carrier sat under the title and this heart
+       monitor sat against the button — two wave canvases, a few hundred pixels
+       apart, saying nearly the same thing. The carrier is gone, along with
+       `wave.ts`, which nothing else imported.
+
+       ── AND IT SURVIVES THE PRESS, WHICH IT DID NOT ──
+       This canvas used to live inside the `lost` branch, so it unmounted the
+       instant the button was clicked. `liveRef` ramps 0 → 1 on that click and
+       `ecgAt` takes it — so the entire payoff, a flatline that starts beating
+       the moment the fault is fixed, had never once been on screen. Only the
+       carrier lived long enough to come alive, and it was the wrong figure to
+       do it. That is why the trace read as decoration: its one job was
+       unreachable.
+
+       It now sits in a fixed slot under the title in every phase, so it does
+       not move when the copy below it is swapped for the boot log, and it
+       beats all the way through the sequence.
+
        On gsap.ticker rather than its own rAF, which is the rule everywhere
-       else in this repo: one frame clock, so nothing races Lenis. The canvas
-       unmounts with the gate, so none of this survives the entrance. */
-    useEffect(() => {
-        if (!open) return;
-        const canvas = canvasRef.current;
-        if (!canvas) return;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        let w = 0;
-        let h = 0;
-
-        const size = () => {
-            const r = canvas.getBoundingClientRect();
-            if (r.width < 1 || r.height < 1) return;
-            w = r.width;
-            h = r.height;
-            canvas.width = Math.round(w * dpr);
-            canvas.height = Math.round(h * dpr);
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        };
-        size();
-
-        /* ── The colour comes from the canvas, per frame ──
-           This read `--accent-rgb` off the document ONCE, so the carrier
-           rendered site-blue on the red alert screen — one calm blue line
-           across a warning, which is precisely the kind of detail that makes
-           a designed screen look accidental.
-
-           It now reads its own computed `color`, which CSS points at
-           `--gate-key`, exactly as the ECG canvas does. Same mechanism, one
-           less thing that can drift from the palette. */
-        const draw = (seconds: number) => {
-            if (w < 1) size();
-            if (w < 1) return;
-
-            const key = getComputedStyle(canvas).color;
-            const live = liveRef.current;
-            const mid = h / 2;
-            const amp = h * 0.42;
-
-            ctx.clearRect(0, 0, w, h);
-
-            /* The baseline stays visible underneath at all times: it is the
-               instrument, and the trace is what the instrument is reading. */
-            ctx.beginPath();
-            ctx.moveTo(0, mid);
-            ctx.lineTo(w, mid);
-            ctx.globalAlpha = 0.1 + live * 0.12;
-            ctx.strokeStyle = key;
-            ctx.lineWidth = 1;
-            ctx.stroke();
-
-            ctx.beginPath();
-            for (let i = 0; i < WAVE_SAMPLES; i++) {
-                const x = (i / (WAVE_SAMPLES - 1)) * w;
-                const y = mid - waveAt(i, WAVE_SAMPLES, seconds, live) * amp;
-                if (i === 0) ctx.moveTo(x, y);
-                else ctx.lineTo(x, y);
-            }
-            ctx.globalAlpha = 0.34 + live * 0.62;
-            ctx.strokeStyle = key;
-            ctx.lineWidth = 1.5;
-            ctx.stroke();
-            ctx.globalAlpha = 1;
-        };
-
-        if (reducedRef.current) {
-            // One frame, no loop. The trace becomes a still reading.
-            draw(0);
-            return;
-        }
-
-        const tick = (time: number) => draw(time);
-        gsap.ticker.add(tick);
-        const ro = new ResizeObserver(size);
-        ro.observe(canvas);
-
-        return () => {
-            gsap.ticker.remove(tick);
-            ro.disconnect();
-        };
-    }, [open]);
-
-    /* ── The ECG arrow ─────────────────────────────────
-       A heart monitor pointing at the button. `ecg.ts` holds the shape and is
-       unit-tested; this only plots it and draws the arrowhead.
-
-       Its own canvas rather than a second figure on the carrier above: they
-       are different instruments saying different things, and the carrier sits
-       under the title while this has to sit against the control it points at.
+       else in this repo: one frame clock, so nothing races Lenis.
 
        Colour comes from the live `--gate-key` token, re-read every frame. That
        is what carries the trace from red through blue to green as the phases
@@ -362,20 +289,17 @@ export default function SignalGate() {
         };
         size();
 
-        /* ── NO ARROW ON THIS CANVAS ──────────────────
-           Two attempts at drawing the pointer here both failed, and for the
-           same underlying reason: the strip is as wide as the button, so
-           wherever the head lands it is competing with the trace.
+        /* ── NOTHING BUT THE TRACE ON THIS CANVAS ─────
+           Four attempts put a pointer here and every one of them failed, for
+           the same underlying reason: the strip and the button were the same
+           width, so wherever an arrowhead landed it was competing with the
+           trace it was drawn on.
 
-           At the right end it pointed past the button. Centred on a
-           descender it was worse — the horizontal centre of "RESTORE SIGNAL"
-           is the SPACE BETWEEN THE TWO WORDS, so a perfectly centred arrow
-           was aimed at a gap, and it read as a stray tick sitting on top of
-           the type.
-
-           So the canvas is the instrument and nothing else. The pointer is
-           its own element below the words, aimed at the button — which is a
-           solid pill with a real centre to point at. */
+           The pointer is gone entirely now, and so is the duplicate label it
+           was aiming at — the button says what it does, is the only control on
+           the screen, and is the only filled thing on it. What is left here is
+           the instrument: a flatline while contact is lost, a heartbeat once
+           it is back. */
 
         const draw = (seconds: number) => {
             if (w < 1) size();
@@ -434,8 +358,11 @@ export default function SignalGate() {
         };
 
         if (reducedRef.current) {
-            // One still frame. The arrowhead survives — it is the pointer, and
-            // a pointer that only exists in motion is no pointer at all.
+            /* One still frame per phase. THE PHASE DEPENDENCY BELOW EXISTS FOR
+               THIS BRANCH: with no ticker running, a reader who asked for less
+               motion would otherwise be left looking at the flatline drawn on
+               mount, unchanged, long after they had fixed it — the trace would
+               be reporting the wrong state rather than merely a still one. */
             draw(0);
             return;
         }
@@ -449,7 +376,7 @@ export default function SignalGate() {
             gsap.ticker.remove(tick);
             ro.disconnect();
         };
-    }, [open]);
+    }, [open, phase]);
 
     /* ── The red room ─────────────────────────────────
        Translucent blocks tumbling behind the alert, after the PlayStation 2's
@@ -763,127 +690,100 @@ export default function SignalGate() {
             <span className="signal-gate-frame" aria-hidden="true" />
 
             <div className="signal-gate-inner">
-                {/* ── The eyebrow, with a glyph ──────────
-                    COLOUR IS NEVER THE ONLY SIGNAL. Red→green is the textbook
-                    red/green colour-blind failure, so the state is carried
-                    three independent ways: this glyph (triangle → check), the
-                    words below, and the palette. Any one of the three alone is
-                    enough to tell what is going on. */}
+                {/* ── The masthead ───────────────────────
+                    A NAME IS THE STRONGEST ANTI-ERROR SIGNAL THERE IS. No
+                    browser error page, no outage notice and no 500 has a
+                    person's name across the top of it, so this settles the
+                    "is the site broken?" question in the first half-second —
+                    which the previous version, opening on a warning triangle
+                    and the words SYSTEM ALERT, actively worked against.
+
+                    The status sits opposite it rather than under the name, so
+                    the row reads as a header bar and gives the column a
+                    defined top edge. Two things, one line, no stack. */}
                 <p className="signal-gate-meta">
-                    <span className="signal-gate-glyph" aria-hidden="true">
-                        {phase === "lost" ? (
-                            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
-                                <path d="M12 3.5 22 20.5H2z" stroke="currentColor" strokeLinejoin="round" />
-                                <path d="M12 10v4.5" stroke="currentColor" strokeLinecap="round" />
-                                <circle cx="12" cy="17.6" r="1.1" fill="currentColor" />
-                            </svg>
-                        ) : (
-                            <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
-                                <circle cx="12" cy="12" r="9.25" stroke="currentColor" />
-                                <path d="m7.6 12.3 3 3 5.8-6.4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-                            </svg>
-                        )}
+                    <span className="signal-gate-who">
+                        Aditya Harikrishnan
+                        <span aria-hidden="true"> · </span>
+                        <span className="signal-gate-who-sub">Portfolio</span>
                     </span>
-                    {phase === "lost" ? "System alert" : "Uplink / carrier locked"}
+
+                    {/* COLOUR IS NEVER THE ONLY SIGNAL. Red→green is the
+                        textbook red/green colour-blind failure, so the state is
+                        carried three independent ways: this glyph, the wording
+                        beside it, and the palette. Any one alone is enough. */}
+                    <span className="signal-gate-status-chip">
+                        <span className="signal-gate-glyph" aria-hidden="true">
+                            {phase === "lost" ? (
+                                /* A POWER SYMBOL, not a warning triangle. A
+                                   triangle is error iconography and it was the
+                                   first mark the eye resolved on this screen.
+                                   This one is read by everyone, technical or
+                                   not, as "switched off — switch it on": it
+                                   says both "intentional" and "there is a
+                                   control here" in a single glyph. */
+                                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                    <path d="M12 3.2v8.4" stroke="currentColor" strokeLinecap="round" />
+                                    <path d="M7.4 6.6a6.6 6.6 0 1 0 9.2 0" stroke="currentColor" strokeLinecap="round" />
+                                </svg>
+                            ) : (
+                                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
+                                    <circle cx="12" cy="12" r="9.25" stroke="currentColor" />
+                                    <path d="m7.6 12.3 3 3 5.8-6.4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
+                                </svg>
+                            )}
+                        </span>
+                        {phase === "lost" ? "Standby" : "Online"}
+                    </span>
                 </p>
 
                 <p id="signal-gate-title" className="signal-gate-title">
                     {phase === "lost" ? "Signal lost" : "Reacquired"}
                 </p>
 
-                {/* The instrument. Present in both phases so it never jumps;
-                    only what it reads changes. */}
+                {/* ── The one instrument, in a fixed slot ──
+                    Above the phase-dependent block rather than inside it, so
+                    it holds the same position in all four phases and does not
+                    move when the copy below is swapped for the boot log.
+
+                    That is also what lets it survive the press and finally
+                    beat — see the effect. */}
                 <canvas
-                    ref={canvasRef}
-                    className="signal-gate-wave"
+                    ref={ecgRef}
+                    className="signal-gate-ecg"
                     aria-hidden="true"
                 />
 
                 {phase === "lost" ? (
                     <>
-                        <p className="body-sm signal-gate-body">
-                            Telemetry from this station stopped mid
-                            transmission. Everything is still down there —
-                            press below to bring it back.
+                        {/* Says the two things the reader needs and nothing
+                            else: nothing is broken, and the way forward is the
+                            control below. The old copy — "telemetry from this
+                            station stopped mid transmission" — was diagnostic
+                            prose, which is exactly how an outage page reads. */}
+                        <p className="signal-gate-body">
+                            Nothing is broken. This is the entrance — press
+                            below to bring the site up.
                         </p>
 
-                        {/* ── The pointer and what it points at ──
-                            Wrapped together, and the wrapper is what makes the
-                            aim correct rather than approximate: it shrinks to
-                            the button's own width, so the canvas above it is
-                            exactly as wide and the arrowhead at its right end
-                            lands over the control instead of 24px past it.
-                            Measured before the wrapper existed — the trace was
-                            272px against a 248px button.
-
-                            A heart monitor: flatlined now, beating the moment
-                            it is pressed. Nothing previously connected the
-                            fault on this screen to the thing that fixes it,
-                            which is the whole reason this redesign exists. */}
-                        <div className="signal-gate-prompt">
-                            <canvas
-                                ref={ecgRef}
-                                className="signal-gate-ecg"
-                                aria-hidden="true"
-                            />
-
-                            {/* The action in the reader's own words, between
-                                the pointer and the control it names.
-
-                                `aria-hidden` — the button below already has an
-                                accessible name, and a screen reader should be
-                                offered ONE action here, not the same one
-                                twice. This is a label, not a second control. */}
-                            {/* ── The pointer lives IN the phrase ──
-                                Between the two words, which is the one place
-                                on this lockup that was always going to work
-                                and took three tries to find. Above the words
-                                and centred, it aimed at the space between
-                                them and read as a stray tick on the type;
-                                below them it was correct but detached, a
-                                third stacked element in an already tall
-                                column.
-
-                                Set in the gap it is neither — it is part of
-                                the phrase, at the phrase's own scale, and it
-                                still hangs directly over the button because
-                                the middle of the lockup is the middle of the
-                                block. A shaft AND a head: at this size a bare
-                                chevron reads as punctuation, and this has to
-                                read as an instruction.
-
-                                The bob is small on purpose. It sits on a
-                                baseline with type either side, so a large
-                                travel would look like a glyph coming loose. */}
-                            <p className="signal-gate-cta" aria-hidden="true">
-                                <span>Restore</span>
-                                <span className="signal-gate-aim">
-                                    <svg viewBox="0 0 24 24" fill="none">
-                                        <path
-                                            d="M12 3.5v13.5M5.75 11.25 12 17.5l6.25-6.25"
-                                            stroke="currentColor"
-                                            strokeWidth="2.25"
-                                            strokeLinecap="round"
-                                            strokeLinejoin="round"
-                                        />
-                                    </svg>
-                                </span>
-                                <span>Signal</span>
-                            </p>
-
-                            <button
-                                ref={buttonRef}
-                                type="button"
-                                onClick={reconnect}
-                                className="signal-gate-action"
-                            >
-                                <span
-                                    className="signal-gate-caret"
-                                    aria-hidden="true"
-                                />
-                                Reestablish connection
-                            </button>
-                        </div>
+                        <button
+                            ref={buttonRef}
+                            type="button"
+                            onClick={reconnect}
+                            className="signal-gate-action"
+                        >
+                            {/* The same power symbol as the status chip, on the
+                                thing that acts on it. It replaces a blinking
+                                terminal caret, which was decoration; this one
+                                is an instruction. */}
+                            <span className="signal-gate-power" aria-hidden="true">
+                                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.3">
+                                    <path d="M12 3.2v8.4" stroke="currentColor" strokeLinecap="round" />
+                                    <path d="M7.4 6.6a6.6 6.6 0 1 0 9.2 0" stroke="currentColor" strokeLinecap="round" />
+                                </svg>
+                            </span>
+                            Restore signal
+                        </button>
                     </>
                 ) : (
                     <ol className="signal-gate-log" aria-live="polite">

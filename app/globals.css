@@ -130,6 +130,15 @@
   initial-value: #e8eaed;
 }
 
+/* The quiet half of the type: the masthead and the status word. Registered
+   like the other three or it cannot interpolate across a phase change — the
+   same trap the surface ramp and the live ring already document. */
+@property --gate-dim {
+  syntax: "<color>";
+  inherits: true;
+  initial-value: #9aa2a8;
+}
+
 :root {
   /* ── Surfaces ──
      Canvas and deep are supplied; the two between them are interpolated, so
@@ -1825,7 +1834,27 @@ html.zone-immersive .zone-bar {
    by eye, measured on the ground it actually lands on:
      #FF453A on #060708 → 5.92:1
      #E8EAED on #060708 → 16.73:1
+     #9AA2A8 on #060708 → 7.30:1
      #30D158 on --surface-0 → 7.64:1
+
+   ── THE RED BUDGET IS THREE THINGS ──
+   The key colour marks the STATUS DOT, the TRACE and the
+   BUTTON FILL. Nothing else on this screen is red, and that
+   restraint is the difference between a designed entrance
+   and an error page.
+
+   It was not always. The eyebrow, the headline, a 29px call
+   to action and the button were all red at once — four
+   saturated things in one vertical stack, three of them
+   labelling the same single action. Saturated red type on a
+   red-lit room is the last piece of error iconography left
+   after the warning triangle goes, and it is also the
+   worst-contrasting text on the screen: the headline in
+   `--gate-text` reads at 16.73:1 against the 5.92 it had in
+   `--gate-key`.
+
+   So the room stays dramatic and the words go calm. Red is
+   reserved for state, signal and action.
    ══════════════════════════════════════════════════════ */
 .signal-gate {
   position: fixed;
@@ -1841,12 +1870,14 @@ html.zone-immersive .zone-bar {
   --gate-bg: #060708;
   --gate-key: #ff453a;
   --gate-text: #e8eaed;
+  --gate-dim: #9aa2a8;
 
   background: var(--gate-bg);
   transition:
     --gate-bg 520ms var(--ease),
     --gate-key 520ms var(--ease),
-    --gate-text 520ms var(--ease);
+    --gate-text 520ms var(--ease),
+    --gate-dim 520ms var(--ease);
 }
 
 /* Pressed: the site's own colours arrive while the readout runs, so the
@@ -1855,14 +1886,16 @@ html.zone-immersive .zone-bar {
 .signal-gate[data-phase="leaving"] {
   --gate-bg: var(--surface-0);
   --gate-key: var(--accent-text);
-  --gate-text: var(--text-secondary);
+  --gate-text: var(--text-primary);
+  --gate-dim: var(--text-tertiary);
 }
 
 /* Confirmed: green, and the only place on the site it appears. */
 .signal-gate[data-phase="confirmed"] {
   --gate-bg: var(--surface-0);
   --gate-key: #30d158;
-  --gate-text: var(--text-secondary);
+  --gate-text: var(--text-primary);
+  --gate-dim: var(--text-tertiary);
 }
 
 /* The whole panel leaves together, so the page is revealed rather than the
@@ -2041,37 +2074,85 @@ html.zone-immersive .zone-bar {
 
 .signal-gate-meta,
 .signal-gate-title,
-.signal-gate-wave,
 .signal-gate-body,
 .signal-gate-ecg,
-.signal-gate-cta,
-.signal-gate-action,
-.signal-gate-hint {
+.signal-gate-action {
   animation: signal-rise 620ms var(--ease) both;
 }
 
-/* The eyebrow states the condition, and it takes the key colour in every
-   phase — it is the line that says what is wrong, so it should look it. */
+/* ── The masthead ───────────────────────────────────────
+   A NAME, and it does more work than any other string here. No browser error
+   page, no outage notice and no 500 has a person's name across the top of it,
+   so this settles "is the site broken?" before the reader has finished the
+   headline — which the previous version, opening on a warning triangle and the
+   words SYSTEM ALERT, actively fought.
+
+   Name left, status right, one line, hairline under it. That turns a stack of
+   text into a panel with a defined top edge, which is most of what separates
+   "designed" from "assembled". The rule is the one allowed here: the design
+   system permits hairlines on floating chrome, and an overlay is exactly
+   that. */
 .signal-gate-meta {
   animation-delay: 60ms;
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 0.5rem;
+  justify-content: space-between;
+  /* WRAPS AS A ROW, NEVER MID-NAME. At 375px the name and the status chip do
+     not fit on one line together — measured, "ADITYA HARIKRISHNAN · PORTFOLIO"
+     wants 275px against the 226px left beside the chip — and without this the
+     name broke across two lines with the chip beside the second half of it,
+     which looks like a bug rather than a masthead. Wrapping instead drops the
+     chip onto its own line and both read cleanly. The row gap is separate from
+     the column gap so the stacked form is tight. */
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  padding-bottom: 0.85rem;
+  border-bottom: 1px solid color-mix(in srgb, var(--gate-dim) 24%, transparent);
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--gate-key);
+  color: var(--gate-dim);
+  transition:
+    color 520ms var(--ease),
+    border-color 520ms var(--ease);
 }
 
-/* The warning triangle, and later the check. SHAPE IS A SIGNAL IN ITS OWN
-   RIGHT: red→green is the textbook red/green colour-blind failure, so the
-   glyph and the wording each carry the state independently of the palette. */
+/* Never breaks. It is one phrase; the wrap above moves the chip instead. */
+.signal-gate-who {
+  white-space: nowrap;
+}
+
+/* One shade quieter than the name it follows, so "portfolio" reads as the
+   qualifier it is rather than as a second name. */
+.signal-gate-who-sub {
+  opacity: 0.62;
+}
+
+.signal-gate-status-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  white-space: nowrap;
+}
+
+/* THE ONE RED THING IN THE MASTHEAD, and it is a glyph rather than a word.
+   SHAPE IS A SIGNAL IN ITS OWN RIGHT: red→green is the textbook red/green
+   colour-blind failure, so the glyph and the wording each carry the state
+   independently of the palette.
+
+   A POWER SYMBOL while contact is lost, not a warning triangle. A triangle is
+   error iconography and it was the first mark the eye resolved on this screen.
+   A power symbol is read by everyone, technical or not, as "switched off —
+   switch it on", which says both "intentional" and "there is a control here"
+   in a single mark. */
 .signal-gate-glyph {
   display: inline-flex;
-  width: 1.05rem;
-  height: 1.05rem;
+  width: 0.95rem;
+  height: 0.95rem;
+  color: var(--gate-key);
+  transition: color 520ms var(--ease);
 }
 
 .signal-gate-glyph svg {
@@ -2079,124 +2160,52 @@ html.zone-immersive .zone-bar {
   height: 100%;
 }
 
+/* OFF-WHITE, NOT RED — see the red budget at the top of this block. This is
+   the single biggest move away from looking like an outage, and it buys
+   16.73:1 where the red headline had 5.92.
+
+   `heading-xl`'s clamp, so it lands on the 50px rung at 1440. It was
+   `clamp(2.25rem, …, 3.75rem)` — 60px, which is on no rung of the ladder, and
+   oversized type with no air around it is itself a signature of amateur
+   work. */
 .signal-gate-title {
-  animation-delay: 120ms;
-  font-size: clamp(2.25rem, 1.72rem + 2.25vw, 3.75rem);
+  animation-delay: 140ms;
+  margin-top: 1.75rem;
+  font-size: clamp(2rem, 1.6rem + 1.69vw, 3.125rem);
   font-weight: 400;
-  letter-spacing: 0.004em;
-  line-height: 1;
-  /* The headline is the alarm while contact is lost, and the site's own
-     primary once it is back — see the phase override below. */
-  color: var(--gate-key);
-  transition: color 520ms var(--ease);
-  margin-top: 0.9rem;
-}
-
-.signal-gate[data-phase="booting"] .signal-gate-title,
-.signal-gate[data-phase="confirmed"] .signal-gate-title,
-.signal-gate[data-phase="leaving"] .signal-gate-title {
-  color: var(--text-primary);
-}
-
-/* ── The instrument ──
-   Fixed height so the panel never reflows between phases: the trace is in
-   the same place before and after, and only what it reads changes. */
-.signal-gate-wave {
-  animation-delay: 180ms;
-  display: block;
-  width: 100%;
-  height: 68px;
-  margin-top: 1.5rem;
-  /* The carrier canvas reads its own computed `color` per frame, same as the
-     ECG. It used to read `--accent-rgb` directly and so rendered SITE BLUE on
-     the alert screen — one calm blue line across an otherwise red warning,
-     which is exactly the kind of detail that makes a designed screen look
-     accidental. */
-  color: var(--gate-key);
+  letter-spacing: -0.014em;
+  line-height: 1.05;
+  color: var(--gate-text);
   transition: color 520ms var(--ease);
 }
 
-/* OFF-WHITE, NOT RED, and this is the single most important restraint on the
-   screen. Red marks the fault; neutral text explains it. A paragraph set in
-   saturated red on black is hard to read and is itself a signal of amateur
-   work — which is precisely the impression this redesign exists to remove. */
-/* ── The ECG arrow ──────────────────────────────────────
-   A heart monitor whose trace runs into an arrowhead aimed at the button
-   directly beneath it. `ecg.ts` holds the shape and is unit-tested; the
+/* ── The one instrument ─────────────────────────────────
+   A heart monitor: flatlined while contact is lost, beating from the moment
+   the button is pressed. `ecg.ts` holds the shape and is unit-tested; the
    canvas only plots it.
+
+   There were TWO wave canvases — a radio carrier under the title and this,
+   glued to the button — a few hundred pixels apart, saying nearly the same
+   thing. The carrier is gone, and `wave.ts` with it.
+
+   FULL COLUMN WIDTH, in a fixed slot under the title. It used to be boxed to
+   the button's width by a `fit-content` wrapper that existed solely to aim an
+   arrowhead at the control; with the pointer gone that rig went too, and the
+   trace becomes a horizon line across the composition rather than a widget
+   stuck onto a button.
+
+   Fixed height, so the panel never reflows between phases: the trace holds its
+   place before and after, and only what it reads changes.
 
    `color`, not a background — the canvas reads its own computed `color` every
    frame and paints with it, which is how the trace follows the phase from red
-   to blue to green without the drawing code knowing any of those values.
-
-   Width is capped and the box is left-aligned with the button below it, so
-   the arrowhead lands over the control rather than somewhere along a
-   full-width strip. */
-/* Shrinks to the button's width so the canvas above can match it exactly.
-   `align-items: stretch` is doing the aiming: without it the canvas sizes to
-   its own `width` and the arrowhead lands wherever that happens to end. */
-.signal-gate-prompt {
-  display: inline-flex;
-  flex-direction: column;
-  align-items: stretch;
-  width: fit-content;
-  margin-top: 1.75rem;
-}
-
+   to blue to green without the drawing code knowing any of those values. */
 .signal-gate-ecg {
-  animation-delay: 280ms;
+  animation-delay: 220ms;
   display: block;
   width: 100%;
-  /* No descender to make room for any more — the pointer is its own element
-     below the words now. This is the trace and nothing else. */
-  height: 54px;
-  color: var(--gate-key);
-  transition: color 520ms var(--ease);
-}
-
-/* ── The call to action ─────────────────────────────────
-   JETBRAINS MONO, NOT INTER, and that is the whole point of it. It sits
-   between an Inter title and an Inter-labelled button, so a different face is
-   what makes it read as an instruction rather than as more of the same
-   chrome. Reusing the site's existing complement to Inter — the instrument
-   voice already carrying every label, the boot log and the countdown — rather
-   than loading a third family for one line on the first screen anyone sees.
-
-   Same family as the 12px SYSTEM ALERT eyebrow above, which is fine: at 29px
-   with 0.2em of tracking the two are not remotely the same object.
-
-   29px is `heading-md`'s desktop rung, so this introduces nothing new to the
-   type ladder. */
-.signal-gate-cta {
-  animation-delay: 300ms;
-  margin-top: 0.75rem;
-  /* A flex ROW, because the arrow is one of the three things on this line.
-     Centred, so the middle of the lockup — which is the arrow — sits over the
-     middle of the button below. */
-  /* A GRID, not flex, and the distinction is load-bearing. `1fr auto 1fr`
-     makes the two word tracks equal BY DEFINITION, so the arrow in the middle
-     track sits exactly on the block's centre line.
-
-     Flex was tried first and cannot do this: `flex: 1 1 0` will not shrink an
-     item below its min-content, so "RESTORE" kept its natural width, "SIGNAL"
-     kept its narrower one, and the arrow stayed 14px right of centre. Under a
-     `fit-content` parent an `fr` track instead resolves to the larger word's
-     max-content and the other matches it. */
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
-  align-items: center;
-  gap: 0.28em;
-  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
-  font-size: clamp(1.375rem, 1.22rem + 0.66vw, 1.8125rem);
-  font-weight: 500;
-  letter-spacing: 0.2em;
-  /* NO padding compensation for the trailing letter-space here. It was needed
-     when this line was `text-align: center` — tracking is applied to the right
-     of every glyph including the last, which shifted the centred text left.
-     Under the grid the last word's trailing space is inside its own track, so
-     the compensation only pushed the whole lockup 3px off the button. */
-  text-transform: uppercase;
-  line-height: 1.1;
+  height: 76px;
+  margin-top: 1.4rem;
   color: var(--gate-key);
   transition: color 520ms var(--ease);
 }
@@ -2253,73 +2262,22 @@ html.zone-immersive .zone-bar {
   height: 100%;
 }
 
+/* Two short clauses, and they are the two things the reader needs: nothing is
+   broken, and the way forward is the control below. The old copy — "telemetry
+   from this station stopped mid transmission" — was diagnostic prose, which is
+   how an outage page reads, not an entrance.
+
+   `body-lg`'s rung at weight 200, the one place on the site 200 is allowed. A
+   single calm sentence at 18.5px is what that weight exists for. */
 .signal-gate-body {
-  animation-delay: 240ms;
-  margin-top: 1.5rem;
-  max-width: 38ch;
+  animation-delay: 300ms;
+  margin-top: 1.4rem;
+  max-width: 40ch;
+  font-size: clamp(1.03125rem, 0.99rem + 0.19vw, 1.15625rem);
+  font-weight: 200;
+  line-height: 1.55;
   color: var(--gate-text);
   transition: color 520ms var(--ease);
-}
-
-/* ── The pointer, set in the phrase ─────────────────────
-   Sized in `em`, so it scales with the call to action at every breakpoint
-   instead of needing its own clamp. 1.15em puts it a touch above the cap
-   height of the words either side — enough to carry as a symbol rather than
-   as a glyph, without breaking the line.
-
-   `flex: none` matters: it is a flex child now, and without it the SVG box
-   would shrink when the lockup is tight on a narrow screen. */
-/* ── EQUAL COLUMNS EITHER SIDE OF THE ARROW ─────────────
-   "RESTORE" is seven characters and "SIGNAL" is six, so simply setting the
-   arrow between them puts it right of centre — measured at 15px off the
-   button below, which is the width of the asymmetry halved.
-
-   Giving both words a `flex-basis: 0` column and letting them grow equally
-   makes the two sides the same width whatever the words are, so the arrow
-   sits exactly on the block's centre line and the phrase balances around it.
-   Aligning each word toward the arrow keeps the gaps even.
-
-   It also means the copy can change without the aim silently drifting. */
-.signal-gate-cta > span:not(.signal-gate-aim) {
-  white-space: nowrap;
-}
-
-.signal-gate-cta > span:first-child {
-  text-align: right;
-}
-
-.signal-gate-cta > span:last-child {
-  text-align: left;
-}
-
-.signal-gate-aim {
-  display: inline-flex;
-  width: 1.15em;
-  height: 1.15em;
-  /* Uppercase type has no descenders, so its optical centre sits above the
-     line box's. Nudging down puts the arrow on the same visual axis as the
-     words rather than floating over them. */
-  transform: translateY(0.06em);
-  color: var(--gate-key);
-  transition: color 520ms var(--ease);
-}
-
-.signal-gate-aim svg {
-  width: 100%;
-  height: 100%;
-  animation: signal-aim 1.6s var(--ease) infinite;
-}
-
-/* Small travel, deliberately. It is on a baseline with type either side, so a
-   large bounce would read as a glyph coming loose rather than as a direction. */
-@keyframes signal-aim {
-  0%,
-  100% {
-    transform: translateY(-1px);
-  }
-  50% {
-    transform: translateY(3px);
-  }
 }
 
 /* ── The control, and it is THE control ─────────────────
@@ -2333,19 +2291,23 @@ html.zone-immersive .zone-bar {
    ground showing through, so the pair moves together and can never drift into
    dark-on-dark. Measured on the alert screen — #060708 on #FF453A is 5.98:1.
 
-   JETBRAINS MONO AND UPPERCASE, matching the pointer lockup above rather than
-   the Inter body around it, so the arrow, the words and the button read as one
-   object instead of three stacked ones. 15 → 18.5px are both rungs of the type
-   ladder; nothing new is introduced.
+   ── IT IS ALSO THE ONLY LABEL NOW ──
+   "RESTORE ↓ SIGNAL" sat above it at 29px and the button said "REESTABLISH
+   CONNECTION": two labels, one action, plus an arrow pointing from one to the
+   other. That duplication was most of what read as amateurish. The lockup, its
+   arrow and the four attempts at aiming it are all gone; the words survive as
+   this label, which is shorter for it.
+
+   JETBRAINS MONO AND UPPERCASE against the Inter title and body — the site's
+   existing complement rather than a third family on the first screen anyone
+   sees. 15 → 18.5px are both rungs of the ladder; nothing new is introduced.
 
    The halo is the one place a glow is allowed on this site, and this overlay
    already holds that exception — see the red room above. It ends when the
    button is pressed, along with everything else here. */
 .signal-gate-action {
-  animation-delay: 360ms;
-  /* Close, deliberately: the arrowhead has to read as pointing INTO this, and
-     2rem of air between them broke the connection the pointer exists to make. */
-  margin-top: 0.9rem;
+  animation-delay: 380ms;
+  margin-top: 2rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2392,27 +2354,39 @@ html.zone-immersive .zone-bar {
   outline-offset: 4px;
 }
 
-/* On the filled control the caret has to be the label's colour — as
-   `--gate-key` it was a red block on a red button, i.e. invisible. */
-.signal-gate-action .signal-gate-caret {
-  background: currentColor;
+/* The same power symbol the status chip carries, on the thing that acts on it.
+   `currentColor`, so it is punched out of the fill exactly like the label —
+   as `--gate-key` it would be a red mark on a red button. It replaces a
+   blinking terminal caret, which was decoration; this is an instruction. */
+.signal-gate-power {
+  display: inline-flex;
+  width: 1.15em;
+  height: 1.15em;
+  flex: none;
+  color: currentColor;
 }
 
-.signal-gate-hint {
-  animation-delay: 400ms;
-  margin-top: 1rem;
-  color: var(--text-quaternary);
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
+.signal-gate-power svg {
+  width: 100%;
+  height: 100%;
 }
 
-/* ── The boot readout ── */
+/* ── The boot readout ──
+   THE HEIGHT IS RESERVED, NOT GROWN. The column is vertically centred, so a
+   list that gets taller one row at a time drags everything above it upward:
+   measured, the trace slid 62px up the screen over the 1580ms the log takes to
+   print, and the reader watched the headline creep. `min-height` holds all
+   seven rows from the first frame.
+
+   Derived from the two values above it — seven rows of `1.9` line-height at
+   this element's own font size — rather than written as a pixel constant, so
+   adding a boot line cannot silently reintroduce the drift. */
 .signal-gate-log {
   margin-top: 1.5rem;
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
   font-size: 0.75rem;
   line-height: 1.9;
+  min-height: calc(1.9em * 7);
   text-transform: uppercase;
   letter-spacing: 0.08em;
   list-style: none;
@@ -2485,23 +2459,12 @@ html.zone-immersive .zone-bar {
   .signal-gate-frame,
   .signal-gate-meta,
   .signal-gate-title,
-  .signal-gate-wave,
   .signal-gate-body,
   .signal-gate-ecg,
-  .signal-gate-cta,
   .signal-gate-action,
-  .signal-gate-hint,
   .signal-gate-row,
   .signal-gate[data-phase="leaving"] {
     animation: none;
-  }
-
-  /* The arrow stops bobbing but stays put and stays visible. It is the
-     instruction, not an ornament — a reader who asked for less motion still
-     needs to be told where to press. */
-  .signal-gate-aim svg {
-    animation: none;
-    transform: none;
   }
 
   /* The verdict still ARRIVES, it just does not slide. It is the message the

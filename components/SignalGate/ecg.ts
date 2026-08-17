@@ -1,29 +1,31 @@
 /* ══════════════════════════════════════════════════════
-   The ECG arrow
+   The ECG trace
 
-   A heart monitor pointing at the button that fixes things.
+   The gate's one instrument, and the only moving figure on
+   the entrance besides the cube field behind it.
 
    ── Why this exists ──
    Readers reported thinking the site was down. The entrance
    said "Signal lost" and offered a quiet control, and
    nothing on screen connected the two — so the fault read as
-   real and the fix read as decoration. This is the pointer:
-   a trace that runs toward the button and ends in an
-   arrowhead aimed at it.
+   real and the fix read as decoration.
 
    The state does the explaining for free. Contact lost is a
    FLATLINE; pressing the button starts a rhythm. Nobody
-   needs that decoded.
+   needs that decoded — which is why the canvas has to STAY
+   MOUNTED through the press, and for a long time it did not.
+   See the effect in SignalGate.tsx.
 
-   ── Why not reuse wave.ts ──
-   That one is a radio carrier — three drifting harmonics,
-   the instrument under the title, and it stays exactly as it
-   is. A heart monitor is a different figure: mostly flat,
-   punctuated by one sharp complex. Sharing a module would
-   mean one function pretending to be both.
+   ── It used to have a carrier beside it ──
+   `wave.ts` drew a radio carrier under the title: three
+   drifting harmonics, a second moving line a few hundred
+   pixels from this one, saying nearly the same thing. It was
+   deleted, and this became the only trace. A heart monitor is
+   the right figure of the two — mostly flat, punctuated by
+   one sharp complex, so the fault is legible as an absence.
 
-   Pure, so the shape is provable in node like wave.ts,
-   blend.ts, layout.ts and flight.ts. The canvas only plots
+   Pure, so the shape is provable in node like blend.ts,
+   layout.ts, flight.ts and cubes.ts. The canvas only plots
    what this returns.
    ══════════════════════════════════════════════════════ */
 
@@ -35,7 +37,7 @@ export const ECG_PERIOD = 1;
 
 const clamp = (v: number) => (v < -1 ? -1 : v > 1 ? 1 : v);
 
-/** Deterministic hash → 0…1. Shared shape with wave.ts: no RNG state. */
+/** Deterministic hash → 0…1. No RNG state, so a frame is reproducible. */
 function hash(a: number, b: number): number {
     const x = Math.sin(a * 127.1 + b * 311.7) * 43758.5453;
     return x - Math.floor(x);
@@ -75,7 +77,7 @@ function complex(beat: number): number {
  * `live` is 0 while contact is lost and 1 once it is back, ramped by the
  * component so the trace comes alive rather than switching.
  *
- * The dead state is not perfectly flat, for the same reason `wave.ts` is not:
+ * The dead state is not perfectly flat, and that is deliberate:
  * a truly flat line reads as "nothing is running", while an occasional tick
  * reads as "something is listening and finding nothing" — which is the state
  * actually being described.
@@ -88,7 +90,7 @@ export function ecgAt(u: number, t: number, live: number): number {
     const L = live < 0 ? 0 : live > 1 ? 1 : live;
 
     /* Quantised into ~6 steps a second so a tick survives a few frames
-       instead of strobing. Same trick, same reason, as wave.ts. */
+       instead of strobing. */
     const slot = Math.floor(t * 6);
     const tick = hash(Math.floor(u * 80), slot);
     const dead = tick > 0.99 ? (hash(Math.floor(u * 240), slot) - 0.5) * 0.3 : 0;
