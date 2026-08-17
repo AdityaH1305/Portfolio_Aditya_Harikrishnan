@@ -16,23 +16,30 @@ import {
     TTL_MS,
     encodeClearance,
     shouldShowGate,
-    bootSequence,
-    BOOT_TOTAL_MS,
-    BOOT_FADE_MS,
-    BOOT_FADE_AT,
-    BOOT_CONFIRM_AT,
-    BOOT_CONFIRM_MS,
+    BURST_AT,
+    BURST_MS,
+    CONVERGE_AT,
+    CONVERGE_MS,
+    EXIT_MS,
+    FINALE_MS,
 } from "./gate";
 import { ecgAt, sweepAt, ECG_SAMPLES } from "./ecg";
 import {
+    CUBE_FACES,
+    CUBE_VERTS,
     collisionRadius,
     depthAt,
     envFor,
+    faceDepth,
+    nearness,
+    project,
     renderCube,
     spawnField,
     type Cube,
+    type Pose,
 } from "./cubes";
 import { stepField } from "./forces";
+import { convergeAt, debrisAt, poseOf, shatter, type Fragment } from "./finale";
 
 /* The blocks' edge colour. Ice, against accent-blue faces — the pair is what
    makes them read as lit glass rather than as wireframe. Written here because
@@ -173,19 +180,16 @@ export default function SignalGate() {
         getServerSnapshot,
     );
 
-    /* FOUR phases, not one flag: `idle` is the station waiting, `linking`
-       plays the readout, `ready` is the verdict, `leaving` cross-fades into
-       the site.
+    /* THREE phases, and they are the three beats of one gesture: `idle` is the
+       station waiting, `parting` is the copy leaving while the blocks gather,
+       `burst` is the shatter and the handover.
 
-       They were `lost → booting → confirmed`, and the rename is the whole
-       redesign in miniature. Nothing here is broken and nothing is being
-       recovered — the system is up from the first frame and the button
-       connects you to it. */
-    const [phase, setPhase] = useState<
-        "idle" | "linking" | "ready" | "leaving"
-    >("idle");
+       It was four, and the middle two played a boot readout — seven log lines
+       and a green verdict banner. Those were a LOADING SCREEN, and the screen
+       they interrupted was not loading anything. The choreography is the
+       transition now and there are no words in it at all. */
+    const [phase, setPhase] = useState<"idle" | "parting" | "burst">("idle");
     const [dismissed, setDismissed] = useState(false);
-    const [shown, setShown] = useState(0);
 
     const gateRef = useRef<HTMLDivElement>(null);
     const ecgRef = useRef<HTMLCanvasElement>(null);
@@ -195,6 +199,21 @@ export default function SignalGate() {
     const timers = useRef<number[]>([]);
     /** Where the pointer is, in the physics' units. Null when it has not moved. */
     const pointerRef = useRef<{ x: number; y: number } | null>(null);
+
+    /* ── The finale's clock, and why it is a ref ──────
+       `performance.now()` at the instant of the press, or 0 while idle. The
+       whole choreography reads its progress from this rather than from React
+       state: the field's draw loop runs on gsap.ticker at 60fps, and a state
+       update per frame would be sixty renders a second of a component that
+       owns three canvases. The phase state exists only for the beats CSS has
+       to know about. */
+    const finaleRef = useRef(0);
+
+    /** The blocks' poses at the moment of the press, frozen. See `convergeAt`. */
+    const fromRef = useRef<Pose[]>([]);
+
+    /** The 27 fragments, cut once when the burst begins. */
+    const shardsRef = useRef<Fragment[]>([]);
 
     /* ── THE TRACE IS ALIVE BEFORE YOU TOUCH ANYTHING ──
        This started at 0, which `ecgAt` draws as a FLATLINE, and that single
@@ -211,7 +230,6 @@ export default function SignalGate() {
     const liveRef = useRef(REST_LIVE);
 
     const open = wanted && !dismissed;
-    const lines = bootSequence();
 
     useEffect(() => {
         reducedRef.current = window.matchMedia(
@@ -420,16 +438,24 @@ export default function SignalGate() {
        is the part that has no testable surface. Every constant that could ruin
        the field lives on the other side of that line.
 
-       ── IT BELONGS TO `idle` ALONE ──
-       Keyed on the phase, not just on `open`, and the ticker callback is
-       therefore REMOVED the instant the button is pressed rather than left
-       running behind an opacity of 0. A full-viewport canvas integrating a
-       physics field and redrawing six solids every frame is not something to
-       keep paying for through a sequence that also has the trace and a boot
-       log in it. The element stays mounted so CSS can fade it, and the last
-       frame painted is what fades — hence no `clearRect` on the way out. */
+       ── IT NOW OUTLIVES THE PRESS, BECAUSE IT IS THE PRESS ──
+       This used to stand down the instant the button was hit — the blocks were
+       a backdrop and the transition was a boot log, so there was nothing for
+       them to do. Now they ARE the transition: they gather into one cube and
+       that cube shatters into the hero, so this loop runs the whole way and
+       the effect is keyed on `open` alone.
+
+       Three regimes in one loop, chosen by the finale clock rather than by
+       React state, because a state update per frame would be sixty renders a
+       second of a component holding three canvases:
+
+         idle      the physics field, as before
+         parting   the physics stops; the blocks ease to one pose
+         burst     27 fragments, flying and fading
+
+       At the end there is nothing left to draw and nothing left to pay for. */
     useEffect(() => {
-        if (!open || phase !== "idle") return;
+        if (!open) return;
         const canvas = cubesRef.current;
         if (!canvas) return;
         const ctx = canvas.getContext("2d");
@@ -477,6 +503,50 @@ export default function SignalGate() {
 
         let last = 0;
 
+        /* One solid, drawn. Shared by all three regimes so a block, the merged
+           cube and a fragment are all made of the same material — which is the
+           point of shattering into cubes rather than into particles.
+
+           Faces carry the volume, edges carry the light, and the balance
+           between them is the difference between a solid and a wireframe. The
+           fills are the accent and the edges are ice, so a near solid reads as
+           glass lit from inside rather than as an outline.
+
+           A convex solid puts exactly TWO faces over any given pixel, not six,
+           so the ceiling one can add is 1-(1-0.3)² ≈ 0.51 — which is what the
+           contrast maths is checked against, with headroom for three. */
+        const paint = (
+            faces: readonly { pts: readonly { x: number; y: number }[] }[],
+            near: number,
+            edge: string,
+            alpha: number,
+        ) => {
+            if (alpha <= 0.004) return;
+            for (const f of faces) {
+                ctx.beginPath();
+                ctx.moveTo(f.pts[0].x, f.pts[0].y);
+                for (let i = 1; i < f.pts.length; i++) {
+                    ctx.lineTo(f.pts[i].x, f.pts[i].y);
+                }
+                ctx.closePath();
+                ctx.fillStyle = `rgba(${edge},${(0.12 + near * 0.26) * alpha})`;
+                ctx.fill();
+                ctx.strokeStyle = `rgba(${ICE},${(0.16 + near * 0.3) * alpha})`;
+                ctx.stroke();
+            }
+        };
+
+        /** Project a pose into sorted faces, the way `renderCube` does. */
+        const facesOf = (pose: Pose) => {
+            const pts = CUBE_VERTS.map((v) => project(v, pose, w, h));
+            return CUBE_FACES
+                .map((idx) => {
+                    const quad = idx.map((i) => pts[i]);
+                    return { pts: quad, depth: faceDepth(quad) };
+                })
+                .sort((a, b) => b.depth - a.depth);
+        };
+
         const draw = (seconds: number) => {
             if (w < 1) size();
             if (w < 1) return;
@@ -491,51 +561,74 @@ export default function SignalGate() {
             const [r, g, b] = rgb;
             const edge = `${r},${g},${b}`;
 
-            // Step the physics. `dt` is clamped inside `stepField`.
             const dt = last === 0 ? 1 / 60 : seconds - last;
             last = seconds;
-            const env = envFor(w, h);
-            for (const c of field) c.r = collisionRadius(c, depthAt(c, seconds));
-            stepField(field, dt, seconds, { ...env, pointer: pointerRef.current });
 
             ctx.clearRect(0, 0, w, h);
             ctx.lineJoin = "round";
             ctx.lineWidth = 1;
 
-            /* Sorted far to near ACROSS the field, not just within each block.
-               Six faces sorted inside a solid that is itself drawn in array
-               order still stacks a distant block over a near one, and with
-               translucent fills that reads as the depth being wrong rather
-               than as a bug. */
-            const solids = field
-                .map((c) => renderCube(c, seconds, w, h))
-                .sort((a, z) => a.near - z.near);
+            /* ── Idle: the physics field ── */
+            if (finaleRef.current === 0) {
+                const env = envFor(w, h);
+                for (const c of field) c.r = collisionRadius(c, depthAt(c, seconds));
+                stepField(field, dt, seconds, { ...env, pointer: pointerRef.current });
 
-            for (const solid of solids) {
-                for (const f of solid.faces) {
-                    ctx.beginPath();
-                    ctx.moveTo(f.pts[0].x, f.pts[0].y);
-                    for (let i = 1; i < f.pts.length; i++) {
-                        ctx.lineTo(f.pts[i].x, f.pts[i].y);
-                    }
-                    ctx.closePath();
-
-                    /* Faces carry the volume, edges carry the light, and the
-                       balance between them is the difference between a solid
-                       and a wireframe. The fills are the accent and the edges
-                       are ice, so a near block reads as glass lit from inside
-                       rather than as an outline.
-
-                       A convex solid puts exactly TWO faces over any given
-                       pixel, not six, so the ceiling a block can add is
-                       1-(1-0.3)² ≈ 0.51 — which is what the contrast maths is
-                       checked against, with headroom for three stacked. */
-                    ctx.fillStyle = `rgba(${edge},${0.12 + solid.near * 0.26})`;
-                    ctx.fill();
-                    ctx.strokeStyle = `rgba(${ICE},${0.16 + solid.near * 0.3})`;
-                    ctx.stroke();
-                }
+                /* Sorted far to near ACROSS the field, not just within each
+                   block. Six faces sorted inside a solid that is itself drawn
+                   in array order still stacks a distant block over a near one,
+                   and with translucent fills that reads as the depth being
+                   wrong rather than as a bug. */
+                const solids = field
+                    .map((c) => renderCube(c, seconds, w, h))
+                    .sort((a, z) => a.near - z.near);
+                for (const s of solids) paint(s.faces, s.near, edge, 1);
+                return;
             }
+
+            const ms = performance.now() - finaleRef.current;
+
+            /* ── Freezing the start poses ──
+               Captured HERE, on the first frame of the finale, rather than in
+               the click handler — the handler has no access to the field, and
+               more importantly this is the last frame the physics ran, so it
+               is exactly where the blocks are. Capturing anywhere else would
+               make all six jump on the first frame of the gather. */
+            if (fromRef.current.length === 0) {
+                fromRef.current = field.map((c) =>
+                    poseOf(c, depthAt(c, seconds), seconds),
+                );
+            }
+
+            /* ── Burst: the cube in pieces ──
+               Sorted far to near like everything else, so translucent
+               fragments stack in the order the eye expects as they cross. */
+            if (ms >= BURST_AT) {
+                const u = (ms - BURST_AT) / BURST_MS;
+                const pieces = shardsRef.current
+                    .map((f) => debrisAt(f, u))
+                    .sort((a, z) => a.pose.z - z.pose.z)
+                    .reverse();
+                for (const d of pieces) {
+                    paint(facesOf(d.pose), nearness(d.pose.z), edge, d.alpha);
+                }
+                return;
+            }
+
+            /* ── Parting: six blocks becoming one ──
+               THE PHYSICS IS OFF from here. Leaving it running would have the
+               field pushing blocks apart while the choreography pulls them
+               together, and the merged cube would arrive soft-edged — the one
+               thing `convergeAt`'s test exists to guarantee against. */
+            const u = Math.min(1, Math.max(0, (ms - CONVERGE_AT) / CONVERGE_MS));
+            const merged = fromRef.current.map((p) => convergeAt(p, u));
+            /* Far to near, and it matters most at the end: at u = 1 all six
+               are the same solid, so what stacks is six identical shells and
+               the fill accumulates into something lit from within. */
+            const order = merged
+                .map((pose) => ({ pose, near: nearness(pose.z) }))
+                .sort((a, z) => a.near - z.near);
+            for (const o of order) paint(facesOf(o.pose), o.near, edge, 1);
         };
 
         if (reducedRef.current) {
@@ -646,62 +739,67 @@ export default function SignalGate() {
     const close = useCallback(() => {
         cachedDecision = false;
         setDismissed(true);
-        /* HERE, not in commit(). This is the moment the page becomes visible,
-           and the whole point of holding the entrance is that the reveals
-           start when the reader can actually see them. Released from commit()
-           they would run under the last 1.6s of the boot log. */
+        /* Idempotent, and by now almost always a no-op: the entrance is
+           released at the BURST, not here, so the hero is already arriving
+           behind the debris by the time this runs. This is the backstop for
+           the reduced-motion path, which has no burst to release from. */
         releaseEntrance();
     }, []);
 
     const reconnect = useCallback(() => {
         if (phase !== "idle") return;
-        setPhase("linking");
         commit();
 
         if (reducedRef.current) {
-            /* No animation, but the verdict is information rather than
-               decoration — it still gets its time on screen. Skipping it here
-               would take the confirmation away from exactly the readers most
-               likely to need an interface to be explicit. */
-            setShown(lines.length);
-            setPhase("ready");
+            /* No gather and no shatter. A reader who asked for less motion
+               gets the copy fading and the overlay going, which is the honest
+               version of this — not a slower explosion. */
+            setPhase("burst");
             liveRef.current = 1;
-            timers.current.push(window.setTimeout(close, BOOT_CONFIRM_MS));
+            timers.current.push(window.setTimeout(close, EXIT_MS + 120));
             return;
         }
 
-        /* One timer per line, plus the fade and the unmount, all scheduled
-           from the click rather than chained. Chaining would let a dropped
-           frame push the sequence past its two seconds; absolute offsets
-           cannot drift. */
-        lines.forEach((line, i) => {
-            timers.current.push(
-                window.setTimeout(() => setShown(i + 1), line.at),
-            );
-        });
-        timers.current.push(
-            window.setTimeout(() => setPhase("ready"), BOOT_CONFIRM_AT),
-        );
-        timers.current.push(
-            window.setTimeout(() => setPhase("leaving"), BOOT_FADE_AT),
-        );
-        timers.current.push(window.setTimeout(close, BOOT_TOTAL_MS));
+        /* The finale's clock starts HERE and the draw loop reads it directly.
+           Everything below is scheduled as an absolute offset from the click
+           rather than chained, so a dropped frame cannot push the sequence
+           long — the same reasoning the boot log used. */
+        finaleRef.current = performance.now();
+        shardsRef.current = shatter(Math.random);
+        setPhase("parting");
 
-        /* The entrance's backstop, armed HERE rather than on mount.
-           app/template.tsx deliberately refuses to release while this overlay
-           is on screen, because a reader may take any amount of time to press
-           the button — so the only bounded window is the one that starts at
-           the click. If `close` somehow never runs, this still hands the page
-           over a moment after the sequence should have ended. Idempotent, so
-           the normal path costs nothing. */
         timers.current.push(
-            window.setTimeout(releaseEntrance, BOOT_TOTAL_MS + 400),
+            window.setTimeout(() => {
+                setPhase("burst");
+                /* ── THE HANDOVER ──
+                   `releaseEntrance()` at the burst, not at unmount, and this
+                   is the single line that makes the whole sequence one shot
+                   instead of two scenes. Hero's SplitText timeline runs for
+                   about a second, so it is still arriving while fragments are
+                   still crossing it: you watch the site appear THROUGH the
+                   debris rather than after it.
+
+                   Released at unmount instead, there is a dead beat between
+                   the explosion ending and the page starting — which is
+                   exactly the seam this is meant to hide. */
+                releaseEntrance();
+            }, BURST_AT),
+        );
+        timers.current.push(window.setTimeout(close, FINALE_MS));
+
+        /* The entrance's backstop. app/template.tsx deliberately refuses to
+           release while this overlay is on screen, because a reader may take
+           any amount of time to press the button — so the only bounded window
+           is the one that starts at the click. Idempotent, so on the normal
+           path the release above has already happened and this costs nothing. */
+        timers.current.push(
+            window.setTimeout(releaseEntrance, FINALE_MS + 400),
         );
 
         /* Ramp the trace from its resting rhythm up to full, so the press
            reads as the signal locking on rather than as something switching.
-           Its own rAF because it has to finish inside the first 320ms whatever
-           the line timers are doing. */
+           It is leaving at the same time, which is the point: the last thing
+           it does before it goes is beat harder. */
         const start = performance.now();
         const ramp = () => {
             const p = Math.min(1, (performance.now() - start) / 320);
@@ -709,7 +807,7 @@ export default function SignalGate() {
             if (p < 1) requestAnimationFrame(ramp);
         };
         requestAnimationFrame(ramp);
-    }, [phase, commit, lines]);
+    }, [phase, commit, close]);
 
     // Clear anything pending if the component goes away mid-sequence.
     useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
@@ -772,11 +870,9 @@ export default function SignalGate() {
                         <span className="signal-gate-who-sub">Portfolio</span>
                     </span>
 
-                    {/* COLOUR IS NEVER THE ONLY SIGNAL. Accent→green is a
-                        gentler pairing than the red→green this used to be, but
-                        the rule stands: the state is carried three independent
-                        ways — this glyph, the wording beside it, and the
-                        palette. Any one alone is enough.
+                    {/* COLOUR IS NEVER THE ONLY SIGNAL. The state is carried
+                        three independent ways — this glyph, the wording beside
+                        it, and the palette. Any one alone is enough.
 
                         A PULSING DOT, not a power symbol. A power symbol says
                         "switched off", which was right when the premise was a
@@ -785,163 +881,77 @@ export default function SignalGate() {
                         hardware in the world uses to say so. */}
                     <span className="signal-gate-status-chip">
                         <span className="signal-gate-glyph" aria-hidden="true">
-                            {phase === "ready" || phase === "leaving" ? (
-                                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2">
-                                    <circle cx="12" cy="12" r="9.25" stroke="currentColor" />
-                                    <path d="m7.6 12.3 3 3 5.8-6.4" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            ) : (
-                                <svg viewBox="0 0 24 24" fill="none">
-                                    <circle cx="12" cy="12" r="4" fill="currentColor" />
-                                    <circle
-                                        className="signal-gate-ping"
-                                        cx="12"
-                                        cy="12"
-                                        r="8.5"
-                                        stroke="currentColor"
-                                        strokeWidth="1.5"
-                                    />
-                                </svg>
-                            )}
+                            <svg viewBox="0 0 24 24" fill="none">
+                                <circle cx="12" cy="12" r="4" fill="currentColor" />
+                                <circle
+                                    className="signal-gate-ping"
+                                    cx="12"
+                                    cy="12"
+                                    r="8.5"
+                                    stroke="currentColor"
+                                    strokeWidth="1.5"
+                                />
+                            </svg>
                         </span>
-                        {phase === "idle"
-                            ? "Live"
-                            : phase === "linking"
-                              ? "Linking"
-                              : "Connected"}
+                        Live
                     </span>
                 </p>
 
-                {/* THREE HEADLINES, NOT TWO, and the middle one is the point:
-                    a single "Connected." covering both `linking` and `ready`
-                    claims the arrival while the readout is still running, and
-                    a headline that gets ahead of the log under it is the sort
-                    of small dishonesty that makes a sequence feel canned.
+                {/* ── THE WORDS DO NOT CHANGE, THEY LEAVE ──
+                    Every string on this screen is now a constant. There used
+                    to be three headlines and three status words tracking the
+                    phases, because the phases had a boot readout to narrate;
+                    with the choreography carrying the transition there is
+                    nothing left to narrate, and copy that rewrites itself on
+                    the way out is noise at exactly the moment the screen
+                    should be getting quieter.
 
-                    None of the three repeats the status chip beside it or the
-                    banner at the end — "Linking", "You're in." and "Uplink
-                    established" are three statements, not one said thrice. */}
+                    All of it stays MOUNTED through `parting` so CSS can carry
+                    it out on a stagger — unmounting would be the abrupt cut
+                    this is deliberately not. */}
                 <p id="signal-gate-title" className="signal-gate-title">
-                    {phase === "idle"
-                        ? "Ready when you are."
-                        : phase === "linking"
-                          ? "Coming online."
-                          : "You’re in."}
+                    Ready when you are.
                 </p>
 
-                {/* ── The one instrument, in a fixed slot ──
-                    Above the phase-dependent block rather than inside it, so
-                    it holds the same position in all four phases and does not
-                    move when the copy below is swapped for the boot log.
-
-                    That is also what lets it survive the press and finally
-                    beat — see the effect. */}
+                {/* The one instrument. It leaves with the copy, fading rather
+                    than cutting — its ticker is detached only once the fade is
+                    over, or the last frame would freeze and the reader would
+                    watch a still line fade next to one that was moving. */}
                 <canvas
                     ref={ecgRef}
                     className="signal-gate-ecg"
                     aria-hidden="true"
                 />
 
-                {phase === "idle" ? (
-                    <>
-                        {/* ── What the reader is about to see ──────
-                            Orienting, not explaining. The old copy was in the
-                            business of talking someone down — "nothing is
-                            broken" — which only ever made sense on a screen
-                            that had just alarmed them. With nothing to
-                            reassure, the line does the useful thing instead
-                            and tells a recruiter what is behind the door.
+                {/* ── What the reader is about to see ──────
+                    Orienting, not explaining. The break is EXPLICIT, one span
+                    per line, so the two clauses do not wrap wherever the
+                    column happens to run out. */}
+                <p className="signal-gate-body">
+                    <span>ML systems, full-stack engineering.</span>
+                    <span>Three projects, measured.</span>
+                </p>
 
-                            The break is EXPLICIT, one span per line, so the
-                            two clauses do not wrap wherever the column happens
-                            to run out. */}
-                        <p className="signal-gate-body">
-                            <span>ML systems, full-stack engineering.</span>
-                            <span>Three projects, measured.</span>
-                        </p>
-
-                        <button
-                            ref={buttonRef}
-                            type="button"
-                            onClick={reconnect}
-                            className="signal-gate-action"
-                        >
-                            Enter
-                            {/* An arrow, not a power symbol. Nothing here is
-                                switched off; this is a threshold, and an arrow
-                                is the one mark that means "through here" to
-                                everybody. It follows the word for the same
-                                reason a door handle is on the leading edge. */}
-                            <span className="signal-gate-power" aria-hidden="true">
-                                <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.3">
-                                    <path d="M4.5 12h14" stroke="currentColor" strokeLinecap="round" />
-                                    <path d="m12.8 6.2 5.8 5.8-5.8 5.8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
-                                </svg>
-                            </span>
-                        </button>
-                    </>
-                ) : (
-                    <ol className="signal-gate-log" aria-live="polite">
-                        {lines.slice(0, shown).map((l) => (
-                            <li key={l.label} className="signal-gate-row">
-                                <span
-                                    className="signal-gate-arrow"
-                                    aria-hidden="true"
-                                >
-                                    &gt;
-                                </span>
-                                <span className="signal-gate-label">
-                                    {l.label}
-                                </span>
-                                {l.status ? (
-                                    <span className="signal-gate-status">
-                                        [{l.status}]
-                                    </span>
-                                ) : null}
-                            </li>
-                        ))}
-                        {shown < lines.length ? (
-                            <li className="signal-gate-row" aria-hidden="true">
-                                <span className="signal-gate-caret" />
-                            </li>
-                        ) : null}
-                    </ol>
-                )}
-            </div>
-
-            {/* ── The verdict ───────────────────────────
-                Across the bottom, full width, and impossible to miss: the beat
-                that says the sequence worked rather than leaving a reader to
-                infer it from a fade.
-
-                "Uplink established", not "All systems operational" — the
-                latter was reassurance about a fault, and there is no longer a
-                fault to reassure anyone about. This states an arrival.
-
-                Its own `aria-live` rather than relying on the log's. That
-                region announces rows as they stream, and this is a different
-                kind of message — it must be spoken as one, not as an eighth
-                log line.
-
-                Rendered from `linking` onward and revealed by CSS on `ready`,
-                so the strip's height is in the layout from the start and the
-                log above it does not shift when it arrives. */}
-            {phase !== "idle" && (
-                <div className="signal-gate-verdict" aria-live="polite">
-                    <span className="signal-gate-verdict-glyph" aria-hidden="true">
-                        <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.2">
-                            <circle cx="12" cy="12" r="9.25" stroke="currentColor" />
-                            <path
-                                d="m7.6 12.3 3 3 5.8-6.4"
-                                stroke="currentColor"
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                            />
+                <button
+                    ref={buttonRef}
+                    type="button"
+                    onClick={reconnect}
+                    className="signal-gate-action"
+                >
+                    Enter
+                    {/* An arrow, not a power symbol. Nothing here is switched
+                        off; this is a threshold, and an arrow is the one mark
+                        that means "through here" to everybody. It follows the
+                        word for the same reason a door handle sits on the
+                        leading edge. */}
+                    <span className="signal-gate-power" aria-hidden="true">
+                        <svg viewBox="0 0 24 24" fill="none" strokeWidth="2.3">
+                            <path d="M4.5 12h14" stroke="currentColor" strokeLinecap="round" />
+                            <path d="m12.8 6.2 5.8 5.8-5.8 5.8" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                     </span>
-                    {phase === "linking" ? "" : "Uplink established"}
-                </div>
-            )}
+                </button>
+            </div>
         </div>
     );
 }

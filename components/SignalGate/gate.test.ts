@@ -7,19 +7,16 @@ import {
     expiredClearance,
     encodeClearance,
     parseClearance,
-    bootSequence,
     TTL_MS,
     GATE_KEY,
-    BOOT_TOTAL_MS,
-    BOOT_FADE_MS,
-    BOOT_EMIT_MS,
-    BOOT_CONFIRM_MS,
-    BOOT_CONFIRM_AT,
-    BOOT_FADE_AT,
+    EXIT_MS,
+    CONVERGE_AT,
+    CONVERGE_MS,
+    MERGE_MS,
+    BURST_AT,
+    BURST_MS,
+    FINALE_MS,
 } from "./gate.ts";
-import { SECTION_IDS } from "../LivingArchitecture/stages.ts";
-import { SKILLS } from "../SkillOrbit/data.ts";
-import { CASE_STUDIES } from "../../lib/caseStudies.ts";
 
 /* Run with:
    node --experimental-strip-types --test components/SignalGate/gate.test.ts */
@@ -239,98 +236,54 @@ test("the storage key is namespaced", () => {
     assert.ok(GATE_KEY.includes(":"), "should not collide with a bare key");
 });
 
-/* ── The boot sequence ─────────────────────────────── */
+/* ── The finale ───────────────────────────────────────
+   The schedule that replaced the boot readout. Every offset is derived, and
+   these tests exist because two consumers key off `FINALE_MS` — `close()` and
+   the entrance failsafe — so a hardcoded millisecond anywhere downstream is
+   the failure that would show up as the gate unmounting mid-explosion. */
 
-test("the sequence is three beats and they sum to the whole", () => {
-    /* Log, then verdict, then fade — and the fade is the tail of the
-       confirmation rather than an extra beat after it. Written as arithmetic
-       because every one of these has a downstream consumer: `close()` fires
-       at TOTAL, and lib/entrance.ts arms its failsafe at TOTAL + 400. A stray
-       hardcoded millisecond anywhere in that chain fails silently. */
-    assert.equal(BOOT_EMIT_MS + BOOT_CONFIRM_MS + BOOT_FADE_MS, BOOT_TOTAL_MS);
-    assert.equal(BOOT_FADE_AT + BOOT_FADE_MS, BOOT_TOTAL_MS);
+test("every offset is derived, not written twice", () => {
+    assert.equal(BURST_AT, CONVERGE_AT + CONVERGE_MS + MERGE_MS);
+    assert.equal(FINALE_MS, BURST_AT + BURST_MS);
 });
 
-test("the verdict lands as the log ends, and holds before the fade", () => {
-    // The confirmation is the whole point of the retime: readers thought the
-    // site was down, so "that worked" has to be on screen long enough to read.
-    assert.equal(BOOT_CONFIRM_AT, BOOT_EMIT_MS, "verdict follows the last line");
-    assert.equal(BOOT_FADE_AT, BOOT_CONFIRM_AT + BOOT_CONFIRM_MS);
+test("THE GATHER STARTS BEFORE THE COPY HAS FINISHED LEAVING", () => {
+    /* The overlap is the design. Text out *then* cubes in reads as two steps;
+       starting the gather while the last words are still going makes the whole
+       press one gesture. If someone retimes the exit longer than the gather's
+       start, that overlap silently becomes a gap. */
     assert.ok(
-        BOOT_CONFIRM_MS >= 700,
-        `${BOOT_CONFIRM_MS}ms is not long enough to read a verdict`,
+        CONVERGE_AT < EXIT_MS,
+        `the gather begins at ${CONVERGE_AT}ms, after the copy is gone at ${EXIT_MS}ms`,
     );
+    assert.ok(CONVERGE_AT > 0, "the gather must not start on the same frame as the press");
 });
 
-test("lines are ordered, start at zero and end as the fade begins", () => {
-    const lines = bootSequence();
-    assert.ok(lines.length >= 5, "too short to read as a boot");
-    assert.equal(lines[0].at, 0, "first line should be immediate");
-    assert.equal(
-        lines[lines.length - 1].at,
-        BOOT_CONFIRM_AT,
-        "last line should land exactly as the verdict appears",
-    );
-    for (let i = 1; i < lines.length; i++) {
-        assert.ok(
-            lines[i].at > lines[i - 1].at,
-            `line ${i} does not advance (${lines[i - 1].at} -> ${lines[i].at})`,
-        );
-        assert.ok(lines[i].at <= BOOT_TOTAL_MS, "line lands after the gate is gone");
+test("the beats are in order and none is instant", () => {
+    const beats = { EXIT_MS, CONVERGE_MS, MERGE_MS, BURST_MS };
+    for (const [name, ms] of Object.entries(beats)) {
+        assert.ok(ms > 0, `${name} is ${ms}`);
     }
+    assert.ok(CONVERGE_AT < BURST_AT, "the gather must precede the burst");
+    assert.ok(BURST_AT < FINALE_MS, "the burst must precede the unmount");
 });
 
-test("no line is left unreadably brief", () => {
-    const lines = bootSequence();
-    for (let i = 1; i < lines.length; i++) {
-        assert.ok(
-            lines[i].at - lines[i - 1].at >= 90,
-            `gap ${lines[i].at - lines[i - 1].at}ms reads as a flicker`,
-        );
-    }
+test("the merged cube gets a beat of its own", () => {
+    /* Without a hold the gather and the burst run together and the single cube
+       — the whole point of the gather — is never actually seen. A quarter of a
+       second is the floor for a shape registering as a shape. */
+    assert.ok(MERGE_MS >= 250, `only ${MERGE_MS}ms on screen as one cube`);
 });
 
-test("THE LOG CANNOT LIE — counts come from the live data", () => {
-    /* The whole reason the sequence reads from the real arrays. This fails
-       the day someone adds a skill, adds a section or ships a fourth case
-       study and forgets the entrance exists, which is exactly the kind of
-       thing that otherwise ships as a confident wrong number. */
-    const text = bootSequence()
-        .map((l) => l.label)
-        .join(" | ");
-
-    assert.ok(
-        text.includes(`${SECTION_IDS.length} stages`),
-        `expected ${SECTION_IDS.length} stages in: ${text}`,
-    );
-    assert.ok(
-        text.includes(`${SKILLS.length} bodies`),
-        `expected ${SKILLS.length} bodies in: ${text}`,
-    );
-    assert.ok(
-        text.includes(`projects / ${CASE_STUDIES.length}`),
-        `expected ${CASE_STUDIES.length} projects in: ${text}`,
-    );
-
-    // And no hardcoded number may survive anywhere in the log.
-    for (const n of text.match(/\d+/g) ?? []) {
-        assert.ok(
-            [SECTION_IDS.length, SKILLS.length, CASE_STUDIES.length]
-                .map(String)
-                .includes(n),
-            `"${n}" in the boot log matches no live count`,
-        );
-    }
+test("the debris has time to clear before the gate unmounts", () => {
+    // The gate goes at FINALE_MS. If the burst ran longer, fragments would be
+    // cut off mid-flight — see the "everything is gone by the end" test in
+    // finale.test.ts, which is the other half of this.
+    assert.equal(FINALE_MS - BURST_AT, BURST_MS);
 });
 
-test("the log opens and closes on a statement, not a check", () => {
-    const lines = bootSequence();
-    assert.equal(lines[0].status, undefined);
-    assert.equal(lines[lines.length - 1].status, undefined);
-    // Everything between reports a result.
-    for (const l of lines.slice(1, -1)) assert.equal(l.status, "OK");
-});
-
-test("the sequence is pure", () => {
-    assert.deepEqual(bootSequence(), bootSequence());
+test("the whole thing stays under three seconds", () => {
+    /* It is between a stranger and the site, and it plays before they have
+       decided to care. The boot readout it replaced was 2900ms. */
+    assert.ok(FINALE_MS <= 3000, `${FINALE_MS}ms from the press to the site`);
 });

@@ -132,94 +132,63 @@ export function msRemaining(now: number, stored: string | null): number {
 }
 
 /* ══════════════════════════════════════════════════════
-   The boot sequence
+   The finale
 
-   What plays on screen between "reestablish connection"
-   and the site.
+   What plays between the press and the site: the copy
+   leaves, six blocks gather into one giant cube, and the
+   cube shatters into the hero.
 
-   ── The log is not decoration, and it does not lie ──
-   The obvious version of this fetches BG.JPG and a couple
-   of hex blobs. On a site whose entire argument is that its
-   numbers were measured against something, inventing
-   filenames would be the one dishonest thing on the page.
+   ── It replaced a boot readout ──
+   Seven log lines and a green verdict banner. They were a
+   LOADING SCREEN, and the screen they interrupted was not
+   loading anything — a different idea bolted to the end of
+   a good one. The choreography is the transition now, and
+   there are no words in it at all.
 
-   So the counts are READ FROM THE ARRAYS THE SITE RENDERS
-   FROM. Add a skill and the log says 28 without anyone
-   touching it. There is a test asserting exactly that,
-   because the failure mode otherwise is silent and
-   embarrassing: a boot readout confidently reporting a
-   number the site stopped having.
+   The log's counts were read from `SECTION_IDS`, `SKILLS`
+   and `CASE_STUDIES`, with a test asserting it could never
+   report a number the site had stopped having. That test
+   went with it, and nothing else asserts those counts — a
+   real loss, recorded here rather than quietly dropped.
+
+   ── Every offset is DERIVED ──
+   Never written twice. This sequence has been retimed three
+   times now and every time the thing that would have broken
+   silently is a hardcoded millisecond somewhere downstream.
+   `close()` and the entrance failsafe both key off
+   `FINALE_MS` and follow whatever these say.
    ══════════════════════════════════════════════════════ */
 
-import { SECTION_IDS } from "../LivingArchitecture/stages.ts";
-import { SKILLS } from "../SkillOrbit/data.ts";
-import { CASE_STUDIES } from "../../lib/caseStudies.ts";
-
-/* ── The schedule ──────────────────────────────────────
-   Every offset below is DERIVED from these three, never written twice. The
-   sequence has been retimed twice now and both times the thing that would
-   have broken silently is a hardcoded millisecond somewhere downstream.
-
-   It was 2000ms flat and ended by simply fading out. That is the half of the
-   entrance this redesign fixes: readers reported thinking the site was down,
-   and a sequence that never says "that worked" leaves them to infer it. The
-   confirmation beat is the answer, and it needs real time on screen — under a
-   second is exactly how a reassurance becomes missable. */
-
-/** Lines are emitted across this window. Unchanged pace: 7 rows, ~263ms apart. */
-export const BOOT_EMIT_MS = 1580;
-
-/** The green ALL SYSTEMS OPERATIONAL beat, after the log and before the fade. */
-export const BOOT_CONFIRM_MS = 900;
-
-/** The cross-fade, which OVERLAPS the tail rather than following it. */
-export const BOOT_FADE_MS = 420;
-
-/** Click to portfolio. Fade included, not added on top. */
-export const BOOT_TOTAL_MS = BOOT_EMIT_MS + BOOT_CONFIRM_MS + BOOT_FADE_MS;
-
-export interface BootLine {
-    /** Left side of the row. */
-    label: string;
-    /** Right side. Absent for lines that are statements, not checks. */
-    status?: string;
-    /** Milliseconds after the click at which this line appears. */
-    at: number;
-}
+/**
+ * How long the copy takes to leave.
+ *
+ * It is STAGGERED across this window rather than fading as a block — see the
+ * exit rules in globals.css. Nothing else keys off it; the convergence starts
+ * on its own offset, deliberately earlier.
+ */
+export const EXIT_MS = 420;
 
 /**
- * The readout, timed.
+ * When the blocks start gathering.
  *
- * A function rather than a constant so the counts are resolved at call time,
- * and so the test can compare a fresh result against the live arrays.
+ * BEFORE THE COPY HAS FINISHED LEAVING, and that overlap is the point. Text
+ * out *then* cubes in reads as two steps; starting the gather while the last
+ * words are still going makes it one gesture.
  */
-export function bootSequence(): BootLine[] {
-    const rows: Omit<BootLine, "at">[] = [
-        { label: "carrier detected" },
-        { label: "handshake", status: "OK" },
-        { label: "scroll driver", status: "OK" },
-        { label: `system atlas / ${SECTION_IDS.length} stages`, status: "OK" },
-        { label: `orbital field / ${SKILLS.length} bodies`, status: "OK" },
-        { label: `projects / ${CASE_STUDIES.length}`, status: "OK" },
-        { label: "uplink restored" },
-    ];
+export const CONVERGE_AT = 180;
 
-    const last = rows.length - 1;
-    return rows.map((r, i) => ({
-        ...r,
-        // First at 0, last exactly at BOOT_EMIT_MS, evenly spaced between.
-        at: Math.round((i / last) * BOOT_EMIT_MS),
-    }));
-}
+/** How long the gather takes. Long enough to watch, short enough to want. */
+export const CONVERGE_MS = 900;
 
-/**
- * When the verdict lands — the instant the last log line does.
- *
- * The log stays on screen underneath it. A reader should see the checks AND
- * the conclusion, not have the evidence swapped out for the summary.
- */
-export const BOOT_CONFIRM_AT = BOOT_EMIT_MS;
+/** The merged cube holds here — the beat before it goes. */
+export const MERGE_MS = 320;
 
-/** When the gate starts fading, i.e. once the confirmation has been read. */
-export const BOOT_FADE_AT = BOOT_CONFIRM_AT + BOOT_CONFIRM_MS;
+/** When it shatters. Also when the entrance is released — see SignalGate.tsx. */
+export const BURST_AT = CONVERGE_AT + CONVERGE_MS + MERGE_MS;
+
+/** How long the debris takes to clear. */
+export const BURST_MS = 900;
+
+/** Click to unmount. The burst is included, not added on top. */
+export const FINALE_MS = BURST_AT + BURST_MS;
 
