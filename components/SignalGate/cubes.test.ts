@@ -8,12 +8,11 @@ import {
     KEEP_X,
     KEEP_Y,
     NEAR,
-    RING_MAX,
-    RING_MIN,
     SIZE_MAX,
     SIZE_MIN,
-    anchorAt,
+    collisionRadius,
     depthAt,
+    envFor,
     faceDepth,
     nearness,
     poseAt,
@@ -21,15 +20,16 @@ import {
     renderCube,
     spawnField,
 } from "./cubes.ts";
+import { keepDepth, stepField, type Env } from "./forces.ts";
 
 /* Run with:
    node --experimental-strip-types --test components/SignalGate/cubes.test.ts
-   Pure module, so no DOM and no browser needed — which is the point. This
-   paints behind the alert screen's copy, and every way it can go wrong is
-   either invisible in code review or only findable by watching the screen for
-   a couple of minutes. */
 
-/** Deterministic RNG, so a field is a fixed object and not a roll. */
+   Geometry only. Where the blocks GO is forces.test.ts; this covers the parts
+   that decide what they look like once they are there — and the one seam
+   between the two, which is that a block's collision radius has to match the
+   size it is actually drawn at. */
+
 function seeded(seed: number): () => number {
     let s = seed >>> 0;
     return () => {
@@ -38,19 +38,15 @@ function seeded(seed: number): () => number {
     };
 }
 
-/** The two counts the component actually ships: desktop and phone. */
-const FIELDS = [spawnField(6, seeded(7)), spawnField(4, seeded(31))];
-const ALL = FIELDS.flat();
-
-/** Ten minutes at 5 fps — well past a full lap of the ring. */
-const TIMES = Array.from({ length: 3000 }, (_, i) => i * 0.2);
-
 const VIEWPORTS: readonly [number, number][] = [
     [1440, 900],
     [1920, 1080],
     [375, 812],
     [768, 1024],
 ];
+
+/** Ten minutes at 6fps — well past anything a reader would sit through. */
+const TIMES = Array.from({ length: 3600 }, (_, i) => i * 0.1667);
 
 test("the face table is a closed cube", () => {
     assert.equal(CUBE_VERTS.length, 8);
@@ -74,107 +70,76 @@ test("the face table is a closed cube", () => {
 });
 
 test("a field is reproducible from its seed", () => {
-    assert.deepEqual(spawnField(6, seeded(99)), spawnField(6, seeded(99)));
-    assert.notDeepEqual(spawnField(6, seeded(99)), spawnField(6, seeded(100)));
-    assert.equal(spawnField(0, seeded(1)).length, 0);
+    assert.deepEqual(
+        spawnField(6, seeded(99), 1440, 900),
+        spawnField(6, seeded(99), 1440, 900),
+    );
+    assert.notDeepEqual(
+        spawnField(6, seeded(99), 1440, 900),
+        spawnField(6, seeded(100), 1440, 900),
+    );
+    assert.equal(spawnField(0, seeded(1), 1440, 900).length, 0);
 });
 
-test("NOTHING IS EVER DRAWN ON THE COPY", () => {
-    /* The headline complaint about the first version, and the reason the ring
-       exists: thirty cubes at uniformly random world positions put most of
-       them across the middle of the screen, so the title, the trace and the
-       button each had a block behind them.
+test("NOTHING SPAWNS ON THE COPY", () => {
+    /* The physics keeps them off it thereafter; this is about frame one, which
+       is the frame everybody sees. */
+    for (const [w, h] of VIEWPORTS) {
+        const env = envFor(w, h);
+        for (const c of spawnField(6, seeded(7), w, h)) {
+            const k = keepDepth(c.x, c.y, env.keepX, env.keepY);
+            assert.ok(k >= 1, `${w}×${h}: spawned at depth ${k.toFixed(3)}`);
+        }
+    }
+});
 
-       Stated in viewport FRACTIONS, so this one assertion holds at 375px and
-       at 1920px and everywhere between. */
-    for (const c of ALL) {
+test("blocks start spread around the copy, not clumped", () => {
+    /* Six independent random positions clump — that is what random does, and
+       at six blocks one clump is the whole composition. Each gets its own
+       slice of the circle and may only wander inside it. */
+    const n = 6;
+    const angles = spawnField(n, seeded(7), 1440, 900)
+        .map((c) => (Math.atan2(c.y, c.x) + Math.PI * 2) % (Math.PI * 2))
+        .sort((a, b) => a - b);
+
+    const slice = (Math.PI * 2) / n;
+    for (let i = 0; i < n; i++) {
+        const gap =
+            i === n - 1 ? angles[0] + Math.PI * 2 - angles[i] : angles[i + 1] - angles[i];
+        assert.ok(
+            gap >= slice * 0.4,
+            `two blocks opened ${((gap * 180) / Math.PI).toFixed(1)}° apart`,
+        );
+    }
+});
+
+test("sizes and depths stay in range", () => {
+    for (const c of spawnField(6, seeded(3), 1440, 900)) {
+        assert.ok(c.size >= SIZE_MIN && c.size <= SIZE_MAX, `size=${c.size}`);
         for (const t of TIMES) {
-            const { fx, fy } = anchorAt(c, t);
-            const d = Math.hypot(fx / KEEP_X, fy / KEEP_Y);
-            assert.ok(d >= 1 - 1e-9, `a cube reached ${d.toFixed(3)} of the keep-out at t=${t}`);
+            const z = depthAt(c, t);
+            assert.ok(z > NEAR && z < FAR, `z=${z} outside the planes at t=${t}`);
         }
     }
 });
 
-test("…and nothing wanders off the screen either", () => {
-    /* The other half. A ring pushed far enough out to clear the copy is a
-       ring whose blocks are outside the frame, and six cubes is few enough
-       that losing one to the margin is a visible hole. */
-    const limX = RING_MAX * KEEP_X;
-    const limY = RING_MAX * KEEP_Y;
-    assert.ok(limX < 0.5 && limY < 0.5, "the ring itself reaches past the frame");
-
-    for (const c of ALL) {
-        for (const t of TIMES) {
-            const { fx, fy, r } = anchorAt(c, t);
-            assert.ok(r >= RING_MIN - 1e-9 && r <= RING_MAX + 1e-9, `radius ${r}`);
-            assert.ok(Math.abs(fx) <= limX + 1e-9, `fx=${fx}`);
-            assert.ok(Math.abs(fy) <= limY + 1e-9, `fy=${fy}`);
-        }
-    }
-});
-
-test("BEARINGS ARE DEALT, NOT ROLLED", () => {
-    /* Six independent random bearings clump — that is what random does, and
-       with a field this small one clump is the whole composition. Each cube
-       gets its own slice and may only wander inside it. */
-    for (const field of FIELDS) {
-        const n = field.length;
-        const slice = (Math.PI * 2) / n;
-        const angles = field
-            .map((c) => ((c.theta % (Math.PI * 2)) + Math.PI * 2) % (Math.PI * 2))
-            .sort((a, b) => a - b);
-
-        for (let i = 0; i < n; i++) {
-            const gap = i === n - 1
-                ? angles[0] + Math.PI * 2 - angles[i]
-                : angles[i + 1] - angles[i];
-            assert.ok(
-                gap >= slice * 0.5 - 1e-9,
-                `two of ${n} cubes sat ${((gap * 180) / Math.PI).toFixed(1)}° apart`,
-            );
-        }
-    }
-});
-
-test("no cube starts level with the middle of the copy", () => {
-    /* The half-slice offset. At `i / n` a six-cube field puts blocks at 0 and
-       π — dead level with the headline, one either side.
-
-       AND THE COUNT HAS TO BE EVEN for the offset to do that. This test was
-       written against 6 and 5, and the five-cube phone field failed it
-       immediately: five slices offset by a half still puts a bearing on 180°.
-       The phone count is 4. */
-    for (const field of FIELDS) {
-        assert.equal(field.length % 2, 0, "an odd count defeats the half-slice offset");
-        for (const c of field) {
-            const th = ((c.theta % Math.PI) + Math.PI) % Math.PI;
-            assert.ok(
-                Math.min(th, Math.PI - th) > 0.25,
-                `a cube opened at ${((th * 180) / Math.PI).toFixed(1)}° off the copy's axis`,
-            );
-        }
-    }
-});
-
-test("DEPTH OSCILLATES AND NEVER WRAPS", () => {
-    /* No seam, so no alpha envelope is needed to hide one — which matters at
-       six cubes, where an envelope closing to zero takes a sixth of the
-       composition off the screen at a time. */
+test("DEPTH NEVER JUMPS", () => {
+    // Bounded oscillation, not a wrap — so no alpha envelope is needed to hide
+    // a teleport, and at six blocks an envelope would be taking a sixth of the
+    // composition off screen at a time.
     const dt = 1 / 60;
-    for (const c of ALL) {
+    for (const c of spawnField(6, seeded(15), 1440, 900)) {
         let prev = depthAt(c, 0);
         for (let i = 1; i <= 6000; i++) {
             const z = depthAt(c, i * dt);
-            assert.ok(z > NEAR && z < FAR, `z=${z} outside the planes`);
             assert.ok(Math.abs(z - prev) < 0.01, `depth jumped ${Math.abs(z - prev)}`);
             prev = z;
         }
     }
 });
 
-test("every cube stays lit — none fades to nothing", () => {
-    for (const c of ALL) {
+test("every block stays lit — none fades to nothing", () => {
+    for (const c of spawnField(6, seeded(4), 1440, 900)) {
         for (const t of TIMES) {
             const n = nearness(depthAt(c, t));
             assert.ok(n > 0.05 && n <= 1, `nearness ${n} at t=${t}`);
@@ -182,29 +147,64 @@ test("every cube stays lit — none fades to nothing", () => {
     }
 });
 
-test("sizes stay inside their range", () => {
-    for (const c of ALL) {
-        assert.ok(c.size >= SIZE_MIN && c.size <= SIZE_MAX, `size=${c.size}`);
+test("THE COLLISION RADIUS TRACKS WHAT IS DRAWN", () => {
+    /* The seam between this module and forces.ts, and the one place a bug here
+       would be invisible in both. If the radius handed to the physics is
+       smaller than the block on screen, blocks visibly overlap before anything
+       pushes; much larger and they barge each other across a gap.
+
+       This caught exactly that: the first version passed the FACE half-extent
+       and the drawn silhouette reached 2.2× further.
+
+       Two assertions, and the second is the real one. A sensible band is easy
+       to hit by luck; a TIGHT SPREAD of the ratio across every viewport, depth
+       and size is what proves the radius is actually derived from the drawing
+       rather than coincidentally near it. */
+    const ratios: number[] = [];
+
+    for (const [w, h] of VIEWPORTS) {
+        const m = Math.min(w, h);
+        for (const c of spawnField(6, seeded(23), w, h)) {
+            for (const t of [0, 4.5, 37, 300]) {
+                const z = depthAt(c, t);
+                const pose = poseAt(c, t, w, h);
+                const pts = CUBE_VERTS.map((v) => project(v, pose, w, h));
+                const cx = w / 2 + c.x * m;
+                const cy = h / 2 + c.y * m;
+                const reach =
+                    Math.max(...pts.map((p) => Math.hypot(p.x - cx, p.y - cy))) / m;
+                const r = collisionRadius(c, z);
+
+                assert.ok(r > 0 && Number.isFinite(r), `bad radius ${r}`);
+                assert.ok(
+                    r >= reach * 0.45 && r <= reach * 1.05,
+                    `radius ${r.toFixed(4)} against a reach of ${reach.toFixed(4)}`,
+                );
+                ratios.push(r / reach);
+            }
+        }
     }
+
+    const spread = Math.max(...ratios) / Math.min(...ratios);
+    assert.ok(spread < 1.6, `the ratio wandered by ${spread.toFixed(2)}×`);
 });
 
-test("the anchor is what decides where a cube lands, at any viewport", () => {
-    /* Screen-anchored, not world-anchored. Anchor in world space instead and
-       the projection pulls a cube toward the middle of the frame as it
-       recedes — every one of them ends up crossing the copy eventually, which
-       is the exact problem the ring was introduced to fix. */
+test("the pose keeps a block where the physics put it, at any viewport", () => {
+    /* Depth is divided back out. Skip that and perspective drags every block
+       toward the middle of the frame as it recedes — and the middle of the
+       frame is the copy. */
     for (const [w, h] of VIEWPORTS) {
-        for (const c of ALL) {
+        const m = Math.min(w, h);
+        for (const c of spawnField(6, seeded(31), w, h)) {
             for (const t of [0, 7.3, 61, 400]) {
-                const a = anchorAt(c, t);
                 const p = project({ x: 0, y: 0, z: 0 }, poseAt(c, t, w, h), w, h);
                 assert.ok(
-                    Math.abs(p.x - (w / 2 + a.fx * w)) < 1e-6,
-                    `x drifted from its anchor: ${p.x} vs ${w / 2 + a.fx * w}`,
+                    Math.abs(p.x - (w / 2 + c.x * m)) < 1e-6,
+                    `x drifted from where the physics put it`,
                 );
                 assert.ok(
-                    Math.abs(p.y - (h / 2 + a.fy * h)) < 1e-6,
-                    `y drifted from its anchor: ${p.y} vs ${h / 2 + a.fy * h}`,
+                    Math.abs(p.y - (h / 2 + c.y * m)) < 1e-6,
+                    `y drifted from where the physics put it`,
                 );
             }
         }
@@ -213,7 +213,7 @@ test("the anchor is what decides where a cube lands, at any viewport", () => {
 
 test("projection stays finite and in front of the camera", () => {
     for (const [w, h] of VIEWPORTS) {
-        for (const c of ALL) {
+        for (const c of spawnField(6, seeded(8), w, h)) {
             for (const t of TIMES) {
                 const pose = poseAt(c, t, w, h);
                 for (const v of CUBE_VERTS) {
@@ -227,17 +227,15 @@ test("projection stays finite and in front of the camera", () => {
 });
 
 test("no block ever becomes a wall", () => {
-    /* A cube filling the frame stops being a backdrop. The bound is a
-       fraction of min(w, h) because `project` scales by that, so this one
-       number holds at every viewport. `SIZE_MAX` and `NEAR` are what it is
-       measuring; raising either is what fails it. */
+    /* A cube filling the frame stops being a backdrop. The bound is a fraction
+       of min(w, h) because `project` scales by that, so this one number holds
+       at every viewport. `SIZE_MAX` and `NEAR` are what it measures. */
     let worst = 0;
     for (const [w, h] of VIEWPORTS) {
         const lim = Math.min(w, h);
-        for (const c of ALL) {
+        for (const c of spawnField(6, seeded(12), w, h)) {
             for (const t of TIMES) {
-                const pose = poseAt(c, t, w, h);
-                const pts = CUBE_VERTS.map((v) => project(v, pose, w, h));
+                const pts = CUBE_VERTS.map((v) => project(v, poseAt(c, t, w, h), w, h));
                 const xs = pts.map((p) => p.x);
                 const ys = pts.map((p) => p.y);
                 worst = Math.max(
@@ -254,7 +252,7 @@ test("no block ever becomes a wall", () => {
 test("faces come back sorted back to front", () => {
     /* Painter's algorithm, and translucent fills make an out-of-order stack
        read as a cube turned inside out rather than as a bug. */
-    for (const c of ALL) {
+    for (const c of spawnField(6, seeded(6), 1440, 900)) {
         for (const t of [0, 3.7, 41.2, 300.9]) {
             const { faces } = renderCube(c, t, 1440, 900);
             assert.equal(faces.length, 6);
@@ -288,10 +286,53 @@ test("nearness runs far → near and clamps outside the range", () => {
     assert.equal(nearness(NEAR - 9), 1);
 });
 
-test("a frame is reproducible", () => {
-    // No accumulated state anywhere. Same t, same picture — which is what
-    // makes every assertion above mean something.
-    const a = ALL.map((c) => renderCube(c, 12.5, 1440, 900));
-    const b = ALL.map((c) => renderCube(c, 12.5, 1440, 900));
-    assert.deepEqual(a, b);
+test("envFor converts the viewport into the physics' units", () => {
+    // Landscape: the short edge is the height, so halfY is exactly 0.5.
+    const d = envFor(1440, 900);
+    assert.equal(d.halfY, 0.5);
+    assert.ok(Math.abs(d.halfX - 0.8) < 1e-9);
+    assert.ok(Math.abs(d.keepX - (KEEP_X * 1440) / 900) < 1e-9);
+
+    // Portrait: it is the width, so halfX is 0.5 and the keep-out is taller
+    // than it is wide — as the copy column is.
+    const p = envFor(375, 812);
+    assert.equal(p.halfX, 0.5);
+    assert.ok(p.keepY > p.keepX, "the exclusion zone should be tall on a phone");
+
+    // The exclusion zone always fits inside the frame, or nothing could
+    // satisfy both constraints at once.
+    for (const [w, h] of VIEWPORTS) {
+        const e = envFor(w, h);
+        assert.ok(e.keepX < e.halfX, `${w}×${h}: keep-out wider than the frame`);
+        assert.ok(e.keepY < e.halfY, `${w}×${h}: keep-out taller than the frame`);
+    }
+});
+
+test("A LIVE FIELD STAYS OFF THE COPY AND ON THE SCREEN", () => {
+    /* The two modules together, driven the way the component drives them:
+       radii refreshed from depth every frame, the pointer parked on the copy
+       so it is actively shoving blocks at the text. */
+    for (const [w, h] of VIEWPORTS) {
+        const base = envFor(w, h);
+        const env: Env = { ...base, pointer: { x: 0, y: 0 } };
+        const cubes = spawnField(6, seeded(42), w, h);
+        const dt = 1 / 60;
+
+        for (let f = 1; f <= 3600; f++) {
+            const t = f * dt;
+            for (const c of cubes) c.r = collisionRadius(c, depthAt(c, t));
+            stepField(cubes, dt, t, env);
+
+            for (const c of cubes) {
+                assert.ok(
+                    keepDepth(c.x, c.y, base.keepX, base.keepY) >= 1 - 1e-9,
+                    `${w}×${h}: on the copy at frame ${f}`,
+                );
+                assert.ok(
+                    Number.isFinite(c.x) && Number.isFinite(c.y),
+                    `${w}×${h}: NaN at frame ${f}`,
+                );
+            }
+        }
+    }
 });

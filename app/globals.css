@@ -1811,50 +1811,48 @@ html.zone-immersive .zone-bar {
    ══════════════════════════════════════════════════════ */
 
 /* ══════════════════════════════════════════════════════
-   THE GATE IS THE ONE PLACE OFF THE ONE-ACCENT LOCK.
+   THE ENTRANCE IS ON THE SITE'S OWN PALETTE.
 
-   Red and green appear nowhere else on this site, and that
-   restriction still stands everywhere else. This overlay is
-   a different room that precedes the portfolio and hands
-   over to the real palette on the way out, and it earns the
-   exception for a measured reason: readers reported thinking
-   the site was DOWN. An entrance that opens in the site's own
-   calm blue, says "Signal lost", and offers a quiet accent
-   button does not read as a designed sequence — it reads as
-   an outage.
+   It used to be the one place off the one-accent lock: a
+   near-black ground and alert red, on the theory that a fault
+   dramatic enough would read as designed. It did not. Three
+   rounds of rewriting the copy never moved the one complaint
+   that mattered — RECRUITERS READ IT AS BROKEN — because the
+   two loudest things on the screen were not words. Red is an
+   alarm before anyone reads a headline, and the trace under
+   it was a FLATLINE, which is the most literal way a screen
+   can say dead.
 
-   So the fault state is an alert, and the recovery is
-   confirmed out loud. Three phases, three palettes:
+   So the fault is gone rather than reworded, and the room is
+   the site's own deep water: `--surface-0` ground, a
+   `--surface-3` aura, accent-blue blocks with ice edges. The
+   exception is retired; there is one palette now.
 
-     lost       near-black ground, alert red     — something is wrong
-     booting    the site's own surface + accent  — it is being fixed
-     confirmed  the same ground, operational green — it worked
+   Two things fall out of that for free. The press stops being
+   a jolt — the boot readout already lands on these colours,
+   so the whole entrance is one continuous palette rather than
+   red → blue. And CONTRAST GETS EASIER, WHICH IS WHAT PAYS
+   FOR A BRIGHTER ROOM: ice on a full-strength blue aura
+   measures ≈8.6:1 where red type on the red room was scraping
+   5.8, so the light can be far more vibrant than the alert
+   screen could ever have afforded.
 
-   Every value below is solved against AA rather than picked
-   by eye, measured on the ground it actually lands on:
-     #FF453A on #060708 → 5.92:1
-     #E8EAED on #060708 → 16.73:1
-     #9AA2A8 on #060708 → 7.30:1
-     #30D158 on --surface-0 → 7.64:1
+   Four phases, and only the last two change hue at all:
 
-   ── THE RED BUDGET IS THREE THINGS ──
-   The key colour marks the STATUS DOT, the TRACE and the
-   BUTTON FILL. Nothing else on this screen is red, and that
-   restraint is the difference between a designed entrance
-   and an error page.
+     idle     deep water, accent   — the station is up, waiting
+     linking  the same, unchanged  — the readout runs
+     ready    the same + green     — you are through
+     leaving  back to accent       — hand over to the site
 
-   It was not always. The eyebrow, the headline, a 29px call
-   to action and the button were all red at once — four
-   saturated things in one vertical stack, three of them
-   labelling the same single action. Saturated red type on a
-   red-lit room is the last piece of error iconography left
-   after the warning triangle goes, and it is also the
-   worst-contrasting text on the screen: the headline in
-   `--gate-text` reads at 16.73:1 against the 5.92 it had in
-   `--gate-key`.
+   Green survives as the one moment of reward. It is the only
+   colour on the site outside the accent, and it earns that by
+   appearing for 900ms at the end of a sequence.
 
-   So the room stays dramatic and the words go calm. Red is
-   reserved for state, signal and action.
+   Measured on the ground each actually lands on:
+     #BBE1FA on --surface-0 → 11.20:1
+     #839BAA on --surface-0 →  5.03:1
+     #5C9ECA on --surface-0 →  5.31:1
+     #30D158 on --surface-0 →  7.64:1
    ══════════════════════════════════════════════════════ */
 .signal-gate {
   position: fixed;
@@ -1865,12 +1863,12 @@ html.zone-immersive .zone-bar {
   justify-content: center;
   padding: clamp(1.5rem, 6vw, 5rem);
 
-  /* The alert palette is the DEFAULT, because `lost` is the first thing on
-     screen and a flash of the wrong ground would undo the whole point. */
-  --gate-bg: #060708;
-  --gate-key: #ff453a;
-  --gate-text: #e8eaed;
-  --gate-dim: #9aa2a8;
+  /* `idle` is the DEFAULT, because it is the first thing on screen and a
+     flash of the wrong ground would undo the whole point. */
+  --gate-bg: var(--surface-0);
+  --gate-key: var(--accent-text);
+  --gate-text: var(--text-primary);
+  --gate-dim: var(--text-tertiary);
 
   background: var(--gate-bg);
   transition:
@@ -1880,9 +1878,10 @@ html.zone-immersive .zone-bar {
     --gate-dim 520ms var(--ease);
 }
 
-/* Pressed: the site's own colours arrive while the readout runs, so the
-   recovery is visible before it is stated. */
-.signal-gate[data-phase="booting"],
+/* Pressed. Nothing needs to change — which is the point of moving the room
+   onto the site's colours — but the rule stays as the seam the `ready` beat
+   transitions out of. */
+.signal-gate[data-phase="linking"],
 .signal-gate[data-phase="leaving"] {
   --gate-bg: var(--surface-0);
   --gate-key: var(--accent-text);
@@ -1890,8 +1889,8 @@ html.zone-immersive .zone-bar {
   --gate-dim: var(--text-tertiary);
 }
 
-/* Confirmed: green, and the only place on the site it appears. */
-.signal-gate[data-phase="confirmed"] {
+/* Ready: green, and the only place on the site it appears. */
+.signal-gate[data-phase="ready"] {
   --gate-bg: var(--surface-0);
   --gate-key: #30d158;
   --gate-text: var(--text-primary);
@@ -1912,37 +1911,39 @@ html.zone-immersive .zone-bar {
 }
 
 /* ══════════════════════════════════════════════════════
-   The red room — `lost` only
+   The room — `idle` only
 
-   Translucent blocks tumbling through a deep red glow, after
-   the PlayStation 2's red screen of death. The alert screen
-   was a headline, a paragraph and a control on flat black
-   with a lot of nothing around them; this gives the fault
-   somewhere to happen.
+   Translucent blocks drifting through deep water, pushing
+   each other apart and scattering from the pointer.
+
+   It was a red glow, after the PlayStation 2's red screen of
+   death, and the reference was the problem: it was a screen
+   people recognised as a FAULT. Same blocks, same aura, same
+   scrim — lit in the site's own colours instead, so the thing
+   a recruiter sees first is somewhere they want to be rather
+   than somewhere that has gone wrong.
 
    ── THIS IS THE SITE'S ONLY GLOW, AND IT IS RATIONED ──
-   Everything above about the one-accent lock applies here
-   too. The page proper has no glow at all — three atmosphere
+   The page proper has no glow at all — three atmosphere
    radials, the Ludex bloom and the zone's violet field were
    all deleted, and only the two canvases emit light, which is
-   what makes them read as instruments. The gate is already
-   the documented exception to the palette; this extends that
-   exception to light, and to nothing else. Do not take it as
-   licence for a decorative radial anywhere on the page.
+   what makes them read as instruments. This overlay is the
+   one exception, it ends the moment the button is pressed,
+   and it is not licence for a decorative radial anywhere on
+   the page.
 
    ── THE AURA IS SHAPED AROUND THE COPY, NOT UNDER IT ──
-   Every element on this screen currently clears AA on
-   #060708 — the red eyebrow and title at 5.92:1, the body at
-   16.73, the button label at 16.82 — and the eyebrow is 12px,
-   so it has the least to give. Red light behind type eats
-   straight into that margin.
-
+   Light behind type still eats contrast, even friendly light.
    So the colour is pooled AWAY from the content column, into
-   the lower-right and upper-left, and a near-black scrim sits
-   over the middle, above the cubes and below the text. The
-   room glows around the reader rather than behind them. The
-   acceptance test for this whole feature is the composited
-   contrast at each text element, not a look-over.
+   the lower-right and upper-left, with a scrim over the
+   middle above the blocks and below the text. The room glows
+   around the reader rather than behind them.
+
+   Blue is far more forgiving than the red was — ice on a
+   full-strength aura measures ≈8.6:1 where red type was
+   scraping 5.8 — and that headroom is spent on a brighter
+   room, not banked. The composited contrast at each text
+   element is still the acceptance test, not a look-over.
    ══════════════════════════════════════════════════════ */
 .signal-gate-backdrop {
   position: absolute;
@@ -1955,19 +1956,21 @@ html.zone-immersive .zone-bar {
   transition: opacity 520ms var(--ease);
 }
 
-/* Belongs to the fault. The instant the button is pressed the room goes with
-   it — and the draw loop is detached in JS at the same moment, so this is the
-   visual half of a stand-down, not a canvas painting behind an opacity of 0. */
-.signal-gate:not([data-phase="lost"]) .signal-gate-backdrop {
+/* Belongs to `idle`. The instant the button is pressed the room goes with it —
+   and the draw loop and the physics are detached in JS at the same moment, so
+   this is the visual half of a stand-down, not a canvas integrating a field
+   behind an opacity of 0. */
+.signal-gate:not([data-phase="idle"]) .signal-gate-backdrop {
   opacity: 0;
 }
 
 /* The aura. Two pools, both off the content column, both well short of the
-   corners so the target-lock brackets still read against black.
+   corners so the target-lock brackets still read against the ground.
 
-   Literal reds rather than `--gate-key`, and deliberately: this element only
-   ever exists during `lost`, while that token travels red → blue → green. A
-   derived aura would flash blue for the length of its own fade-out. */
+   Literal values rather than `--gate-key`, and deliberately: this element only
+   ever exists during `idle`, while that token travels to green on the `ready`
+   beat. A derived aura would flash green for the length of its own fade-out.
+   These are `--surface-3` and the accent. */
 .signal-gate-backdrop::before,
 .signal-gate-backdrop::after {
   content: "";
@@ -1978,29 +1981,32 @@ html.zone-immersive .zone-bar {
 .signal-gate-backdrop::before {
   background:
     radial-gradient(
-      58% 66% at 84% 80%,
-      rgba(190, 26, 22, 0.5),
-      rgba(190, 26, 22, 0.18) 46%,
-      transparent 72%
+      60% 68% at 84% 80%,
+      rgba(50, 130, 184, 0.42),
+      rgba(15, 76, 117, 0.24) 46%,
+      transparent 74%
     ),
     radial-gradient(
-      52% 62% at 13% 15%,
-      rgba(146, 20, 18, 0.32),
-      rgba(146, 20, 18, 0.1) 48%,
-      transparent 74%
+      54% 64% at 13% 15%,
+      rgba(15, 76, 117, 0.5),
+      rgba(15, 76, 117, 0.18) 48%,
+      transparent 76%
     );
 }
 
-/* The scrim, painted over the cubes. Sized with `max()` so it still covers
+/* The scrim, painted over the blocks. Sized with `max()` so it still covers
    the 34rem column on a 375px screen — a percentage alone collapses to
    narrower than the text it is protecting, which is the one width where the
-   contrast actually needs it. */
+   contrast actually needs it.
+
+   `--surface-0`, so the middle of the screen settles onto exactly the ground
+   the site itself uses and the handover has nothing to cross. */
 .signal-gate-backdrop::after {
   z-index: 1;
   background: radial-gradient(
     max(22rem, 44%) max(22rem, 62%) at 50% 50%,
-    rgba(6, 7, 8, 0.94),
-    rgba(6, 7, 8, 0.94) 62%,
+    rgba(27, 38, 44, 0.92),
+    rgba(27, 38, 44, 0.92) 62%,
     transparent 100%
   );
 }
@@ -2011,10 +2017,11 @@ html.zone-immersive .zone-bar {
   width: 100%;
   height: 100%;
   display: block;
-  /* The draw loop reads this, not a hardcoded value — the same rule the
-     carrier and the ECG follow, so the field cannot hold a second copy of
-     the red. Face fills are derived from it inside the loop. */
-  color: var(--gate-key);
+  /* The draw loop reads this, not a hardcoded value — the same rule the trace
+     follows, so the field cannot hold a second copy of the accent. Face fills
+     are derived from it inside the loop; the ice edge is the one literal, and
+     it is there because an element cannot hand a canvas two colours. */
+  color: var(--accent);
 }
 
 /* ── Target-lock brackets ──
@@ -2137,16 +2144,15 @@ html.zone-immersive .zone-bar {
   white-space: nowrap;
 }
 
-/* THE ONE RED THING IN THE MASTHEAD, and it is a glyph rather than a word.
-   SHAPE IS A SIGNAL IN ITS OWN RIGHT: red→green is the textbook red/green
-   colour-blind failure, so the glyph and the wording each carry the state
+/* THE ONE ACCENT MARK IN THE MASTHEAD, and it is a glyph rather than a word.
+   SHAPE IS A SIGNAL IN ITS OWN RIGHT: the state has to survive a reader who
+   cannot separate the two hues, so the glyph and the wording each carry it
    independently of the palette.
 
-   A POWER SYMBOL while contact is lost, not a warning triangle. A triangle is
-   error iconography and it was the first mark the eye resolved on this screen.
-   A power symbol is read by everyone, technical or not, as "switched off —
-   switch it on", which says both "intentional" and "there is a control here"
-   in a single mark. */
+   A PULSING DOT while the station waits, not a power symbol. A power symbol
+   means "switched off", which was right when the premise was a fault and is
+   exactly backwards now — the system is up, and a dot with a pulse ring is
+   what every piece of live hardware in the world uses to say so. */
 .signal-gate-glyph {
   display: inline-flex;
   width: 0.95rem;
@@ -2158,6 +2164,28 @@ html.zone-immersive .zone-bar {
 .signal-gate-glyph svg {
   width: 100%;
   height: 100%;
+  overflow: visible;
+}
+
+/* The ring breathing out of the dot. `transform-box: fill-box` and a 50%
+   origin, or the scale pivots on the SVG's own origin and the ring swings off
+   across the masthead instead of expanding in place. */
+.signal-gate-ping {
+  transform-box: fill-box;
+  transform-origin: 50% 50%;
+  animation: signal-ping 2.6s var(--ease) infinite;
+}
+
+@keyframes signal-ping {
+  0% {
+    opacity: 0.55;
+    transform: scale(0.55);
+  }
+  70%,
+  100% {
+    opacity: 0;
+    transform: scale(1.25);
+  }
 }
 
 /* OFF-WHITE, NOT RED — see the red budget at the top of this block. This is
@@ -2245,7 +2273,7 @@ html.zone-immersive .zone-bar {
   pointer-events: none;
 }
 
-.signal-gate[data-phase="confirmed"] .signal-gate-verdict,
+.signal-gate[data-phase="ready"] .signal-gate-verdict,
 .signal-gate[data-phase="leaving"] .signal-gate-verdict {
   opacity: 1;
   transform: translateY(0);
@@ -2284,10 +2312,15 @@ html.zone-immersive .zone-bar {
   margin-top: 1.4rem;
   /* A safety net only — the lines are explicit spans, so this never decides
      where they break. It just stops a runaway at some unforeseen width. */
-  max-width: 34ch;
-  font-size: clamp(1.15625rem, 1.1013rem + 0.2347vw, 1.3125rem);
+  max-width: 40ch;
+  /* `body-lg`'s rung, 16.5 → 18.5. It sat a rung higher, at 21, when it was
+     carrying the reassurance couplet and had to be the loudest thing on the
+     screen. This copy is orienting rather than emotional, so it stops
+     competing with the 50px headline — and at 21px the first clause wrapped
+     at 375px, which put "engineering." alone on a line of its own. */
+  font-size: clamp(1.03125rem, 0.99rem + 0.19vw, 1.15625rem);
   font-weight: 500;
-  line-height: 1.35;
+  line-height: 1.45;
   /* Tightened a hair, as every rung above 18.5px on this site is. */
   letter-spacing: -0.006em;
   color: var(--gate-text);
@@ -2302,41 +2335,47 @@ html.zone-immersive .zone-bar {
 }
 
 /* ── The control, and it is THE control ─────────────────
-   SOLID, NOT A TINT. This was a 12%-key wash behind a 1px border with a 16px
-   Inter label — a ghost button, on a screen whose entire job is to stop people
-   thinking the site is broken. It read as the quietest thing present, which is
-   the exact opposite of what it is. Filled with the key colour and the label
-   punched out of the ground, it is unmistakably the one thing to press.
+   SOLID, NOT A TINT, and it is the only filled control on the site. It was a
+   12%-key wash behind a 1px border — a ghost button, on the one screen that
+   has to make its next step obvious.
 
-   `color: var(--gate-bg)` rather than a literal near-black: the label is the
-   ground showing through, so the pair moves together and can never drift into
-   dark-on-dark. Measured on the alert screen — #060708 on #FF453A is 5.98:1.
+   ── IT IS ICE, NOT ACCENT, AND THAT IS A MEASUREMENT ──
+   Filling with `--gate-key` is the obvious move now that the key is the site's
+   accent, and it FAILS: #3282B8 with a `--surface-0` label is **3.59:1**, well
+   under AA, and nothing about it looks wrong enough to catch by eye. Ice at
+   #BBE1FA against the same label is **11.04:1** — the highest contrast
+   anywhere on the screen — which also makes the control the light source of
+   the composition rather than one more blue thing in a blue room.
 
-   ── IT IS ALSO THE ONLY LABEL NOW ──
-   "RESTORE ↓ SIGNAL" sat above it at 29px and the button said "REESTABLISH
-   CONNECTION": two labels, one action, plus an arrow pointing from one to the
-   other. That duplication was most of what read as amateurish. The lockup, its
-   arrow and the four attempts at aiming it are all gone; the words survive as
-   this label, which is shorter for it.
+   `color: var(--gate-bg)` rather than a literal: the label is the ground
+   showing through, so the pair moves together and can never drift into
+   light-on-light.
+
+   The halo stays `--gate-key`, so the button reads as ice lit from beneath by
+   the room's own accent. It is the one place a glow is allowed on this site,
+   the overlay already holds that exception, and it ends when the button is
+   pressed along with everything else here.
 
    JETBRAINS MONO AND UPPERCASE against the Inter title and body — the site's
    existing complement rather than a third family on the first screen anyone
-   sees. 15 → 18.5px are both rungs of the ladder; nothing new is introduced.
-
-   The halo is the one place a glow is allowed on this site, and this overlay
-   already holds that exception — see the red room above. It ends when the
-   button is pressed, along with everything else here. */
+   sees. 15 → 18.5px are both rungs of the ladder; nothing new is introduced. */
 .signal-gate-action {
   animation-delay: 380ms;
-  margin-top: 2rem;
+  margin-top: 2.1rem;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6rem;
-  padding: 1.15rem 2.5rem;
+  gap: 0.7rem;
+  padding: 1.15rem 2.6rem;
+  /* A FLOOR, not padding. "Enter" is five characters and the padding alone
+     left a 187px pill in a 544px column — correct by the type rules and far
+     too small to be the thing the screen is built around. A minimum width
+     makes the control substantial without distorting the padding rhythm, and
+     keeps it that way if the label ever changes. */
+  min-width: min(14rem, 100%);
   border-radius: 9999px;
-  border: 1px solid var(--gate-key);
-  background: var(--gate-key);
+  border: 1px solid var(--gate-text);
+  background: var(--gate-text);
   color: var(--gate-bg);
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
   font-size: clamp(0.9375rem, 0.86rem + 0.33vw, 1.15625rem);
@@ -2344,12 +2383,12 @@ html.zone-immersive .zone-bar {
   letter-spacing: 0.14em;
   /* Tracking is applied to the RIGHT of every glyph including the last, so a
      centred label sits half a space left of true centre. Half of it back as
-     padding, the same correction the eyebrow and the boot rows carry. */
-  padding-left: calc(2.5rem + 0.07em);
+     padding, the same correction the masthead and the boot rows carry. */
+  padding-left: calc(2.6rem + 0.07em);
   text-transform: uppercase;
   line-height: 1;
   cursor: pointer;
-  box-shadow: 0 18px 46px -14px color-mix(in srgb, var(--gate-key) 62%, transparent);
+  box-shadow: 0 18px 48px -14px color-mix(in srgb, var(--gate-key) 70%, transparent);
   transition:
     background 0.35s var(--ease),
     border-color 0.35s var(--ease),
@@ -2360,10 +2399,16 @@ html.zone-immersive .zone-bar {
 .signal-gate-action:hover {
   /* Brighter, not different. A hover that changes the fill colour on a solid
      control reads as a second state rather than as the same button lit. */
-  background: color-mix(in srgb, var(--gate-key) 82%, white);
-  border-color: color-mix(in srgb, var(--gate-key) 82%, white);
-  box-shadow: 0 22px 56px -12px color-mix(in srgb, var(--gate-key) 78%, transparent);
+  background: color-mix(in srgb, var(--gate-text) 78%, white);
+  border-color: color-mix(in srgb, var(--gate-text) 78%, white);
+  box-shadow: 0 24px 60px -12px color-mix(in srgb, var(--gate-key) 88%, transparent);
   transform: translateY(-2px);
+}
+
+/* The arrow leans into the direction it points as the button is approached —
+   a door handle moving toward the door. Transform only, so it composites. */
+.signal-gate-action:hover .signal-gate-power {
+  transform: translateX(3px);
 }
 
 .signal-gate-action:active {
@@ -2375,16 +2420,17 @@ html.zone-immersive .zone-bar {
   outline-offset: 4px;
 }
 
-/* The same power symbol the status chip carries, on the thing that acts on it.
-   `currentColor`, so it is punched out of the fill exactly like the label —
-   as `--gate-key` it would be a red mark on a red button. It replaces a
-   blinking terminal caret, which was decoration; this is an instruction. */
+/* The arrow. `currentColor`, so it is punched out of the fill exactly like the
+   label — given its own colour it would be a mark floating on the button
+   rather than part of it. It replaced a power symbol, which said "switched
+   off" on a screen where nothing is. */
 .signal-gate-power {
   display: inline-flex;
   width: 1.15em;
   height: 1.15em;
   flex: none;
   color: currentColor;
+  transition: transform 0.35s var(--ease);
 }
 
 .signal-gate-power svg {
@@ -2484,8 +2530,16 @@ html.zone-immersive .zone-bar {
   .signal-gate-ecg,
   .signal-gate-action,
   .signal-gate-row,
+  .signal-gate-ping,
   .signal-gate[data-phase="leaving"] {
     animation: none;
+  }
+
+  /* The dot stops pulsing but stays a dot. The ring is the ornament; the fill
+     is the state, and a reader who asked for less motion still needs to be
+     told the station is up. */
+  .signal-gate-ping {
+    opacity: 0.4;
   }
 
   /* The verdict still ARRIVES, it just does not slide. It is the message the

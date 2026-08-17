@@ -1,48 +1,36 @@
 /* ══════════════════════════════════════════════════════
-   The cube field
+   The cube field — geometry
 
-   A handful of translucent blocks drifting around the alert
-   screen, after the PlayStation 2's red screen of death.
-   That reference is a good one precisely because nobody has
-   ever mistaken it for a browser error: it is unmistakably a
-   designed screen, which is the whole problem this entrance
-   has been solving.
+   Translucent blocks drifting through the entrance, lit in
+   the site's own ice and accent.
 
-   ── SIX BLOCKS, AND THEY ORBIT THE COPY ──
-   The first version spawned thirty at uniformly random world
-   positions, which put most of them in the middle of the
-   screen: the headline, the trace and the button all had a
-   block behind them and the whole thing read as noise. The
-   count came down to six and the placement stopped being
-   random.
+   ── What this module is, and is not ──
+   THE GEOMETRY ONLY: a unit cube, a projection, and the
+   shading scalars. Where the blocks actually go is
+   `forces.ts`, which integrates them under repulsion, the
+   pointer and the copy's keep-out.
 
-   Each cube holds a BEARING and a RADIUS on a ring drawn
-   around the content column, and it drifts slowly around
-   that ring. The ring is expressed in fractions of the
-   viewport, so `anchorAt` is pure and viewport-free and the
-   keep-out is provable at every screen size at once — see
-   `KEEP_X` / `KEEP_Y`.
+   That split is the one SkillOrbit already uses — a pure
+   solver beside a pure rules module beside a stateful engine
+   — and it exists because the two halves fail differently.
+   Geometry fails visibly and instantly; physics fails
+   subtly, over minutes, in ways only a simulation catches.
 
-   ── Screen-anchored, not world-anchored ──
-   The consequence of the above, and it is the part that is
-   easy to get wrong. Depth is divided out when the anchor is
-   converted to world space, so a cube keeps its place on
-   screen as it moves toward and away from the camera. Anchor
-   it in world space instead and the projection pulls it
-   toward the centre of the frame as it recedes — every cube
-   ends up crossing the copy eventually, which is exactly the
-   problem the ring was introduced to fix.
+   ── It used to be an orbit ──
+   Positions were analytic: a bearing and a radius on a fixed
+   ring, so `poseAt(cube, t)` was a pure function of the clock
+   and "nothing is ever drawn on the copy" was true by
+   construction. Blocks that push each other cannot work that
+   way. The ring is gone; the guarantee moved into
+   `projectOut` and is asserted frame by frame instead.
 
-   ── Pure, so a frame is reproducible ──
-   Nothing accumulates. A cube's pose is a function of its
-   seed and the clock, so the same `t` always gives the same
-   frame and the shape of the field is provable in node like
-   ecg.ts, blend.ts, layout.ts and flight.ts. That
-   matters more than usual here: this paints BEHIND text that
-   has to stay readable, and "a cube went somewhere it should
-   not have" is otherwise only findable by sitting and
-   watching.
+   ── Canvas 2D and a hand-rolled projection ──
+   Not a 3D library. Every other moving thing in this repo is
+   drawn the same way, and a WebGL dependency on the first
+   screen anyone loads is not worth one backdrop.
    ══════════════════════════════════════════════════════ */
+
+import type { Body } from "./forces";
 
 export interface Vec3 {
     readonly x: number;
@@ -50,40 +38,27 @@ export interface Vec3 {
     readonly z: number;
 }
 
-export interface Cube {
-    /** Bearing around the content column at t = 0, radians. */
-    readonly theta: number;
-    /** Angular drift, radians per second. Signed, and very small. */
-    readonly omega: number;
-    /** Mean distance from centre, in units of the keep-out ellipse. */
-    readonly radius: number;
-    /** Radial breathing, so the ring is not a rigid circle. */
-    readonly swing: number;
-    readonly swingRate: number;
-    readonly swingPhase: number;
-    /** Depth OSCILLATES between two bounds rather than drifting and wrapping. */
+/**
+ * A block: its physics state, plus everything needed to draw it.
+ *
+ * One object rather than two parallel arrays, so a body and its geometry can
+ * never fall out of step — which is exactly the bug a field of six would take
+ * a long time to reveal.
+ */
+export interface Cube extends Body {
+    /** Half-extent, in world units. */
+    readonly size: number;
+    /** Depth OSCILLATES between two bounds. It is not part of the physics. */
     readonly zMid: number;
     readonly zAmp: number;
     readonly zRate: number;
     readonly zPhase: number;
-    /** Half-extent, in world units. */
-    readonly size: number;
     /** Rotation at t = 0, so the field does not start axis-aligned. */
     readonly rox: number;
     readonly roy: number;
     /** Rotation rates, radians per second. */
     readonly rrx: number;
     readonly rry: number;
-}
-
-/** Where a cube sits on screen, as a signed fraction of the viewport. */
-export interface Anchor {
-    /** −0.5 is the left edge, +0.5 the right. */
-    readonly fx: number;
-    /** −0.5 is the top edge, +0.5 the bottom. Down-positive, like the canvas. */
-    readonly fy: number;
-    /** Distance in keep-out-ellipse units. Always ≥ 1. */
-    readonly r: number;
 }
 
 export interface Pose {
@@ -122,29 +97,18 @@ export const FOV = 1.15;
  * The keep-out ellipse: semi-axes as fractions of the viewport, measured from
  * its centre. NOTHING IS EVER DRAWN INSIDE THIS.
  *
- * Sized to the content column — 34rem wide and about 490px tall on a desktop,
- * which is 0.19 × 0.27 of a 1440 × 900 viewport — with margin on both axes.
- * Fractions rather than pixels, so one assertion covers every screen size.
+ * `forces.ts` enforces it; this is where the number lives because it is a
+ * statement about the layout, not about the physics. Sized to the copy column
+ * with margin, in FRACTIONS so one value covers every screen size.
  *
- * On a phone the column fills the width and no ring can clear it sideways.
- * That is what the scrim is for, and the composited contrast is measured with
- * a block sitting directly behind the type.
+ * On a phone the column fills the width and no exclusion zone can clear it
+ * sideways. That is what the scrim is for, and the composited contrast is
+ * measured with a block sitting directly behind the type.
  */
-export const KEEP_X = 0.32;
-export const KEEP_Y = 0.33;
+export const KEEP_X = 0.28;
+export const KEEP_Y = 0.3;
 
-/** Ring radii, in units of the keep-out ellipse. 1 IS the ellipse. */
-export const RING_MIN = 1.0;
-export const RING_MAX = 1.4;
-
-/**
- * Size range. See the "wall" test — this and `NEAR` are what it measures.
- *
- * The keep-out constrains a cube's CENTRE, not its extent, so a block sitting
- * on the ellipse still reaches inward by its own half-span. Shrinking this is
- * the lever that buys the copy air; pushing the ring further out is not,
- * because past `RING_MAX` the blocks leave the frame.
- */
+/** Size range, in world units. See the "wall" test — this and `NEAR` set it. */
 export const SIZE_MIN = 0.14;
 export const SIZE_MAX = 0.26;
 
@@ -185,51 +149,66 @@ export const CUBE_FACES: readonly (readonly number[])[] = [
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
 /**
+ * The physics half of a viewport, in `min(w, h)` units.
+ *
+ * Everything `forces.ts` needs about the screen, derived in one place so the
+ * component never converts by hand. Note that `keepY` uses the viewport HEIGHT
+ * against the short edge, which on a phone makes the exclusion zone taller
+ * than it is wide — as the copy column is.
+ */
+export function envFor(w: number, h: number) {
+    const m = Math.min(w, h);
+    return {
+        halfX: w / 2 / m,
+        halfY: h / 2 / m,
+        keepX: (KEEP_X * w) / m,
+        keepY: (KEEP_Y * h) / m,
+    };
+}
+
+/**
  * Lay out a field.
  *
- * BEARINGS ARE DEALT, NOT ROLLED. Each cube gets its own slice of the circle
- * and may wander a little inside it, so six blocks are always spread around
- * the frame. Six independent random bearings clump — that is what random
- * does, and with a field this small one clump is the whole composition.
- *
- * The half-slice offset matters too: at `i / n` a six-cube field puts blocks
- * at 0 and π, dead level with the middle of the copy on both sides. At
- * `(i + 0.5) / n` the nearest bearings are 30° off that line.
- *
- * THAT ONLY WORKS FOR AN EVEN `n`, and the callers are 6 and 4 for exactly
- * that reason. Five slices offset by a half still lands one bearing on 180°,
- * which is the worst place on the ring — level with the headline. There is a
- * test for it, and it caught a five-cube phone field doing precisely this.
+ * Blocks start spread evenly around the copy — one slice of the circle each,
+ * with a little wander inside it — because six independent random positions
+ * clump, and with a field this small one clump is the whole composition. The
+ * physics takes over from there; this only decides where the first frame is.
  *
  * `rand` is injected rather than read off `Math.random`, so a test can seed it
- * and assert against an exact field — the same reason `randomTtl` takes one in
- * gate.ts.
+ * and simulate an exact field — the same reason `randomTtl` used to take one.
  */
-export function spawnField(n: number, rand: () => number): Cube[] {
+export function spawnField(
+    n: number,
+    rand: () => number,
+    w: number,
+    h: number,
+): Cube[] {
+    const { keepX, keepY } = envFor(w, h);
     const out: Cube[] = [];
     const slice = TAU / Math.max(n, 1);
 
     for (let i = 0; i < n; i++) {
-        const swing = 0.04 + rand() * 0.06;
+        const th = (i + 0.5) * slice + (rand() - 0.5) * slice * 0.5;
+        const spread = 1.2 + rand() * 0.35;
         const zAmp = 0.3 + rand() * 0.6;
         const lo = NEAR + Z_MARGIN + zAmp;
         const hi = FAR - Z_MARGIN - zAmp;
 
         out.push({
-            // Own slice, with up to a quarter-slice of wander either way.
-            theta: (i + 0.5) * slice + (rand() - 0.5) * slice * 0.5,
-            // A lap takes between three and ten minutes. This is a room, not
-            // a screensaver.
-            omega: (rand() < 0.5 ? -1 : 1) * (0.01 + rand() * 0.02),
-            radius: RING_MIN + swing + rand() * (RING_MAX - RING_MIN - swing * 2),
-            swing,
-            swingRate: 0.09 + rand() * 0.1,
-            swingPhase: rand() * TAU,
+            x: Math.cos(th) * keepX * spread,
+            y: Math.sin(th) * keepY * spread,
+            vx: 0,
+            vy: 0,
+            // Replaced every frame by `collisionRadius`; a sane first value so
+            // the very first step is not a special case.
+            r: 0.08,
+            wx: rand() * TAU,
+            wy: rand() * TAU,
+            size: SIZE_MIN + rand() * (SIZE_MAX - SIZE_MIN),
             zAmp,
             zMid: lo + rand() * (hi - lo),
             zRate: (rand() < 0.5 ? -1 : 1) * (0.03 + rand() * 0.05),
             zPhase: rand() * TAU,
-            size: SIZE_MIN + rand() * (SIZE_MAX - SIZE_MIN),
             rox: rand() * TAU,
             roy: rand() * TAU,
             rrx: (rand() * 2 - 1) * 0.11,
@@ -241,61 +220,69 @@ export function spawnField(n: number, rand: () => number): Cube[] {
 }
 
 /**
- * Where a cube sits on screen at time `t`, in viewport fractions.
+ * Depth at time `t`. Bounded oscillation — it never wraps.
  *
- * Viewport-free on purpose: the keep-out is an assertion about fractions, so
- * one test covers 375px and 1440px and everything between at once.
+ * DEPTH IS NOT PART OF THE PHYSICS. Two blocks "touching" is something that
+ * happens on the screen, not in the world, so the repulsion is 2D and this
+ * axis is left analytic. It also means depth cannot be perturbed into the
+ * camera by a hard shove, which would be a very loud way to fail.
  */
-export function anchorAt(cube: Cube, t: number): Anchor {
-    const th = cube.theta + cube.omega * t;
-    const r =
-        cube.radius + Math.sin(t * cube.swingRate + cube.swingPhase) * cube.swing;
-
-    return { fx: r * KEEP_X * Math.cos(th), fy: r * KEEP_Y * Math.sin(th), r };
-}
-
-/** Depth at time `t`. Bounded oscillation — see `poseAt`. */
 export function depthAt(cube: Cube, t: number): number {
     return cube.zMid + cube.zAmp * Math.sin(t * cube.zRate + cube.zPhase);
 }
 
 /**
- * Where a cube is in world space, and how it is turned, at time `t` seconds.
+ * How much of a cube's own size its silhouette actually spans.
  *
- * DEPTH OSCILLATES; IT DOES NOT WRAP. An earlier version drifted linearly in
- * depth and wrapped at the planes, which needed an alpha envelope closing to
- * zero at both ends to hide the teleport — and with only six blocks on screen
- * that envelope was taking one or two of them out of the picture at a time.
- * Bounded oscillation has no seam to hide, so every cube is visible for as
- * long as the screen is up.
+ * A turning cube is between 1.0 half-extents wide face-on, √2 edge-on and √3
+ * corner-on, so a single number has to sit somewhere in that range. 1.35 is
+ * about the mean over all orientations: face-on it errs slightly generous,
+ * corner-on slightly tight, and neither is visible on a translucent block.
  *
- * The anchor is divided by the projection's own depth scale, which is what
- * pins the cube to its place on screen as it moves in and out.
+ * The first version used 1.0 — the FACE half-extent — and a test caught it
+ * immediately: the drawn silhouette reached 2.2× the radius the physics was
+ * using, so blocks would have visibly overlapped before anything pushed.
+ */
+const SOLID_SPAN = 1.35;
+
+/**
+ * A block's radius on screen, in the physics' own units.
+ *
+ * Derived rather than stored, because it depends on depth: a near block is
+ * drawn larger and so has to start pushing from further away. Feeding a fixed
+ * radius in would make far blocks barge and near ones interpenetrate.
+ */
+export function collisionRadius(cube: Cube, z: number): number {
+    return (cube.size * SOLID_SPAN * FOV) / z;
+}
+
+/** 0 at the far plane, 1 at the near one. Drives how lit a block reads. */
+export function nearness(z: number): number {
+    return clamp01((FAR - z) / (FAR - NEAR));
+}
+
+/**
+ * Where a block is in world space, and how it is turned, at time `t`.
+ *
+ * Its screen position comes straight from the physics; the conversion here
+ * multiplies depth back in, so a block holds its place on screen as it moves
+ * toward and away from the camera. Without that division perspective drags
+ * every block toward the middle of the frame as it recedes — and the middle of
+ * the frame is the copy.
  */
 export function poseAt(cube: Cube, t: number, w: number, h: number): Pose {
-    const { fx, fy } = anchorAt(cube, t);
     const z = depthAt(cube, t);
-    const k = z / (Math.min(w, h) * FOV);
+    const k = z / FOV;
 
     return {
-        x: fx * w * k,
-        // Negated: world Y is up, the anchor's is down.
-        y: -fy * h * k,
+        x: cube.x * k,
+        // Negated: world Y is up, the physics' Y is down like the canvas.
+        y: -cube.y * k,
         z,
         rx: cube.rox + cube.rrx * t,
         ry: cube.roy + cube.rry * t,
         size: cube.size,
     };
-}
-
-/**
- * 0 at the far plane, 1 at the near one.
- *
- * Drives how lit a block reads — the only reason the field has any depth to
- * it beyond raw scale.
- */
-export function nearness(z: number): number {
-    return clamp01((FAR - z) / (FAR - NEAR));
 }
 
 /**
@@ -323,7 +310,7 @@ export function project(v: Vec3, pose: Pose, w: number, h: number): Pt2 {
     const wx = pose.x + x1 * size;
     const wy = pose.y + y2 * size;
     /* Floored. The CENTRE can never reach the camera, but a corner of the
-       largest cube reaches 0.52 closer than the centre does, and a small
+       largest cube reaches 0.45 closer than the centre does, and a small
        divisor throws the vertex thousands of pixels out. Belt and braces: the
        geometry already keeps this well clear, and a test says so. */
     const wz = Math.max(NEAR * 0.5, pose.z + z2 * size);
@@ -348,7 +335,7 @@ export function faceDepth(pts: readonly Pt2[]): number {
 }
 
 /**
- * Everything the canvas needs for one cube in one frame: its six faces sorted
+ * Everything the canvas needs for one block in one frame: its six faces sorted
  * back to front, plus the shading scalar.
  *
  * Assembled here rather than in the component so the draw loop is a `fill()`
