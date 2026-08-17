@@ -756,14 +756,20 @@ export default function SignalGate() {
 
                 {phase === "lost" ? (
                     <>
-                        {/* Says the two things the reader needs and nothing
-                            else: nothing is broken, and the way forward is the
-                            control below. The old copy — "telemetry from this
-                            station stopped mid transmission" — was diagnostic
-                            prose, which is exactly how an outage page reads. */}
+                        {/* ── The reframe, in two lines ──────────
+                            Not a paragraph and not an explanation. The first
+                            line answers the fear, the second turns it into the
+                            point — a reader who arrives worried leaves the
+                            sentence knowing this was built on purpose.
+
+                            The break is EXPLICIT, one span per line, because
+                            these two clauses are a couplet and the pivot only
+                            lands if the second line starts on its own. Left to
+                            wrap it would break wherever the column happened to
+                            run out. */}
                         <p className="signal-gate-body">
-                            Nothing is broken. This is the entrance — press
-                            below to bring the site up.
+                            <span>You haven’t lost the site.</span>
+                            <span>You’ve just found the entrance.</span>
                         </p>
 
                         <button

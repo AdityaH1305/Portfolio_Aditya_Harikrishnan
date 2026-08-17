@@ -2262,22 +2262,43 @@ html.zone-immersive .zone-bar {
   height: 100%;
 }
 
-/* Two short clauses, and they are the two things the reader needs: nothing is
-   broken, and the way forward is the control below. The old copy — "telemetry
-   from this station stopped mid transmission" — was diagnostic prose, which is
-   how an outage page reads, not an entrance.
+/* ── The reframe ────────────────────────────────────────
+   A couplet, not a paragraph: the first line answers the fear and the second
+   turns it into the point. The old copy was diagnostic prose — "telemetry from
+   this station stopped mid transmission" — which is how an outage page reads,
+   not an entrance.
 
-   `body-lg`'s rung at weight 200, the one place on the site 200 is allowed. A
-   single calm sentence at 18.5px is what that weight exists for. */
+   WEIGHT 500 IS AS BOLD AS THIS SITE GOES, and that is a hard ceiling rather
+   than a preference: `app/layout.tsx` loads 200 / 400 / 500 and nothing else,
+   so a 600 or 700 here would either add a fourth webfont fetch to the first
+   screen anyone sees or render as a synthesised bold, which looks worse than
+   the real 500. The emphasis therefore comes from two directions at once —
+   200 → 500 AND a jump from `body-lg` to the 21px rung. Against the 200-weight
+   line it replaces, that is a large step.
+
+   One rung under the mono button label and heavier than the 50px title, which
+   is the right inversion here: the headline is two words and enormous, this is
+   the line that has to be read. */
 .signal-gate-body {
   animation-delay: 300ms;
   margin-top: 1.4rem;
-  max-width: 40ch;
-  font-size: clamp(1.03125rem, 0.99rem + 0.19vw, 1.15625rem);
-  font-weight: 200;
-  line-height: 1.55;
+  /* A safety net only — the lines are explicit spans, so this never decides
+     where they break. It just stops a runaway at some unforeseen width. */
+  max-width: 34ch;
+  font-size: clamp(1.15625rem, 1.1013rem + 0.2347vw, 1.3125rem);
+  font-weight: 500;
+  line-height: 1.35;
+  /* Tightened a hair, as every rung above 18.5px on this site is. */
+  letter-spacing: -0.006em;
   color: var(--gate-text);
   transition: color 520ms var(--ease);
+}
+
+/* One line per span. The couplet's pivot only lands if the second clause
+   starts a line of its own; left to wrap, it would break wherever the column
+   happened to run out. */
+.signal-gate-body span {
+  display: block;
 }
 
 /* ── The control, and it is THE control ─────────────────
