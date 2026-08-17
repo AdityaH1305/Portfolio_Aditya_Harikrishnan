@@ -1947,22 +1947,29 @@ html.zone-immersive .zone-bar {
   transition: opacity 520ms var(--ease);
 }
 
-/* ── THE ROOM CHARGES, THEN BLOWS OUT ──────────────────
-   The backdrop does NOT stand down on the press any more. The blocks inside it
-   are the transition now, so it has to live all the way to the end — only the
-   light around them changes.
+/* ── THE ROOM HOLDS, THEN BLOWS OUT ────────────────────
+   The backdrop does NOT stand down on the press. The blocks inside it are the
+   transition now, so it has to live all the way to the end.
 
-   `parting`: the aura tightens toward the centre and brightens as the blocks
-   gather, so the merge reads as building to something rather than merely
-   happening. The scrim goes at the same time; it exists to protect the copy,
-   and the copy is leaving.
+   ── THE AURA DOES NOT SHRINK ON THE PRESS, AND MUST NOT ──
+   It used to: `parting` scaled this to 0.72 as a "charge", the idea being
+   that the light tightening inward would make the gather feel like it was
+   building to something. What it actually did was pull the lit region away
+   from the edges of the frame, so the whole room appeared to contract and its
+   outer border visibly darkened — a shrinking box drawn around the reader at
+   the exact moment the screen should be opening up.
 
-   `burst`: the aura flares once and drops away with the debris. */
-.signal-gate[data-phase="parting"] .signal-gate-backdrop::before {
-  transform: scale(0.72);
-  opacity: 1.35;
-}
+   The brightening half of that never worked either: the base `::before` sits
+   at `opacity: 1`, so the `1.35` was clamped straight back to 1 and did
+   nothing. The shrink was the only part that ever rendered, and it was the
+   part that looked wrong.
 
+   So the room simply holds through `parting`. The gather has the six blocks
+   and the copy leaving; it does not need the walls moving as well.
+
+   `burst`: the aura expands and fades with the debris. Outward, which reads
+   as release — the opposite of the contraction above, and the reason that one
+   is fine where this one was not. */
 .signal-gate[data-phase="burst"] .signal-gate-backdrop::before {
   transform: scale(1.9);
   opacity: 0;
@@ -2496,8 +2503,8 @@ html.zone-immersive .zone-bar {
      explosion. The copy still LEAVES rather than cutting: a reader who asked
      for less motion asked for less, not for none.
 
-     The room goes with it in one step rather than charging first; a charge
-     that leads nowhere is the worst of both. */
+     The room goes in one step rather than holding for a burst that never
+     comes. */
   .signal-gate:not([data-phase="idle"]) .signal-gate-meta,
   .signal-gate:not([data-phase="idle"]) .signal-gate-title,
   .signal-gate:not([data-phase="idle"]) .signal-gate-ecg,
