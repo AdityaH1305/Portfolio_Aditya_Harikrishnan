@@ -84,8 +84,12 @@ export default function FeaturedWork() {
                         it is a label for it — while the lead is a separate thought,
                         so these two gaps should not be equal. 36px is a little over
                         half the word's own height, which is the proportion that reads
-                        as deliberate rather than as leftover space. */}
-                    <p className="body-lg measure-tight mt-9">
+                        as deliberate rather than as leftover space. 40 against 20
+                        is a clean 1:2, and both are now measured against the word's
+                        real ink box rather than the span between cube centres — the
+                        earlier version was 12px short in each axis, so every gap
+                        here was 6px tighter than it read. */}
+                    <p className="body-lg measure-tight mt-10">
                         Three systems built end to end — each one measured
                         against a real baseline and written up with its limits
                         intact.

@@ -51,6 +51,7 @@ import {
     slotPose,
     sourceForCell,
     wordScreenHeight,
+    wordScreenWidth,
     type Vec2,
 } from "./word";
 
@@ -129,7 +130,9 @@ export default function ZoneTitle() {
            drawn there, so the heading should be its own natural size. */
         const fitHeading = () => {
             if (!slotEl) return;
-            slotEl.style.minHeight = `${wordScreenHeight(window.innerWidth)}px`;
+            const r = canvas.getBoundingClientRect();
+            if (r.width < 1 || r.height < 1) return;
+            slotEl.style.minHeight = `${wordScreenHeight(r.width, r.height)}px`;
         };
         fitHeading();
         size();
@@ -158,10 +161,22 @@ export default function ZoneTitle() {
             if (rgb?.length !== 3) return;
             const edge = `${rgb[0]},${rgb[1]},${rgb[2]}`;
 
+            /* ── LEFT-ALIGNED, NOT CENTRED IN THE COLUMN ──
+               This used to anchor on `box.left + box.width / 2`. The box is the
+               full content column and the word is narrower than it, so the word
+               sat centred inside it — indented about 49px at 1440 while the
+               eyebrow above and the lead below both started hard against the
+               column's left edge. Three things that should share a margin, and
+               one of them did not.
+
+               Anchoring on the word's own half-width puts its INK edge on the
+               column edge, which is what "aligned" means for type. The
+               vertical stays centred because `fitHeading` has already given
+               the box the word's exact height. */
             const box = slotEl.getBoundingClientRect();
             if (box.width < 1) return;
             const anchor = anchorWorld(
-                box.left + box.width / 2,
+                box.left + wordScreenWidth(w, h) / 2,
                 box.top + box.height / 2,
                 WORD_Z,
                 w,
@@ -252,9 +267,15 @@ export default function ZoneTitle() {
                reaching for a bigger number. The word is drawn at the heading's
                LIVE screen position, so it scrolls out of view after roughly
                `vh + header height` whatever the trigger says. Past that the
-               phases play off the top of the screen. The rest of the slowdown
-               has to come from the curve and the stagger in `word.ts`, and it
-               does — see `settle`.
+               phases play off the top of the screen.
+
+               1.3, NOT 1.7. The span and the curve are two different levers and
+               they were confused once already. 1.3x here is about 1.5x the
+               original 799px arc — the duration that felt right — while
+               `settle` in `word.ts` separately halves the peak rate, which is
+               what removed the snap. Stacking a 1.7x span ON TOP of the gentler
+               curve made the whole thing roughly four times slower and it
+               dragged. Duration is this number; smoothness is that one.
 
                `top 90%` rather than `top bottom` so the word is already a
                little way into view before it starts assembling, instead of
@@ -270,7 +291,7 @@ export default function ZoneTitle() {
                 slotEl ??
                 canvas,
             start: "top 90%",
-            end: () => `+=${Math.round(window.innerHeight * 1.7)}`,
+            end: () => `+=${Math.round(window.innerHeight * 1.3)}`,
             scrub: true,
             invalidateOnRefresh: true,
             onRefresh: () => {

@@ -33,6 +33,8 @@ import {
     slotPose,
     sourceForCell,
     wordBounds,
+    wordScreenHeight,
+    wordScreenWidth,
 } from "./word.ts";
 
 const VIEWPORTS = [
@@ -310,5 +312,60 @@ test("the curve still lands exactly on both ends", () => {
         assert.ok(v >= prev - 1e-12, `not monotone at ${t}`);
         assert.ok(v >= 0 && v <= 1);
         prev = v;
+    }
+});
+
+/* ══ The ink box ═════════════════════════════════════ */
+
+test("THE REPORTED BOX IS THE INK, NOT THE GRID", () => {
+    /* `wordScreenWidth` / `wordScreenHeight` are what the heading's own box is
+       set from and what the component aligns against, so they have to describe
+       the rectangle the cubes actually cover.
+
+       The first version returned the span between outermost cube CENTRES,
+       which is about 12px short in each axis — a cube is not a point. The
+       heading was given that box, so the word still overhung it by ~6px on
+       every side and every margin around it was quietly that much tighter than
+       it read. Comparing against `wordBounds`, which walks the real poses, is
+       what pins it. */
+    for (const { w, h } of VIEWPORTS) {
+        const poses = WORD_CELLS.map((_, i) => slotPose(i, anchorAt(w, h), w, h));
+        const b = wordBounds(poses, w, h);
+        assert.ok(
+            Math.abs(b.w - wordScreenWidth(w, h)) < 0.01,
+            `width says ${wordScreenWidth(w, h).toFixed(1)}, ink is ${b.w.toFixed(1)}`,
+        );
+        assert.ok(
+            Math.abs(b.h - wordScreenHeight(w, h)) < 0.01,
+            `height says ${wordScreenHeight(w, h).toFixed(1)}, ink is ${b.h.toFixed(1)}`,
+        );
+    }
+});
+
+test("THE WORD ALIGNS ON ITS LEFT EDGE, NOT ITS CENTRE", () => {
+    /* The component anchors on `box.left + wordScreenWidth / 2` so the word's
+       ink edge lands on the column's edge — the same margin the eyebrow above
+       and the lead below sit against.
+
+       It used to anchor on the BOX's half-width. The box is the full content
+       column and the word is narrower, so the word sat centred inside it and
+       came out indented ~49px at 1440 while everything around it was flush
+       left. This is that arithmetic, checked. */
+    for (const { w, h } of VIEWPORTS) {
+        for (const left of [0, 128, 203, w * 0.3]) {
+            const anchor = anchorWorld(
+                left + wordScreenWidth(w, h) / 2,
+                h * 0.4,
+                WORD_Z,
+                w,
+                h,
+            );
+            const poses = WORD_CELLS.map((_, i) => slotPose(i, anchor, w, h));
+            const b = wordBounds(poses, w, h);
+            assert.ok(
+                Math.abs(b.x - left) < 0.01,
+                `asked for ${left}, ink starts at ${b.x.toFixed(1)}`,
+            );
+        }
     }
 });

@@ -133,21 +133,55 @@ export function cellSizeFor(w: number, h: number, z: number = WORD_Z): number {
     return pitchFor(w, h, z) * FILL;
 }
 
-/**
- * The word's height on screen, in CSS pixels.
- *
- * Exists so the heading it stands in for can be given the SAME box. The canvas
- * draws the word centred on that box, and the two were different sizes — 65px
- * of word on a 43px heading, overhanging ~11px top and bottom. Every margin
- * around it was therefore lying: 24px above read as a 13px gap and 20px below
- * as 9px, which is why the header looked unbalanced for a reason no amount of
- * tuning those margins could have fixed.
- *
- * Derived from the same constants the poses are, so there is one source of
- * truth rather than a number retyped into the stylesheet.
- */
-export function wordScreenHeight(w: number): number {
+/* ── The word's INK box, in CSS pixels ─────────────────
+
+   These exist so the heading the word stands in for can be given the same
+   rectangle, and so the component can align it. Both were got wrong once and
+   the corrections are worth keeping.
+
+   FIRST: the box and the word were simply different sizes — 65px of word on a
+   43px heading, overhanging ~11px top and bottom. Every margin around it was
+   therefore lying, `mt-6` above reading as a 13px gap and `mt-5` below as 9px,
+   which is why the header looked unbalanced for a reason no amount of tuning
+   those margins could fix.
+
+   SECOND, and subtler: the first correction measured centre-to-centre. A cube
+   is not a point — it extends its own screen radius past the outermost centre
+   on every side — so the box was still about 12px short in each axis and the
+   word still overhung it by 6px. `+ 2 * cellScreenRadius` is the difference
+   between "the grid spans this" and "the ink covers this", and only the
+   second one is what a margin sits against.
+
+   Derived from the same constants the poses are, so there is one source of
+   truth rather than numbers retyped into the stylesheet. */
+
+/** Apparent half-width of one cube, in CSS pixels. */
+export function cellScreenRadius(
+    w: number,
+    h: number,
+    z: number = WORD_Z,
+): number {
+    return (cellSizeFor(w, h, z) * Math.min(w, h) * FOV) / z;
+}
+
+/** Distance between the outermost cube CENTRES, horizontally. */
+function centresWidth(w: number): number {
+    return WORD_FRAC * w;
+}
+
+/** Distance between the outermost cube centres, vertically. */
+function centresHeight(w: number): number {
     return ((WORD_ROWS - 1) * WORD_FRAC * w) / (WORD_COLS - 1);
+}
+
+/** Full width of the drawn word, edge to edge. */
+export function wordScreenWidth(w: number, h: number): number {
+    return centresWidth(w) + 2 * cellScreenRadius(w, h);
+}
+
+/** Full height of the drawn word, edge to edge. */
+export function wordScreenHeight(w: number, h: number): number {
+    return centresHeight(w) + 2 * cellScreenRadius(w, h);
 }
 
 export interface Vec2 {
