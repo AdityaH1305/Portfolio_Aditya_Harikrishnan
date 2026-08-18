@@ -18,9 +18,10 @@
 import { useRef, useEffect } from "react";
 import { LivingArchitectureEngine } from "./engine";
 import { SECTION_IDS } from "./stages";
+import { progressAt } from "./blend";
 import { getBreakpointMode, syncAccentFromCSS } from "./config";
 import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
-import { ZONE_EVENT, ZONE_FADE_MS, ATLAS_QUIET_EVENT } from "@/lib/zone";
+import { ATLAS_QUIET_EVENT } from "@/lib/zone";
 
 /**
  * Map scroll position to a continuous stage index.
@@ -50,20 +51,6 @@ function attachScrub(engine: LivingArchitectureEngine): () => void {
     if (anchors.length > 0) anchors[0] = 0;
   };
 
-  const toProgress = (y: number): number => {
-    const last = anchors.length - 1;
-    if (last < 1) return 0;
-    if (y <= anchors[0]) return 0;
-    if (y >= anchors[last]) return last;
-    for (let i = 0; i < last; i++) {
-      if (y < anchors[i + 1]) {
-        const span = anchors[i + 1] - anchors[i];
-        return span > 0 ? i + (y - anchors[i]) / span : i;
-      }
-    }
-    return last;
-  };
-
   const st = ScrollTrigger.create({
     start: 0,
     end: "max",
@@ -72,7 +59,7 @@ function attachScrub(engine: LivingArchitectureEngine): () => void {
        a third smoothing stage reads as lag rather than weight. */
     scrub: true,
     onRefresh: measure,
-    onUpdate: () => engine.setProgress(toProgress(window.scrollY)),
+    onUpdate: () => engine.setProgress(progressAt(window.scrollY, anchors)),
   });
 
   measure();
@@ -146,28 +133,30 @@ export default function LivingArchitecture({
     resizeObserver.observe(canvas);
 
     /* ── Pause arbitration ──────────────────────────────
-       THREE independent reasons to stop drawing, and they must be tracked
-       separately. A single boolean means returning to the tab while the
-       reader is inside the case-study zone resumes a canvas that is faded to
-       0.08 and supposed to be asleep — the atlas would quietly start burning
-       frames again, in the one region of the page that could least afford it.
+       TWO independent reasons to stop drawing, and they must be tracked
+       separately rather than collapsed into one boolean.
 
-       The zone reason is the load-shedding half of the fade in globals.css:
-       the canvas is the most expensive continuous thing on the page, and #work
-       is the longest region of it.
+       THE ZONE IS NO LONGER ONE OF THEM. It used to be: the atlas faded to
+       0.08 and froze through `#work`, on the grounds that it was the most
+       expensive continuous thing on the page and `#work` was the longest
+       region of it. But `#work` is where the atlas reaches its VISUAL PEAK —
+       the only stage with all five secondaries lit and the only one that
+       saturates the signal pool — so the load shedding was hiding the diagram
+       exactly where it was worth the most. It now runs there at full strength,
+       and the performance governor in `engine.ts` covers that region for the
+       first time.
 
-       The third is any other section asking for quiet — currently the Stack
-       field, which runs a canvas of its own. That one is a SET keyed by
-       source, not a boolean: with a boolean, two sections whose viewports
-       briefly overlap would have the one leaving clear the flag for the one
-       arriving, and the atlas would wake up underneath it. */
+       The second is any section asking for quiet — the Stack field and the
+       entrance, both of which run a canvas of their own. That one is a SET
+       keyed by source, not a boolean: with a boolean, two sections whose
+       viewports briefly overlap would have the one leaving clear the flag for
+       the one arriving, and the atlas would wake up underneath it. */
     let hiddenTab = document.hidden;
-    let inZone = document.documentElement.classList.contains("zone-immersive");
     const quiet = new Set<string>();
 
     const arbitrate = () => {
       if (reducedMotion) return;
-      if (hiddenTab || inZone || quiet.size > 0) engine.pause();
+      if (hiddenTab || quiet.size > 0) engine.pause();
       else engine.resume();
     };
 
@@ -176,28 +165,6 @@ export default function LivingArchitecture({
       arbitrate();
     };
     document.addEventListener("visibilitychange", handleVisibility);
-
-    /* Pausing is deferred by the length of the CSS fade so the freeze lands
-       once the canvas is already down at 0.08 — stopping mid-fade leaves a
-       visibly half-lit still frame. Resuming is immediate: the atlas has to be
-       moving again before it is visible on the way out. */
-    let zoneTimer: number | undefined;
-
-    const handleZone = (e: Event) => {
-      const active = (e as CustomEvent<{ active: boolean }>).detail.active;
-      window.clearTimeout(zoneTimer);
-
-      if (!active) {
-        inZone = false;
-        arbitrate();
-        return;
-      }
-      zoneTimer = window.setTimeout(() => {
-        inZone = true;
-        arbitrate();
-      }, ZONE_FADE_MS);
-    };
-    window.addEventListener(ZONE_EVENT, handleZone);
 
     /* No fade deferral here: the sections that ask for this own a bounded
        panel rather than retinting the page, so there is no chrome transition
@@ -296,9 +263,7 @@ export default function LivingArchitecture({
       mm.revert();
       engine.stop();
       resizeObserver.disconnect();
-      window.clearTimeout(zoneTimer);
       document.removeEventListener("visibilitychange", handleVisibility);
-      window.removeEventListener(ZONE_EVENT, handleZone);
       window.removeEventListener(ATLAS_QUIET_EVENT, handleQuiet);
       engineRef.current = null;
     };

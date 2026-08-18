@@ -1,7 +1,15 @@
 "use client";
 
+import dynamic from "next/dynamic";
+
 import Reveal from "@/components/Reveal";
 import CaseStudyZone from "@/components/CaseStudyZone";
+
+/* The title, built out of the atlas. `ssr: false` like the other two canvases
+   — it is decoration over a heading that is already in the HTML. */
+const ZoneTitle = dynamic(() => import("@/components/ZoneTitle/ZoneTitle"), {
+    ssr: false,
+});
 
 /* ══════════════════════════════════════════════════════
    FeaturedWork — the case-study index
@@ -24,22 +32,54 @@ export default function FeaturedWork() {
     return (
         <section id="work" className="relative section-y section-divide">
             <div className="section-container">
-                <Reveal className="section-head">
+                {/* ── ONE COLUMN, NOT TWO, AND ONLY HERE ──
+                    Every other section puts its headline left and its lead
+                    right in a `.section-head` grid, asymmetric on purpose so
+                    the two edges do not line up into a second implied centre.
+
+                    This section keeps the asymmetry and changes what is on
+                    the right: the atlas. `.section-head`'s grid spans the
+                    full measure, which crosses the diagram's band at 1440 —
+                    the same reason the acts below moved into the left band.
+                    The right column is now the thing the section is about,
+                    which is a better version of the same idea rather than an
+                    exception to it. */}
+                <Reveal className="work-head">
                     {/* "Projects", not "Case Studies". The ids are untouched —
                         #work still resolves for the atlas, the nav rail and
                         the palette — but the phrase a reader sees is the one
                         they use themselves. */}
-                    <div>
-                        <p className="label">Selected Work</p>
-                        <h2 className="heading-lg mt-3">Projects</h2>
-                    </div>
-                    <p className="body-lg measure-tight">
+                    <p className="label">Selected Work</p>
+
+                    {/* THE HEADING STAYS IN THE DOM AND STAYS THE HEADING.
+                        Where the canvas can actually render, CSS hides it
+                        visually and `ZoneTitle` draws the same word out of
+                        the atlas's own cubes; everywhere else — no JS, a
+                        narrow screen, reduced motion — this is simply the
+                        section title, styled as usual. Same arrangement
+                        SkillOrbit uses for its skill list: the DOM is the
+                        accessible interface and the canvas is decoration.
+
+                        `data-zone-title` is the anchor the canvas measures
+                        each frame, which is why the element must keep its
+                        box rather than being `display: none`. */}
+                    {/* `mt-6`, not the usual `mt-3`: the cube word is drawn at 65px
+                        tall against a 43px heading box and centred on it, so it
+                        reaches ~11px above the box. Measured, `mt-3` left exactly
+                        1px between the word and the eyebrow. */}
+                    <h2 className="heading-lg mt-6 work-head-title" data-zone-title>
+                        Projects
+                    </h2>
+
+                    <p className="body-lg measure-tight mt-5">
                         Three systems built end to end — each one measured
                         against a real baseline and written up with its limits
                         intact.
                     </p>
                 </Reveal>
             </div>
+
+            <ZoneTitle />
 
             {/* The immersive sequence replaces the card list. Each panel
                 still links to its /work/* route, so this is an index with a

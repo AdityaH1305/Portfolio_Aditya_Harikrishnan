@@ -1,5 +1,5 @@
 import { type BranchDef } from "./config.ts";
-import { type StageConfig } from "./stages.ts";
+import { SECTION_IDS, type StageConfig } from "./stages.ts";
 
 /* ══════════════════════════════════════════════════════
    Stage blending
@@ -106,4 +106,80 @@ export function bracket(
     const c = p < 0 ? 0 : p > max ? max : p;
     const from = Math.min(Math.floor(c), max - 1);
     return { from, to: from + 1, t: c - from };
+}
+
+/* ══════════════════════════════════════════════════════
+   Scroll position → continuous stage
+
+   Lifted out of `attachScrub` in LivingArchitecture.tsx so
+   it can be proven in node, which is the same reason the
+   rest of this module exists: the scrub is arithmetic, and
+   arithmetic that only ever runs behind a scroll listener
+   is arithmetic nobody can check.
+   ══════════════════════════════════════════════════════ */
+
+/**
+ * The segment that holds near its stage instead of running straight through.
+ *
+ * DERIVED FROM `SECTION_IDS`, never written as a literal — this and the atlas
+ * both index the same contract, and a hardcoded `2` would silently start
+ * holding the wrong section the first time the order changed.
+ */
+const HOLD_SEGMENT = SECTION_IDS.indexOf("work");
+
+/** Fraction of the `#work` segment spent near the peak. */
+export const HOLD_SPAN = 0.85;
+
+/** How far past stage 2 it creeps while holding. */
+export const HOLD_REACH = 0.18;
+
+/**
+ * Why `#work` is special.
+ *
+ * The case-study zone is a 1300vh sticky scroller living INSIDE `#work`, so a
+ * linear mapping spends thirteen screens walking progress from 2 to 3. Stage 2
+ * is the atlas's Visual Peak — the only stage with all five secondaries lit and
+ * the only one that saturates the signal pool — and stage 3 is Refinement,
+ * where three of those secondaries collapse to 0.02 and `signalMax` drops from
+ * 8 to 5.
+ *
+ * That did not matter while the atlas was faded to 0.08 and frozen through the
+ * whole region. Now that it is visible there, a linear run would show the
+ * network THINNING OUT across the entire section that is supposed to be
+ * showing it off.
+ *
+ * So most of the segment creeps just past the peak and the run to stage 3
+ * happens in the tail, as the reader leaves. Continuous at both ends, and
+ * monotonic throughout — both asserted.
+ */
+function holdCurve(t: number): number {
+    return t <= HOLD_SPAN
+        ? (t / HOLD_SPAN) * HOLD_REACH
+        : HOLD_REACH + ((t - HOLD_SPAN) / (1 - HOLD_SPAN)) * (1 - HOLD_REACH);
+}
+
+/**
+ * Map a scroll position to a continuous stage index.
+ *
+ * Anchored to sections rather than to raw document progress: a long section
+ * would otherwise drag the atlas out of sync with what is on screen. Each
+ * anchor is where a section's top crosses 40% of the viewport — the same
+ * activation point the reduced-motion IntersectionObserver path uses, so `p`
+ * is an integer exactly when the discrete driver would have fired.
+ */
+export function progressAt(y: number, anchors: readonly number[]): number {
+    const last = anchors.length - 1;
+    if (last < 1) return 0;
+    if (y <= anchors[0]) return 0;
+    if (y >= anchors[last]) return last;
+
+    for (let i = 0; i < last; i++) {
+        if (y < anchors[i + 1]) {
+            const span = anchors[i + 1] - anchors[i];
+            if (span <= 0) return i;
+            const t = (y - anchors[i]) / span;
+            return i + (i === HOLD_SEGMENT ? holdCurve(t) : t);
+        }
+    }
+    return last;
 }

@@ -1,6 +1,12 @@
 import assert from "node:assert/strict";
 import test from "node:test";
-import { blendStages, bracket } from "./blend.ts";
+import {
+    HOLD_REACH,
+    HOLD_SPAN,
+    blendStages,
+    bracket,
+    progressAt,
+} from "./blend.ts";
 import { SECTION_IDS, STAGES } from "./stages.ts";
 import { type StageConfig } from "./stages.ts";
 
@@ -199,4 +205,99 @@ test("bracket never produces from === to", () => {
         assert.ok(from >= 0 && to <= n - 1, `p=${p} in range`);
         assert.ok(t >= 0 && t <= 1, `p=${p} t in [0,1]`);
     }
+});
+
+/* ══ progressAt — the scroll mapping ═════════════════ */
+
+/** Anchors shaped like the real page: seven sections, `#work` the long one. */
+const ANCHORS = [0, 900, 1800, 15000, 16200, 17400, 18600];
+
+test("progress is pinned at the ends", () => {
+    assert.equal(progressAt(-500, ANCHORS), 0);
+    assert.equal(progressAt(0, ANCHORS), 0);
+    assert.equal(progressAt(18600, ANCHORS), ANCHORS.length - 1);
+    assert.equal(progressAt(99999, ANCHORS), ANCHORS.length - 1);
+});
+
+test("PROGRESS ONLY EVER GOES FORWARD", () => {
+    /* A non-monotonic mapping makes the atlas retract while the reader is
+       still scrolling down, which reads as the diagram breaking rather than
+       as a stage change. The hold curve is piecewise, so this is exactly the
+       kind of thing an edit could quietly ruin. */
+    let prev = -Infinity;
+    for (let y = -200; y <= 19000; y += 17) {
+        const p = progressAt(y, ANCHORS);
+        assert.ok(p >= prev - 1e-12, `went backwards at y=${y}: ${p} < ${prev}`);
+        prev = p;
+    }
+});
+
+test("every segment boundary is continuous", () => {
+    /* A discontinuity here is a visible jump in the atlas at the exact moment
+       a section arrives — the one place a reader is most likely to notice. */
+    for (let i = 1; i < ANCHORS.length - 1; i++) {
+        const before = progressAt(ANCHORS[i] - 0.5, ANCHORS);
+        const after = progressAt(ANCHORS[i] + 0.5, ANCHORS);
+        assert.ok(
+            Math.abs(after - before) < 0.02,
+            `jump of ${after - before} at anchor ${i}`,
+        );
+        assert.ok(
+            Math.abs(before - i) < 0.02,
+            `anchor ${i} should land on stage ${i}, got ${before}`,
+        );
+    }
+});
+
+test("#WORK HOLDS NEAR THE PEAK INSTEAD OF THINNING OUT", () => {
+    /* The case-study zone is 1300vh inside `#work`, so a linear mapping walks
+       progress 2 → 3 across thirteen screens — and stage 3 drops three
+       secondaries to 0.02 and cuts `signalMax` from 8 to 5. With the atlas now
+       visible in there, that is the network dying while the reader reads. */
+    const i = SECTION_IDS.indexOf("work");
+    const lo = ANCHORS[i];
+    const span = ANCHORS[i + 1] - lo;
+
+    // Most of the section sits just past the peak, not drifting toward 3.
+    for (const f of [0.1, 0.25, 0.5, 0.7, HOLD_SPAN]) {
+        const p = progressAt(lo + span * f, ANCHORS);
+        assert.ok(
+            p >= i && p <= i + HOLD_REACH + 1e-9,
+            `at ${f * 100}% through #work progress was ${p}`,
+        );
+    }
+
+    // And it still gets all the way to the next stage by the end.
+    assert.ok(progressAt(lo + span * 0.999, ANCHORS) > i + 0.9);
+    assert.equal(progressAt(ANCHORS[i + 1], ANCHORS), i + 1);
+});
+
+test("no other section is affected", () => {
+    /* The hold is one segment's business. Everything else stays linear, or the
+       six other sections quietly get a different atlas than they were tuned
+       against. */
+    const work = SECTION_IDS.indexOf("work");
+    for (let i = 0; i < ANCHORS.length - 1; i++) {
+        if (i === work) continue;
+        const span = ANCHORS[i + 1] - ANCHORS[i];
+        for (const f of [0.25, 0.5, 0.75]) {
+            const p = progressAt(ANCHORS[i] + span * f, ANCHORS);
+            assert.ok(
+                Math.abs(p - (i + f)) < 1e-9,
+                `segment ${i} at ${f} gave ${p}, expected ${i + f}`,
+            );
+        }
+    }
+});
+
+test("degenerate anchors cannot produce NaN", () => {
+    /* `measure()` returns 0 for a section id it cannot find, so a renamed or
+       missing section hands this a run of equal anchors. Dividing by that span
+       poisons the stage index and the atlas stops drawing entirely. */
+    const flat = [0, 0, 0, 500, 500, 900, 900];
+    for (let y = -100; y <= 1200; y += 7) {
+        assert.ok(Number.isFinite(progressAt(y, flat)), `NaN at y=${y}`);
+    }
+    assert.ok(Number.isFinite(progressAt(100, [0])));
+    assert.equal(progressAt(100, []), 0);
 });

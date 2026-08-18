@@ -577,14 +577,17 @@ export function buildAct(
         p(ACT.entry[1]),
     );
 
-    /* Media panel. Anchored right in CSS and vertically centred here; `x` is
-       never touched, so the panel occupies the same rectangle from the first
-       frame of act one to the last of act three. Only its contents change.
+    /* Media panel. Placed by CSS grid; `x` and `y` are never touched, so the
+       panel occupies the same rectangle from the first frame of act one to
+       the last of act three. Only its contents change.
 
-       `yPercent` alone — the old `xPercent: -50` went with `left: 50%`, and
-       leaving it behind would shift the panel half its own width off the
-       right edge of the stage. */
-    gsap.set(media, { yPercent: -50 });
+       NO `yPercent` HERE, and that is the second time this pairing has had to
+       be unwound. It was `xPercent: -50` against `left: 50%`, then
+       `yPercent: -50` against `top: 50%`. The panel is now a grid item in row
+       2 with no percentage offset to cancel, so a leftover centring transform
+       would lift it half its own height clean out of its row — which looks
+       like a layout bug rather than a stale tween, and the tween is the last
+       place anyone would go looking. */
 
     tl.fromTo(
         media,

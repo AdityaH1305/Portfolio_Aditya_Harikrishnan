@@ -1128,45 +1128,147 @@ html.zone-immersive {
     height: 100%;
   }
 
+  /* ── THE LEFT BAND, AND WHY THE COLUMN IS SOLVED RATHER THAN GUESSED ──
+
+     Everything from `52vw` rightward belongs to the atlas — that is
+     `DRAW_ZONES.desktop.left` in LivingArchitecture/config.ts, and this is
+     the second place that number now lives. The act used to run the full
+     measure, which put the media panel over 78.5% of the band and the head
+     over the same span again; the canvas was faded to 8% and frozen because
+     there was no point drawing under it.
+
+     So the content gets the left band and the diagram gets the right one. The
+     width is derived, not typed: the slots box starts at the container's own
+     content edge, which is `padding-left` plus whatever the centring margin
+     is once the container hits `--page-max`. Subtract both from 52vw and take
+     a gutter off the end.
+
+     Measured: 501px at 1440, 498px at 1280, 365px at 1024 — against a media
+     panel that was 560px. The figures give up 3.5% of their width and the
+     atlas gets its whole band back. */
   .zone-act-slots {
+    --zone-gutter: 2.5rem;
+    --zone-col: calc(
+      52vw - max(0px, (100vw - var(--page-max)) / 2) - 8rem -
+        var(--zone-gutter)
+    );
+
     position: relative;
     height: 100%;
+    width: min(100%, var(--zone-col));
+
+    /* ── ONE COLUMN, AND IT IS A GRID BECAUSE OF THE BEATS ──
+
+       The three slots that used to be absolutely placed at 8% / 50% / 42% /
+       88% are now simply stacked, which is what the mobile default has always
+       done and what the SSR HTML has always said. Desktop moved toward the
+       readable version rather than away from it.
+
+       Grid rather than flex, and the reason is the DOM order. The beats are
+       NOT contiguous in the markup — it reads head, "what it is", figures,
+       "how it works", "the result", because that is the stacked reading order
+       a phone gets and it is deliberately interleaved. Wrapping the three in
+       a box to make them overlap would have moved the first one past the
+       figures for every reader without JavaScript.
+
+       Grid items placed in the same row simply overlap. So all three beats
+       are assigned row 3 and share one cell — the cross-fade keeps working,
+       the markup keeps its interleaved order, and there is no wrapper. */
+    display: grid;
+    /* A second column, just for the CTAs. They used to sit in a row of their
+       own under the beats, and with the beat track fixed at 17vh the longest
+       beat body — 188px, measured across all three acts — overflowed it and
+       ran straight through the buttons.
+
+       Beside the figure they cost width instead of height, which the column
+       has more of: the beat row can now be sized to the text that is actually
+       in it, and three stacked pills read as a rail rather than as a line
+       that wrapped. */
+    grid-template-columns: minmax(0, 1fr) auto;
+    /* ── THE MEDIA ROW IS THE FLEXIBLE ONE, and it has to be ──
+       Head, beats and CTAs are all text: their heights are what they are, and
+       in a 501px column the CTA row wraps to two lines and the title to two.
+       Making any of those absorb the slack means clipping words.
+
+       With the panel as `1fr` the column always fits — measured: with the
+       panel fixed instead, the CTA row ran 4px past the 100vh stage and
+       `.zone-stage`'s `overflow: hidden` quietly ate the bottom of it. */
+    grid-template-rows:
+      auto
+      auto
+      clamp(11.75rem, 22vh, 14rem);
+
+    /* Every track is content-sized now, so the column is shorter than the
+       stage and the whole composition is centred in it. It cannot be a `1fr`
+       any more: `1fr` on the media row plus `align-self: stretch` handed the
+       panel the row's full height while `max-width` capped its width, which
+       broke the aspect ratio and produced a PORTRAIT mat around landscape
+       screenshots — 307×342 where the figures are all wider than they are
+       tall. */
+    align-content: center;
+
+    /* The gaps and the beat track are the only slack in the column, and on a
+       720px-tall laptop they are what the panel is competing against: at
+       19vh + 4vh the panel came out 354px wide, against 512px before the
+       relayout. Trimming both to what the content actually needs — the beat
+       body measures ~102px — buys the figure back about 13%. */
+    row-gap: clamp(0.625rem, 1.9vh, 2rem);
+    padding-block: clamp(0.75rem, 3vh, 2.75rem);
   }
 
-  /* The head spans the full measure across the TOP band and the media never
-     enters that band. Sharing a band was the first thing tried and it does not
-     survive a 720px-tall laptop: a stacked title-plus-metric block is ~350px,
-     the panel is another ~320px, and the two collided in every slot no matter
-     how the offsets were tuned. Title left, metric right, everything else
-     below. */
   .zone-act-head {
-    position: absolute;
-    top: 8%;
-    left: 0;
-    right: 0;
+    position: static;
+    grid-row: 1;
+    grid-column: 1 / -1;
   }
 
   /* A FIXED panel box, with the figure contained inside it.
 
      These images run from 6.8:1 (the architecture strip) to 1.12:1 (the ROC
      curve). Sizing the panel to each one would make the composition lurch
-     every time a slide changed, and the tall one would collide with both the
-     head above and the CTAs below. One box, object-fit: contain, and the
+     every time a slide changed. One box, object-fit: contain, and the
      choreography is stable for every study.
 
-     ── Anchored right, and it never moves again ──
-     The panel used to hop between three slots per act, crossing the stage so
-     the text landed on whichever side it had just left. Reading a case study
-     then meant tracking a moving column to find the next sentence. It is now
-     pinned to the right edge for the whole zone — `right: 0`, no `left`, no
-     `xPercent` — and the choreography lives in the crossfades instead. */
+     ── SIZED BY HEIGHT, WIDTH DERIVED ──
+     The binding constraint is vertical, not horizontal: the column has to
+     hold a head, a panel, a beat and a CTA row inside 100vh. Setting the
+     width and letting the height fall out gives a 2.35:1 letterbox on a
+     720px-tall laptop. Taking the height from the viewport and capping the
+     width against it means the panel gets NARROWER on a short screen rather
+     than squashed — 501×342 at 1440×900, 443×274 at 1280×720, both close to
+     the 1.56:1 the panel has always been. */
   .zone-act-media {
-    position: absolute;
-    top: 50%;
-    right: 0;
+    --zone-media-h: clamp(11rem, 38vh, 22.5rem);
+
+    position: relative;
+    top: auto;
+    right: auto;
     left: auto;
-    width: min(40vw, 560px);
-    height: min(44vh, 360px);
+    grid-row: 2;
+    grid-column: 1;
+    justify-self: start;
+
+    /* WIDTH FIRST, HEIGHT FROM THE ASPECT. Two earlier attempts are worth
+       recording because both fail silently rather than loudly.
+
+       `height: min(100%, …)` against a `1fr` track is a cyclic dependency, so
+       the browser treats the percentage as `auto`, the `min()` collapses to
+       the clamp, and the panel pushed the CTA row 56px past the bottom of a
+       720px stage where `overflow: hidden` ate it.
+
+       `align-self: stretch` fixed that and broke something quieter: stretch
+       made the height definite, `aspect-ratio` derived a width from it, and
+       `max-width` then clamped that width back — leaving the box at 307×342.
+       A PORTRAIT mat around landscape screenshots, aspect ratio silently
+       ignored because two constraints disagreed.
+
+       The column's width is the one thing actually known here — it is what is
+       left after the CTA rail — so take it, derive the height, and let the
+       grid centre what remains. */
+    align-self: start;
+    width: 100%;
+    max-height: var(--zone-media-h);
+    aspect-ratio: 1.62;
     margin-block: 0;
   }
 
@@ -1187,23 +1289,64 @@ html.zone-immersive {
     min-height: 0;
   }
 
-  /* Every beat, every act, one column on the left. The panel owns the right
-     side; the reader's eye returns to the same x for all nine beats in the
-     zone. The `[data-slot="left"|"right"]` variants that used to alternate
-     sides are gone, along with the attribute that selected them. */
+  /* ── All three beats share row 3, so they overlap ──
+     They cross-fade in situ; letting them stack in the flow would turn a
+     dissolve into three paragraphs. Sharing a grid cell is what makes that
+     work without a wrapper and without touching the markup's reading order.
+
+     The row is a fixed track rather than `auto` because the three bodies
+     differ in length: letting the tallest set it would make the panel above
+     jump every time the act changed.
+
+     `align-self: start` so each beat sits at the top of the cell instead of
+     stretching to fill it — three stretched boxes cross-fade at three
+     different line positions and the text appears to slide. */
   .zone-act-beat {
-    position: absolute;
-    top: 42%;
-    left: 0;
-    width: min(30vw, 400px);
+    position: static;
+    grid-row: 3;
+    grid-column: 1 / -1;
+    align-self: start;
+    width: 100%;
     margin-top: 0;
   }
 
+  /* ── The CTA rail ──
+     Column two, beside the figure and centred against it. `CtaRow` renders a
+     wrapping horizontal row, which is right on the case-study routes and
+     wrong in 500px of column — it wrapped to two and three lines and was the
+     thing overlapping the beat text.
+
+     The flip is done here rather than with a prop on `CtaRow`, because that
+     component is shared with all three `/work/*` routes and only the zone
+     wants a column. `stretch` rather than `start` so every pill is the same
+     width: a ragged stack of three different lengths reads as leftovers, an
+     even one reads as a rail. */
   .zone-act-ctas {
-    position: absolute;
-    bottom: 8%;
-    left: 0;
+    position: static;
+    grid-row: 2;
+    grid-column: 2;
+    align-self: center;
+    justify-self: end;
+    width: clamp(8.5rem, 11.5vw, 10.75rem);
     margin-top: 0;
+    margin-left: clamp(1rem, 2vw, 1.75rem);
+  }
+
+  .zone-act-ctas > div {
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 0.625rem;
+  }
+
+  /* Tighter than the page's own pills — the rail is narrow and the label has
+     to fit inside it without wrapping. */
+  .zone-act-ctas .btn-primary,
+  .zone-act-ctas .btn-secondary {
+    justify-content: center;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.6875rem;
+    letter-spacing: 0.1em;
   }
 }
 
@@ -1238,29 +1381,62 @@ html.zone-immersive .atmosphere-grid {
   opacity: 0.12;
 }
 
-/* The cyan pools go out entirely — the backdrop's violet ones replace them.
-   Leaving both on is what would make the room read as muddy rather than
-   changed. */
-html.zone-immersive /* The noise gets its own value and must NOT join the group above.
-   Its base opacity is 0.02, so `opacity: 0.25` was not dimming it — it was
-   12.5× MORE grain, applied at exactly the moment the background darkens and
-   makes grain more visible. That was the "too grainy" report. */
+/* THIS RULE WAS DEAD FOR ITS ENTIRE LIFE, and the way it died is worth
+   keeping. An orphaned `html.zone-immersive` fragment — left behind when the
+   cyan-pool rule above it was deleted but its selector was not — sat directly
+   in front of this comment. CSS ignores comments when parsing selectors, so
+   the two fragments joined into `html.zone-immersive html.zone-immersive
+   .atmosphere-noise`: a descendant selector requiring one <html> element
+   inside another, which can never match anything.
+
+   Nothing errored, nothing warned, and the grain sat at its base 0.02
+   throughout the zone rather than the 0.012 written here — 1.67× what the
+   author believed was on screen. It surfaced only when the atlas was about to
+   be brightened against it.
+
+   The original reasoning still holds: the noise needs its OWN value and must
+   not join the opacity group above. Its base is 0.02, so the `0.25` it once
+   shared with the other chrome was not dimming it — it was 12.5× MORE grain,
+   applied at exactly the moment the background darkens and makes grain more
+   visible. That was the "too grainy" report. */
 html.zone-immersive .atmosphere-noise {
   opacity: 0.012;
 }
 
-/* The atlas recedes furthest, and its draw loop is PAUSED behind this fade
-   (see LivingArchitecture.tsx). It was the one piece of chrome the original
-   zone never dimmed, which left the most expensive continuous thing on the
-   page — a full-viewport canvas redrawing every frame — running at full
-   strength through the longest region of it, competing with the figures it
-   was supposed to be sitting behind.
+/* ══════════════════════════════════════════════════════
+   THE ATLAS IS THE ONE THING HERE THAT DOES NOT RECEDE
 
-   0.08 rather than 0: a frozen canvas at zero is just a dead element, and the
-   faint remaining structure is what keeps the zone feeling like part of the
-   same site. */
+   It used to. This rule read `opacity: 0.08` and the draw
+   loop was paused on top of it, on the reasoning that a
+   full-viewport canvas redrawing every frame was the most
+   expensive continuous thing on the page and `#work` was
+   the longest region of it.
+
+   That reasoning had the geometry right and the subject
+   backwards. `#work` is where the atlas reaches its VISUAL
+   PEAK — the only stage with all five secondary branches
+   lit, the only one that saturates the signal pool, and the
+   maximum on both cluster density and cluster opacity. The
+   load shedding was switching off the densest state of the
+   diagram in the exact region built to show the work it
+   represents, and a reader scrolling the case studies saw a
+   frozen ghost at 8%.
+
+   So the room still darkens and every other piece of chrome
+   still recedes — the nav to 0.25, the grid to 0.12, the
+   grain to 0.012 — and the atlas alone comes UP. Against
+   `--surface-0` at `#0E161B` rather than `#1B262C`, the same
+   accent reads considerably brighter than it does on the
+   rest of the page; the 12.5× opacity change does the rest.
+
+   The layout is the other half of this. The act's content
+   is confined to the left band so the canvas has somewhere
+   to be seen — see the choreographed block above. Raising
+   this without that would light a canvas that the media
+   panel covers 78.5% of.
+   ══════════════════════════════════════════════════════ */
 html.zone-immersive .living-architecture-canvas {
-  opacity: 0.08;
+  opacity: 1;
 }
 
 .side-nav,
@@ -3272,6 +3448,70 @@ html.glyph-dragging body {
 @media (scripting: none) {
   .glyph-a-canvas,
   .glyph-a-hit {
+    display: none;
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   #work's header, and the title built out of cubes
+
+   One column in the left band, for the same reason the acts
+   below it are: everything from 52vw rightward belongs to
+   the atlas now. `.section-head`'s two-column grid spans
+   the full measure and crossed the diagram; the asymmetry
+   it exists to create is still here, with the diagram as
+   the right-hand column.
+   ══════════════════════════════════════════════════════ */
+.work-head {
+  display: grid;
+  gap: 0;
+}
+
+@media (min-width: 1024px) {
+  .work-head {
+    width: min(
+      100%,
+      calc(52vw - max(0px, (100vw - var(--page-max)) / 2) - 8rem - 2.5rem)
+    );
+  }
+}
+
+/* ── The heading is hidden, not removed ──
+   Under the choreographed gate the canvas draws this word out of the atlas's
+   cubes, so the DOM copy would be a duplicate. It keeps its box — the canvas
+   measures it every frame to know where to put the word — and it keeps its
+   place in the accessibility tree, which a `display: none` would cost.
+
+   The gate is byte-identical to the zone's own and to `ZoneTitle`'s: anywhere
+   the canvas will not mount, this is simply the section title. */
+@media (min-width: 1024px) and (prefers-reduced-motion: no-preference) and
+  (scripting: enabled) {
+  .work-head-title {
+    /* Not `visibility: hidden` — that would take it out of the a11y tree too.
+       Transparent text keeps the box, the line count and the heading. */
+    color: transparent;
+    user-select: none;
+  }
+}
+
+/* Above the atlas at 0, below the nav at 50. Never takes a pointer: the
+   heading underneath is the real element. `color` is the single source the
+   draw loop reads back, the same rule the other two canvases follow. */
+.zone-title-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 1;
+  pointer-events: none;
+  background: transparent;
+  color: var(--accent);
+}
+
+@media (scripting: none) {
+  .zone-title-canvas {
     display: none;
   }
 }
