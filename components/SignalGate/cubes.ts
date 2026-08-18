@@ -46,6 +46,23 @@ export interface Vec3 {
  * a long time to reveal.
  */
 export interface Cube extends Body {
+    /**
+     * Where the physics wants this block to be at rest — the position
+     * `spawnField` chose for it.
+     *
+     * ON THE CUBE RATHER THAN IN A PARALLEL ARRAY, for the reason stated above
+     * this interface. `arrival.ts` overwrites `x`/`y` every frame while the
+     * block is flying in, so that everything downstream — the pointer scatter,
+     * the pose freeze at `CONVERGE_AT`, the merge — reads a live position with
+     * no special case for "is it still arriving". That is what makes a press
+     * during the arrival safe: the block always holds where it is drawn.
+     *
+     * But the arrival still needs to know where it is going, and an array
+     * indexed alongside `fieldRef` is exactly the kind of thing that survives
+     * one refactor and not two.
+     */
+    readonly restX: number;
+    readonly restY: number;
     /** Half-extent, in world units. */
     readonly size: number;
     /** Depth OSCILLATES between two bounds. It is not part of the physics. */
@@ -194,9 +211,16 @@ export function spawnField(
         const lo = NEAR + Z_MARGIN + zAmp;
         const hi = FAR - Z_MARGIN - zAmp;
 
+        const x = Math.cos(th) * keepX * spread;
+        const y = Math.sin(th) * keepY * spread;
+
         out.push({
-            x: Math.cos(th) * keepX * spread,
-            y: Math.sin(th) * keepY * spread,
+            x,
+            y,
+            // Where `arrival.ts` flies it back to. Identical at spawn, and
+            // never written again.
+            restX: x,
+            restY: y,
             vx: 0,
             vy: 0,
             // Replaced every frame by `collisionRadius`; a sane first value so

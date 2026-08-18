@@ -39,6 +39,7 @@ import {
     type Pose,
 } from "./cubes";
 import { stepField } from "./forces";
+import { ARRIVE_TOTAL, arriveAt } from "./arrival";
 import { convergeAt, poseOf, shatter, type Fragment } from "./finale";
 
 /* The blocks' edge colour. Ice, against accent-blue faces — the pair is what
@@ -229,6 +230,18 @@ export default function SignalGate() {
 
     /** The 27 fragments, cut once when the burst begins. */
     const shardsRef = useRef<Fragment[]>([]);
+
+    /* ── When the field came into being ────────────────
+       `performance.now()` at the first frame the blocks exist, which is what
+       `arrival.ts` measures its half-second beat and its flight from.
+
+       MOUNT, NOT PAGE LOAD, and that is the whole point of the change. This
+       canvas waits on hydration and on a dynamic chunk, so "half a second
+       after the page loads" may already have gone by the time it can draw
+       anything — and then the blocks are back to appearing in one cut, which
+       is the thing being fixed. Anchored here, the beat is always the same
+       length and the arrival can never be skipped. */
+    const bornRef = useRef(0);
 
     /* ── THE TRACE IS ALIVE BEFORE YOU TOUCH ANYTHING ──
        This started at 0, which `ecgAt` draws as a FLATLINE, and that single
@@ -585,14 +598,61 @@ export default function SignalGate() {
             const dt = last === 0 ? 1 / 60 : seconds - last;
             last = seconds;
 
+            /* One clock read a frame, shared by the arrival and the finale.
+               They measure from different instants but both off the same
+               monotonic source. */
+            const now = performance.now();
+            if (bornRef.current === 0) bornRef.current = now;
+
             ctx.clearRect(0, 0, w, h);
             ctx.lineJoin = "round";
             ctx.lineWidth = 1;
 
-            const ms =
-                finaleRef.current === 0
-                    ? -1
-                    : performance.now() - finaleRef.current;
+            const ms = finaleRef.current === 0 ? -1 : now - finaleRef.current;
+
+            /* ── The arrival: the blocks flying in ──
+               Before anything else, and only ever once. `arrival.ts` owns the
+               choreography; this writes the result straight into each block's
+               `x`/`y` rather than drawing from a separate pose.
+
+               MUTATING IS THE POINT. Everything downstream — the pointer
+               scatter, the freeze at `CONVERGE_AT`, the merge — reads a live
+               position with no special case for "is it still arriving", so a
+               reader who presses ENTER mid-flight gets a gather that starts
+               from where the blocks actually are. The button is focused on
+               open and Enter is one keystroke away; somebody will.
+
+               The physics does not run here. There is nothing for it to fight
+               yet, and the blocks are outside the soft walls it would spend
+               the whole arrival pushing them back through.
+
+               `reducedRef` skips the whole thing: that path draws ONE still
+               frame with no ticker, so without this guard it would render the
+               blocks off screen and leave the room permanently empty — the
+               worst possible outcome for the reader least served by it. */
+            const since = bornRef.current === 0 ? Infinity : now - bornRef.current;
+            if (
+                finaleRef.current === 0 &&
+                !reducedRef.current &&
+                since < ARRIVE_TOTAL
+            ) {
+                const env = envFor(w, h);
+                const drifting = field.map((c, i) => {
+                    const d = arriveAt(c, i, field.length, since, env);
+                    c.x = d.x;
+                    c.y = d.y;
+                    return { cube: c, alpha: d.alpha };
+                });
+
+                const solids = drifting
+                    .map(({ cube, alpha }) => ({
+                        ...renderCube(cube, seconds, w, h),
+                        alpha,
+                    }))
+                    .sort((a, z) => a.near - z.near);
+                for (const s of solids) paint(s.faces, s.near, edge, s.alpha);
+                return;
+            }
 
             /* ── The physics field: idle, AND the beat before the gather ──
                ONE BRANCH FOR BOTH, and the boundary is `CONVERGE_AT` rather
