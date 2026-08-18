@@ -10,6 +10,7 @@ import {
 import { gsap } from "@/lib/motion";
 import { lockScroll, unlockScroll } from "@/lib/lenis";
 import { claimEntrance, releaseEntrance } from "@/lib/entrance";
+import { publishBurst } from "@/lib/handoff";
 import { ATLAS_QUIET_EVENT, CURSOR_TINT_EVENT } from "@/lib/zone";
 import {
     GATE_KEY,
@@ -17,7 +18,6 @@ import {
     encodeClearance,
     shouldShowGate,
     BURST_AT,
-    BURST_MS,
     CONVERGE_AT,
     CONVERGE_MS,
     EXIT_MS,
@@ -39,7 +39,7 @@ import {
     type Pose,
 } from "./cubes";
 import { stepField } from "./forces";
-import { convergeAt, debrisAt, poseOf, shatter, type Fragment } from "./finale";
+import { convergeAt, poseOf, shatter, type Fragment } from "./finale";
 
 /* The blocks' edge colour. Ice, against accent-blue faces — the pair is what
    makes them read as lit glass rather than as wireframe. Written here because
@@ -600,20 +600,23 @@ export default function SignalGate() {
                 );
             }
 
-            /* ── Burst: the cube in pieces ──
-               Sorted far to near like everything else, so translucent
-               fragments stack in the order the eye expects as they cross. */
-            if (ms >= BURST_AT) {
-                const u = (ms - BURST_AT) / BURST_MS;
-                const pieces = shardsRef.current
-                    .map((f) => debrisAt(f, u))
-                    .sort((a, z) => a.pose.z - z.pose.z)
-                    .reverse();
-                for (const d of pieces) {
-                    paint(facesOf(d.pose), nearness(d.pose.z), edge, d.alpha);
-                }
-                return;
-            }
+            /* ── Burst: HANDED OVER, not drawn ──
+               This canvas stops at the burst. `components/GlyphA/` picks the
+               same 27 fragments up from `lib/handoff.ts` and flies them on
+               into the letter, so the debris outlives the overlay that
+               produced it.
+
+               It has to be one canvas or the other. Both drawing the same
+               fragments for the same 900ms would composite them twice, and
+               translucent faces painted over themselves come out at roughly
+               double strength — not obviously a bug, just a burst that is
+               inexplicably brighter than the cube it came from.
+
+               Nothing else about the schedule moves. `FINALE_MS` still ends
+               the overlay 900ms from here; the gate simply paints nothing for
+               that last stretch, which is invisible because the background is
+               already transparent and the copy has already left. */
+            if (ms >= BURST_AT) return;
 
             /* ── Parting: six blocks becoming one ──
                THE PHYSICS IS OFF from here. Leaving it running would have the
@@ -767,6 +770,28 @@ export default function SignalGate() {
         finaleRef.current = performance.now();
         shardsRef.current = shatter(Math.random);
         setPhase("parting");
+
+        /* ── The fragments, handed on ──
+           `components/GlyphA/` catches these and flies them into the letter,
+           so the debris outlives the overlay that made it. THE GATE'S OWN
+           pieces, not a re-`shatter()`: the letter is built out of what the
+           reader watched leave, and a second cut would give 27 different ones
+           with the same statistics and none of the continuity.
+
+           PUBLISHED HERE, AT THE CLICK, rather than in the burst callback
+           below — and dated forward to when the burst will actually happen,
+           in the same clock `finaleRef` uses.
+
+           It belongs at the click because `releaseEntrance()` runs its
+           subscribers SYNCHRONOUSLY and the glyph's subscriber is what calls
+           `takeBurst()`. Publishing beside that release makes two adjacent
+           lines order-dependent: get them the wrong way round and the letter
+           asks for the fragments one line before they exist, gets null, and
+           falls back to a fresh `shatter()`. Nothing errors — the debris just
+           quietly stops being the debris that left, which is the one thing
+           this handover is for. A full second of daylight removes the hazard
+           instead of documenting it. */
+        publishBurst(shardsRef.current, finaleRef.current + BURST_AT);
 
         timers.current.push(
             window.setTimeout(() => {

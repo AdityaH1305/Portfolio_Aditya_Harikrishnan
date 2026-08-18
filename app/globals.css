@@ -3193,3 +3193,85 @@ html.cursor-custom [data-cursor="text"] {
     animation: none;
   }
 }
+
+/* ══════════════════════════════════════════════════════
+   The A — the entrance's debris, standing still
+
+   A second full-viewport canvas, and the only other thing
+   on the site that emits light. It is the same material as
+   the entrance's blocks — same camera, same projection,
+   same rect — so `--accent` here is read by the draw loop
+   off this element's own `color`, exactly as
+   `.signal-gate-cubes` does. Two copies of the accent in
+   two canvases is how they drift.
+
+   ── Two layers, and the toggle is the whole trick ──
+   `z-index: 0` at rest, with the hero's own `z-[1]` above
+   it: a letter standing still is background, like every
+   other ambient system here.
+
+   `.is-front` lifts it to 2 while the fragments are still
+   flying. That window is the tail of the entrance — Hero's
+   character timeline is running underneath it — and the
+   entire reason the gate releases at the burst rather than
+   at unmount is so the site arrives THROUGH the debris.
+   Behind the copy, there is nothing to arrive through.
+
+   It also settles the phone, where the hero column is full
+   width and there is nowhere for a letter to stand that is
+   not over type. At rest it goes under, faint, like the
+   atlas.
+   ══════════════════════════════════════════════════════ */
+.glyph-a-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+  color: var(--accent);
+}
+
+.glyph-a-canvas.is-front {
+  z-index: 2;
+}
+
+/* ── The pointer surface ──
+   THE LETTER'S OWN BOUNDS, NOT THE VIEWPORT. The canvas stays
+   `pointer-events: none` and this is the only thing that takes a pointer, so
+   a full-bleed overlay can never swallow a click meant for the page. The draw
+   loop resizes it each frame and collapses it to 0×0 the moment the letter
+   starts leaving.
+
+   `manipulation`, NEVER `none`. A `touch-action: none` here is how a page
+   becomes unscrollable on a phone — the same rule `.skill-orbit-canvas`
+   carries, and this repo has shipped that bug before. */
+.glyph-a-hit {
+  position: fixed;
+  z-index: 0;
+  width: 0;
+  height: 0;
+  touch-action: manipulation;
+}
+
+/* The pointer affordance is `data-cursor="probe"` on the element itself, not
+   a `cursor` declaration. `html.cursor-custom *` sets `cursor: none` at
+   (0,1,1) and this site draws its own — a `cursor: grab` here is dead CSS
+   that looks like it is doing something. `probe` is the state the other
+   draggable canvas on the site already uses. */
+
+html.glyph-dragging,
+html.glyph-dragging body {
+  user-select: none;
+}
+
+/* No JS, no canvas, and nothing to drag. */
+@media (scripting: none) {
+  .glyph-a-canvas,
+  .glyph-a-hit {
+    display: none;
+  }
+}

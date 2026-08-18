@@ -27,6 +27,14 @@ const LivingArchitecture = dynamic(
     { ssr: false },
 );
 
+/* The entrance's 27 fragments, after the burst — they fly on into a letter
+   standing where the atlas core will be, and come apart into the atlas as the
+   hero scrolls by. `ssr: false` like the atlas: it is a canvas and nothing
+   else, and there is no markup worth shipping for it. */
+const GlyphA = dynamic(() => import("@/components/GlyphA/GlyphA"), {
+    ssr: false,
+});
+
 export default function Home() {
     const [showGame, setShowGame] = useState(false);
 
@@ -52,6 +60,7 @@ export default function Home() {
             <BackgroundAtmosphere />
             <AtmosphereParallax />
             <LivingArchitecture />
+            <GlyphA />
             <ScrollProgress />
 
             {/* ── Navigation ── */}
