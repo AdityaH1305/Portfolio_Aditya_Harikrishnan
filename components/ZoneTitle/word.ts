@@ -116,7 +116,7 @@ export const WORD_CELLS: readonly Cell[] = (() => {
    space it has. */
 
 /** Word width as a fraction of the viewport width. */
-export const WORD_FRAC = 0.34;
+export const WORD_FRAC = 0.28;
 
 /** Depth the word stands at. */
 export const WORD_Z = 4.2;
@@ -131,6 +131,23 @@ export function pitchFor(w: number, h: number, z: number = WORD_Z): number {
 
 export function cellSizeFor(w: number, h: number, z: number = WORD_Z): number {
     return pitchFor(w, h, z) * FILL;
+}
+
+/**
+ * The word's height on screen, in CSS pixels.
+ *
+ * Exists so the heading it stands in for can be given the SAME box. The canvas
+ * draws the word centred on that box, and the two were different sizes — 65px
+ * of word on a 43px heading, overhanging ~11px top and bottom. Every margin
+ * around it was therefore lying: 24px above read as a 13px gap and 20px below
+ * as 9px, which is why the header looked unbalanced for a reason no amount of
+ * tuning those margins could have fixed.
+ *
+ * Derived from the same constants the poses are, so there is one source of
+ * truth rather than a number retyped into the stylesheet.
+ */
+export function wordScreenHeight(w: number): number {
+    return ((WORD_ROWS - 1) * WORD_FRAC * w) / (WORD_COLS - 1);
 }
 
 export interface Vec2 {

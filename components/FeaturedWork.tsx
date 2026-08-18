@@ -63,15 +63,16 @@ export default function FeaturedWork() {
                         `data-zone-title` is the anchor the canvas measures
                         each frame, which is why the element must keep its
                         box rather than being `display: none`. */}
-                    {/* `mt-6`, not the usual `mt-3`: the cube word is drawn at 65px
-                        tall against a 43px heading box and centred on it, so it
-                        reaches ~11px above the box. Measured, `mt-3` left exactly
-                        1px between the word and the eyebrow. */}
-                    <h2 className="heading-lg mt-6 work-head-title" data-zone-title>
+                    {/* The site's ordinary eyebrow-to-headline gap, and it can be
+                        ordinary again: `ZoneTitle` now gives this element the drawn
+                        word's own height. The two used to be 43px and 65px, so the
+                        word overhung its box and every margin here read about 11px
+                        tighter than it was written. */}
+                    <h2 className="heading-lg mt-3 work-head-title" data-zone-title>
                         Projects
                     </h2>
 
-                    <p className="body-lg measure-tight mt-5">
+                    <p className="body-lg measure-tight mt-6">
                         Three systems built end to end — each one measured
                         against a real baseline and written up with its limits
                         intact.

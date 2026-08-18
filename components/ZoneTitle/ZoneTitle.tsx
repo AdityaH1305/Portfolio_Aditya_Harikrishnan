@@ -50,14 +50,20 @@ import {
     seedPose,
     slotPose,
     sourceForCell,
+    wordScreenHeight,
     type Vec2,
 } from "./word";
 
 const ICE = "187,225,250";
 
-/* ── The score, in fractions of the trigger's span ── */
-const EMERGE_END = 0.45;
-const DISPERSE_START = 0.62;
+/* ── The score, in fractions of the trigger's span ──
+
+   Emerge, hold, disperse. The hold is the part that was wrong: at 0.45/0.62 it
+   was 17% of an already-short span, so the word had barely finished assembling
+   before it began to leave. It is nearly a third of the arc now, which is most
+   of what "too fast" actually meant. */
+const EMERGE_END = 0.4;
+const DISPERSE_START = 0.68;
 
 /**
  * Below this apparent half-width, a cube paints its NEAREST FACE ONLY.
@@ -102,7 +108,6 @@ export default function ZoneTitle() {
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
             sources = atlasSources(w, h, getBreakpointMode(window.innerWidth));
         };
-        size();
 
         /* The word is anchored to the heading's own box and re-read every
            frame, so it scrolls with the page rather than being pinned to the
@@ -111,6 +116,24 @@ export default function ZoneTitle() {
            what makes it a usable anchor and what keeps the section's real
            <h2> in the accessibility tree. */
         const slotEl = document.querySelector<HTMLElement>("[data-zone-title]");
+
+        /* GIVE THE HEADING THE WORD'S OWN HEIGHT.
+
+           Set from `word.ts` rather than in CSS so the number cannot drift,
+           and set OUTSIDE `size()` so it lands on the first pass whether or
+           not the canvas needed resizing. It runs before the ScrollTrigger is
+           created, so the trigger measures the final layout.
+
+           Nothing sets it where the canvas does not mount — reduced motion,
+           no JS, a narrow screen — and that is correct: there is no word being
+           drawn there, so the heading should be its own natural size. */
+        const fitHeading = () => {
+            if (!slotEl) return;
+            slotEl.style.minHeight = `${wordScreenHeight(window.innerWidth)}px`;
+        };
+        fitHeading();
+        size();
+
         let progress = 0;
         let blank = false;
         let last = 0;
@@ -205,15 +228,43 @@ export default function ZoneTitle() {
         const tick = () => draw();
         gsap.ticker.add(tick);
 
-        const ro = new ResizeObserver(size);
+        const ro = new ResizeObserver(() => {
+            fitHeading();
+            size();
+        });
         ro.observe(canvas);
 
         const st = ScrollTrigger.create({
-            trigger: slotEl ?? canvas,
-            start: "top 92%",
-            end: "bottom 8%",
+            /* ── THE SPAN, AND WHY IT IS AN EXPLICIT LENGTH ──
+               This used to trigger on the `<h2>` with `top 92%` / `bottom 8%`,
+               and that element is ~43px tall — so the whole arc was
+               `0.84 x vh + 43`, about 799px. Split by the score, and with the
+               stagger and the easing each taking their share, a letter had
+               roughly 130px to travel in. One wheel notch, which is what made
+               it snap rather than assemble.
+
+               The header block is the honest trigger, and the end is a flat
+               pixel length rather than an alignment for the same reason
+               `.zone-scroll` uses `400vh`: one number in one place, and it does
+               not quietly change when the heading rewraps.
+
+               Running past the header into the zone is deliberate and safe.
+               The disperse targets are `atlasSources` — the core and stage-2
+               branch endpoints, all right of `52vw` — while the zone's content
+               now sits left of it. The cubes travel away from the copy, into
+               the diagram they came out of. */
+            trigger:
+                document.querySelector<HTMLElement>(".work-head") ??
+                slotEl ??
+                canvas,
+            start: "top bottom",
+            end: () => `+=${Math.round(window.innerHeight * 1.3)}`,
             scrub: true,
-            onRefresh: size,
+            invalidateOnRefresh: true,
+            onRefresh: () => {
+                fitHeading();
+                size();
+            },
             onUpdate: (self) => {
                 progress = self.progress;
             },
