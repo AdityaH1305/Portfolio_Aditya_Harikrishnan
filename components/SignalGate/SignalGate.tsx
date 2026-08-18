@@ -209,8 +209,23 @@ export default function SignalGate() {
        to know about. */
     const finaleRef = useRef(0);
 
-    /** The blocks' poses at the moment of the press, frozen. See `convergeAt`. */
+    /** The blocks' poses at the moment the gather begins, frozen. See `convergeAt`. */
     const fromRef = useRef<Pose[]>([]);
+
+    /* ── The field, and why it is a ref ────────────────
+       SPAWNED ONCE PER VISIT, and that has to survive things other than a
+       resize. It used to be an effect-local `let` guarded by `first = w < 1`,
+       which defends against the ResizeObserver and is structurally blind to
+       the effect itself re-running — the guard tests a variable that is reset
+       by the very event it is meant to catch.
+
+       It was re-running, on every phase change, and the result was the six
+       blocks snapping to a fresh evenly-spaced ring at the exact moment of the
+       press: all their drift, velocity and rotation thrown away one frame
+       before `fromRef` captured them. The dependency list is correct now, but
+       a ref is what makes "spawned once" a property of the code rather than
+       something contingent on that list staying right. */
+    const fieldRef = useRef<Cube[]>([]);
 
     /** The 27 fragments, cut once when the burst begins. */
     const shardsRef = useRef<Fragment[]>([]);
@@ -464,12 +479,11 @@ export default function SignalGate() {
         const dpr = Math.min(window.devicePixelRatio || 1, 2);
         let w = 0;
         let h = 0;
-        let field: Cube[] = [];
+        const field = fieldRef.current;
 
         const size = () => {
             const r = canvas.getBoundingClientRect();
             if (r.width < 1 || r.height < 1) return;
-            const first = w < 1;
             w = r.width;
             h = r.height;
             canvas.width = Math.round(w * dpr);
@@ -478,8 +492,15 @@ export default function SignalGate() {
             /* Spawned once, from the first real box. A resize must NOT respawn
                — the blocks would jump to new places mid-read — so the physics
                simply carries on against the new bounds, which is what the soft
-               walls are for. */
-            if (first) field = spawnField(w < 768 ? 4 : 6, Math.random, w, h);
+               walls are for.
+
+               The guard is the FIELD'S OWN emptiness, not `w`. Keying it off a
+               local meant anything that re-entered this effect got a brand-new
+               ring of blocks while believing it was protecting against exactly
+               that. */
+            if (field.length === 0) {
+                field.push(...spawnField(w < 768 ? 4 : 6, Math.random, w, h));
+            }
         };
         size();
 
@@ -568,8 +589,28 @@ export default function SignalGate() {
             ctx.lineJoin = "round";
             ctx.lineWidth = 1;
 
-            /* ── Idle: the physics field ── */
-            if (finaleRef.current === 0) {
+            const ms =
+                finaleRef.current === 0
+                    ? -1
+                    : performance.now() - finaleRef.current;
+
+            /* ── The physics field: idle, AND the beat before the gather ──
+               ONE BRANCH FOR BOTH, and the boundary is `CONVERGE_AT` rather
+               than the press.
+
+               The gather does not start for 180ms after the click — that
+               overlap is deliberate, so the blocks begin moving while the last
+               words are still leaving. Stopping the physics at the press
+               instead left the field dead still for those 180ms: a hitch right
+               at the moment of contact. It went unnoticed only because a worse
+               bug was sitting on top of it, snapping every block to a fresh
+               position on the same frame.
+
+               So the field keeps drifting until the choreography actually has
+               something to say, and the handover is exact: `convergeAt(from, 0)`
+               returns `from` unchanged, so the first frame of the gather draws
+               precisely what the physics frame would have. */
+            if (ms < CONVERGE_AT) {
                 const env = envFor(w, h);
                 for (const c of field) c.r = collisionRadius(c, depthAt(c, seconds));
                 stepField(field, dt, seconds, { ...env, pointer: pointerRef.current });
@@ -586,14 +627,17 @@ export default function SignalGate() {
                 return;
             }
 
-            const ms = performance.now() - finaleRef.current;
-
             /* ── Freezing the start poses ──
-               Captured HERE, on the first frame of the finale, rather than in
-               the click handler — the handler has no access to the field, and
-               more importantly this is the last frame the physics ran, so it
-               is exactly where the blocks are. Capturing anywhere else would
-               make all six jump on the first frame of the gather. */
+               Captured HERE, on the first frame at or after `CONVERGE_AT`,
+               rather than in the click handler — the handler has no access to
+               the field, and more importantly the branch above ran the physics
+               right up to this instant, so this IS where the blocks are.
+
+               That claim used to be false. The effect was keyed on `phase` as
+               well as `open`, so the press tore it down and re-ran it, and the
+               drifted field was discarded microseconds before this line read
+               it. The comment was correct about the intent and the code did
+               the opposite; see `fieldRef` above. */
             if (fromRef.current.length === 0) {
                 fromRef.current = field.map((c) =>
                     poseOf(c, depthAt(c, seconds), seconds),
@@ -619,10 +663,12 @@ export default function SignalGate() {
             if (ms >= BURST_AT) return;
 
             /* ── Parting: six blocks becoming one ──
-               THE PHYSICS IS OFF from here. Leaving it running would have the
-               field pushing blocks apart while the choreography pulls them
-               together, and the merged cube would arrive soft-edged — the one
-               thing `convergeAt`'s test exists to guarantee against. */
+               THE PHYSICS IS OFF FROM THE GATHER, not from the press. Leaving
+               it running here would have the field pushing blocks apart while
+               the choreography pulls them together, and the merged cube would
+               arrive soft-edged — the one thing `convergeAt`'s test exists to
+               guarantee against. Before the gather there is nothing to fight,
+               so it runs. */
             const u = Math.min(1, Math.max(0, (ms - CONVERGE_AT) / CONVERGE_MS));
             const merged = fromRef.current.map((p) => convergeAt(p, u));
             /* Far to near, and it matters most at the end: at u = 1 all six
@@ -655,7 +701,22 @@ export default function SignalGate() {
             window.removeEventListener("pointermove", onMove);
             window.removeEventListener("pointerleave", onLeave);
         };
-    }, [open, phase]);
+        /* ── `open` ALONE, AND THAT IS LOAD-BEARING ──
+           Nothing in this effect reads `phase`; the regime comes from
+           `finaleRef`. It was in the list anyway — copied from the ECG effect
+           above, where the dependency IS deliberate and IS documented, because
+           that draw reads `liveRef` and a reduced-motion reader needs a fresh
+           still frame per phase.
+
+           Here it did nothing but damage. Every phase change tore the loop
+           down and rebuilt it, which respawned the field, cleared the canvas
+           and re-registered the ticker, the observer and both listeners. The
+           visible symptom was the six blocks jumping to a fresh ring on the
+           press. The reduced-motion path had it worse: it never sets
+           `finaleRef`, so the re-run redrew the IDLE field from a new spawn —
+           a hard cut to a different arrangement, for the readers least served
+           by one. */
+    }, [open]);
 
     /* Hold the atlas dormant while the gate is up, so reconnecting is what
        brings it to life. Reuses the quiet broadcast the case-study zone and

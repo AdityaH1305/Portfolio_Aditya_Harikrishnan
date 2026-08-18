@@ -241,11 +241,85 @@ test("SIX BLOCKS BECOME ONE CUBE, NOT SIX NEARLY-ALIGNED ONES", () => {
     assert.ok(Math.abs(first.ry - MERGE_RY) < 1e-9);
 });
 
-test("a block does not jump at the moment the press happens", () => {
-    // At u = 0 the convergence must return exactly where the block already is,
-    // or all six twitch on the first frame of the sequence.
+test("a block does not jump at the moment the gather starts", () => {
+    /* At u = 0 the convergence must return where the block already is, or all
+       six twitch on the first frame of the sequence. The draw loop leans on
+       this directly: the physics runs right up to `CONVERGE_AT` and the first
+       gather frame has to draw what the last physics frame would have.
+
+       Position, depth and size are exact. ROTATION IS COMPARED MODULO A FULL
+       TURN, because `convergeAt` now rewrites the start angle to the
+       equivalent one nearest the merge target — same angle on screen, since
+       the projection only ever takes a sine and a cosine of it, but a
+       different number. That rewrite is what stops a reader who left the
+       entrance open for five minutes watching the cube unwind six revolutions
+       into place. */
     const from: Pose = { x: 0.7, y: -0.3, z: 4.1, rx: 1.2, ry: -0.6, size: 0.21 };
-    assert.deepEqual(convergeAt(from, 0), from);
+    const at0 = convergeAt(from, 0);
+
+    assert.equal(at0.x, from.x);
+    assert.equal(at0.y, from.y);
+    assert.equal(at0.z, from.z);
+    assert.equal(at0.size, from.size);
+
+    const TAU = Math.PI * 2;
+    const sameTurn = (a: number, b: number) => {
+        const d = Math.abs(((a - b) % TAU) + TAU) % TAU;
+        return Math.min(d, TAU - d) < 1e-9;
+    };
+    assert.ok(sameTurn(at0.rx, from.rx), `rx ${at0.rx} vs ${from.rx}`);
+    assert.ok(sameTurn(at0.ry, from.ry), `ry ${at0.ry} vs ${from.ry}`);
+});
+
+test("THE GATHER TAKES THE SHORT WAY ROUND, HOWEVER LONG THE WAIT", () => {
+    /* A block's rotation is `rox + rrx * t`, and `t` is the ticker's elapsed
+       seconds since page load. Nothing bounds it. Lerping that raw scalar to
+       `MERGE_RX` unwound the whole accumulated angle inside the 900ms gather:
+       ~1.5 turns if pressed after 30 seconds, ~3 after two minutes, ~6 after
+       five. The merge looked different depending on how long somebody had sat
+       there, and no constant in this file could have fixed that, because the
+       one deciding it was the clock.
+
+       Nothing here used to bound the path between the two endpoints — the
+       seeded case below only reaches t < 4s, and the identity and no-jump
+       cases each check a single value of `u`. */
+    for (const wound of [0.3, 6.9, 19.5, 40, -33.2]) {
+        const from: Pose = {
+            x: 0.4,
+            y: 0.2,
+            z: 4,
+            rx: wound,
+            ry: -wound,
+            size: 0.2,
+        };
+
+        let prevX = convergeAt(from, 0).rx;
+        let prevY = convergeAt(from, 0).ry;
+        let travelX = 0;
+        let travelY = 0;
+
+        for (let u = 0.01; u <= 1.0001; u += 0.01) {
+            const p = convergeAt(from, u);
+            travelX += Math.abs(p.rx - prevX);
+            travelY += Math.abs(p.ry - prevY);
+            prevX = p.rx;
+            prevY = p.ry;
+        }
+
+        assert.ok(
+            travelX <= Math.PI + 1e-6,
+            `rx turned ${travelX} rad from a start of ${wound}`,
+        );
+        assert.ok(
+            travelY <= Math.PI + 1e-6,
+            `ry turned ${travelY} rad from a start of ${-wound}`,
+        );
+
+        // And it still lands exactly on the merged angle, which is what keeps
+        // the six blocks one cube rather than six nearly-aligned ones.
+        assert.ok(Math.abs(convergeAt(from, 1).rx - MERGE_RX) < 1e-9);
+        assert.ok(Math.abs(convergeAt(from, 1).ry - MERGE_RY) < 1e-9);
+    }
 });
 
 test("the convergence is monotone — nothing overshoots the centre", () => {

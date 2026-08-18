@@ -247,10 +247,59 @@ export function convergeAt(from: Pose, u: number): Pose {
         x: mix(from.x, 0),
         y: mix(from.y, 0),
         z: mix(from.z, MERGE_Z),
-        rx: mix(from.rx, MERGE_RX),
-        ry: mix(from.ry, MERGE_RY),
+        rx: mix(nearestTurn(from.rx, MERGE_RX), MERGE_RX),
+        ry: mix(nearestTurn(from.ry, MERGE_RY), MERGE_RY),
         size: mix(from.size, MERGE_SIZE),
     };
+}
+
+/* ── The short way round ───────────────────────────────
+
+   A block's rotation is `rox + rrx * t`, and `t` is the ticker's elapsed
+   seconds since page load — it grows without bound for as long as the reader
+   leaves the entrance open. `rox` alone reaches a full turn, and `rrx` adds
+   another ±0.11 radians a second on top.
+
+   Lerping that raw scalar down to `MERGE_RX` unwound the whole accumulated
+   angle inside the 900ms gather, on both axes at once. Pressed after thirty
+   seconds that is about one and a half turns; after two minutes, three; after
+   five, six — roughly seven rotations a second. THE MERGE LOOKED DIFFERENT
+   DEPENDING ON HOW LONG SOMEBODY HAD SAT THERE, which is not a thing any
+   amount of tuning fixes, because the constant that decides it is the clock.
+
+   ── Why the START is normalised, not the mix ──
+   Wrapping the interpolation itself would land each block on
+   `MERGE_RX + k·2π` — visually identical, since the projection only ever takes
+   a sine and a cosine, but no longer the SAME NUMBER across the six. The
+   convergence identity is the one property `finale.test.ts` guards hardest:
+   "nearly the same" shows as a soft, multiplied edge that reads as a rendering
+   fault rather than as a design.
+
+   Rewriting `from` to the equivalent angle nearest the target keeps the
+   endpoint exactly `MERGE_RX`, so the identity is untouched and the trip is
+   never longer than half a turn.
+
+   ── And not in `poseOf` ──
+   That function is documented and tested as returning what `poseAt` in
+   `cubes.ts` would have drawn, and `poseAt` returns the raw angle. Normalising
+   there would break a stated equivalence to fix something invisible from the
+   outside. The wrap belongs here, where the target is known. */
+
+const TAU = Math.PI * 2;
+
+/** Wrap a difference into (−π, π]. */
+function wrapPi(d: number): number {
+    const m = ((d % TAU) + TAU) % TAU;
+    return m > Math.PI ? m - TAU : m;
+}
+
+/**
+ * The rotation equivalent to `from` that sits nearest `target`.
+ *
+ * Same angle on screen, at most half a turn away as a number.
+ */
+export function nearestTurn(from: number, target: number): number {
+    return target + wrapPi(from - target);
 }
 
 /**
