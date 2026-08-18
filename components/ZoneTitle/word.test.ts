@@ -29,6 +29,7 @@ import {
     screenOf,
     screenRadius,
     seedPose,
+    settle,
     slotPose,
     sourceForCell,
     wordBounds,
@@ -246,4 +247,68 @@ test("the word builds left to right and still finishes", () => {
 
     // And there is a real lead — otherwise the stagger is decorative.
     assert.ok(localProgress(0.3, 0) - localProgress(0.3, WORD.length - 1) > 0.15);
+});
+
+/* ══ Pace ════════════════════════════════════════════ */
+
+test("NO PART OF THE ASSEMBLY IS A BURST", () => {
+    /* This is the assertion the "it forms too fast" report turned into.
+
+       The complaint was never really about the scroll distance. A cubic
+       ease-in-out — which is what this used, and what the rest of the site
+       uses for its own good reasons — reaches THREE TIMES its average slope at
+       the midpoint. A letter therefore idles through most of its window and
+       then crosses the whole gap in a short burst, and stretching the window
+       only stretches the idling. Smoothstep peaks at 1.5x, so the fastest
+       instant is half as fast over the same travel.
+
+       Measured as peak per-step distance against the mean, which is exactly
+       the ratio that matters and is invisible in the constant itself. */
+    const { w, h } = VIEWPORTS[0];
+    const sources = atlasSources(w, h, "desktop");
+    const STEPS = 400;
+
+    WORD_CELLS.forEach((_, i) => {
+        const slot = slotPose(i, anchorAt(w, h), w, h);
+        const seed = seedPose(sources[sourceForCell(i, sources.length)], slot, w, h);
+
+        for (const move of [
+            (u: number) => emergeAt(seed, slot, u).pose,
+            (u: number) => disperseAt(slot, seed, u).pose,
+        ]) {
+            let prev = screenOf(move(0), w, h);
+            let peak = 0;
+            let total = 0;
+            for (let k = 1; k <= STEPS; k++) {
+                const at = screenOf(move(k / STEPS), w, h);
+                const d = Math.hypot(at.x - prev.x, at.y - prev.y);
+                if (d > peak) peak = d;
+                total += d;
+                prev = at;
+            }
+            const mean = total / STEPS;
+            if (mean < 1e-9) continue; // a cube that barely travels
+            assert.ok(
+                peak / mean <= 1.6,
+                `cube ${i} peaked at ${(peak / mean).toFixed(2)}x its average — that is a snap`,
+            );
+        }
+    });
+});
+
+test("the curve still lands exactly on both ends", () => {
+    /* Everything that asserts a cube arrives on its slot depends on this, so
+       swapping the easing must not have moved either endpoint. */
+    assert.equal(settle(0), 0);
+    assert.equal(settle(1), 1);
+    assert.equal(settle(-3), 0);
+    assert.equal(settle(4), 1);
+
+    let prev = -1;
+    for (let t = 0; t <= 1.0001; t += 0.005) {
+        const v = settle(t);
+        assert.ok(v >= prev - 1e-12, `not monotone at ${t}`);
+        assert.ok(v >= 0 && v <= 1);
+        prev = v;
+    }
 });

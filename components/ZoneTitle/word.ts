@@ -32,7 +32,7 @@
    ══════════════════════════════════════════════════════ */
 
 import { FOV, NEAR, type Pose } from "../SignalGate/cubes.ts";
-import { easeInOut, easeOut } from "../SignalGate/finale.ts";
+import { easeOut } from "../SignalGate/finale.ts";
 import {
     CORE_POSITIONS,
     LENGTH_SCALE,
@@ -252,6 +252,28 @@ const HOLD_OUT = 0.4;
 
 const clamp01 = (v: number) => (v < 0 ? 0 : v > 1 ? 1 : v);
 
+/**
+ * The curve the cubes travel on — smoothstep, NOT the cubic `easeInOut` the
+ * rest of the site uses.
+ *
+ * THE PROBLEM WAS PEAK SPEED, NOT DISTANCE. A cubic ease-in-out reaches a
+ * slope of 3x its own average at the midpoint, so a letter spends most of its
+ * window barely moving and then crosses the gap in a burst — which reads as a
+ * snap however long the window is. Lengthening the scroll span cannot fix
+ * that; it stretches the pauses and leaves the burst exactly as fast.
+ *
+ * Smoothstep peaks at 1.5x average, so the fastest instant is HALF what it
+ * was for the same travel. That, rather than the span, is what turned this
+ * from a snap into an assembly. `word.test.ts` asserts the ratio directly.
+ *
+ * Still exactly 0 at 0 and 1 at 1, so every landing-on-the-slot assertion is
+ * untouched.
+ */
+export function settle(t: number): number {
+    const c = clamp01(t);
+    return c * c * (3 - 2 * c);
+}
+
 function lerpPose(from: Pose, to: Pose, e: number, size: number): Pose {
     const mix = (a: number, b: number) => a + (b - a) * e;
     return {
@@ -301,7 +323,7 @@ export function seedPose(src: Vec2, slot: Pose, w: number, h: number): Pose {
  */
 export function emergeAt(from: Pose, slot: Pose, u: number): Drawn {
     const p = clamp01(u);
-    const e = easeInOut(p);
+    const e = settle(p);
     return {
         pose: lerpPose(from, slot, e, from.size + (slot.size - from.size) * e),
         alpha: p >= FADE_IN ? 1 : easeOut(p / FADE_IN),
@@ -318,7 +340,7 @@ export function emergeAt(from: Pose, slot: Pose, u: number): Drawn {
  */
 export function disperseAt(slot: Pose, to: Pose, p: number): Drawn {
     const c = clamp01(p);
-    const e = easeInOut(c);
+    const e = settle(c);
     const fade = c <= HOLD_OUT ? 1 : 1 - (c - HOLD_OUT) / (1 - HOLD_OUT);
     return {
         pose: lerpPose(slot, to, e, slot.size + (to.size - slot.size) * e),
@@ -331,9 +353,15 @@ export function disperseAt(slot: Pose, to: Pose, p: number): Drawn {
  *
  * The word assembles left to right rather than all at once — eight letters
  * arriving on the same frame is a title that pops rather than one that is
- * built. Bounded so the last letter still has most of the window to travel in.
+ * built.
+ *
+ * It is ALSO a speed control, which is easy to miss: every letter gets only
+ * `1 - STAGGER` of the window to move in, so the stagger is taken directly out
+ * of each letter's travel time. At 0.28 a letter had 72% of an already-short
+ * emerge; at 0.2 it has 80%, which is a free 11% slower for the same scroll
+ * distance and still reads clearly left to right.
  */
-export const STAGGER = 0.28;
+export const STAGGER = 0.2;
 
 export function localProgress(u: number, glyph: number): number {
     const lead = (glyph / Math.max(1, WORD.length - 1)) * STAGGER;

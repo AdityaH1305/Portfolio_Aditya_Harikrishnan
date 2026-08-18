@@ -62,8 +62,8 @@ const ICE = "187,225,250";
    was 17% of an already-short span, so the word had barely finished assembling
    before it began to leave. It is nearly a third of the arc now, which is most
    of what "too fast" actually meant. */
-const EMERGE_END = 0.4;
-const DISPERSE_START = 0.68;
+const EMERGE_END = 0.42;
+const DISPERSE_START = 0.72;
 
 /**
  * Below this apparent half-width, a cube paints its NEAREST FACE ONLY.
@@ -248,6 +248,18 @@ export default function ZoneTitle() {
                `.zone-scroll` uses `400vh`: one number in one place, and it does
                not quietly change when the heading rewraps.
 
+               THERE IS A CEILING ON THIS, and it is worth knowing before
+               reaching for a bigger number. The word is drawn at the heading's
+               LIVE screen position, so it scrolls out of view after roughly
+               `vh + header height` whatever the trigger says. Past that the
+               phases play off the top of the screen. The rest of the slowdown
+               has to come from the curve and the stagger in `word.ts`, and it
+               does — see `settle`.
+
+               `top 90%` rather than `top bottom` so the word is already a
+               little way into view before it starts assembling, instead of
+               forming on the bottom edge.
+
                Running past the header into the zone is deliberate and safe.
                The disperse targets are `atlasSources` — the core and stage-2
                branch endpoints, all right of `52vw` — while the zone's content
@@ -257,8 +269,8 @@ export default function ZoneTitle() {
                 document.querySelector<HTMLElement>(".work-head") ??
                 slotEl ??
                 canvas,
-            start: "top bottom",
-            end: () => `+=${Math.round(window.innerHeight * 1.3)}`,
+            start: "top 90%",
+            end: () => `+=${Math.round(window.innerHeight * 1.7)}`,
             scrub: true,
             invalidateOnRefresh: true,
             onRefresh: () => {

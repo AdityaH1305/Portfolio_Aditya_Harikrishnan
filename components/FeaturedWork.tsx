@@ -63,16 +63,29 @@ export default function FeaturedWork() {
                         `data-zone-title` is the anchor the canvas measures
                         each frame, which is why the element must keep its
                         box rather than being `display: none`. */}
-                    {/* The site's ordinary eyebrow-to-headline gap, and it can be
-                        ordinary again: `ZoneTitle` now gives this element the drawn
-                        word's own height. The two used to be 43px and 65px, so the
-                        word overhung its box and every margin here read about 11px
-                        tighter than it was written. */}
-                    <h2 className="heading-lg mt-3 work-head-title" data-zone-title>
+                    {/* ── THE CUBE WORD'S BOX IS ALL INK, AND TYPE'S IS NOT ──
+                        `ZoneTitle` gives this element the drawn word's exact height,
+                        so the margins here are honest — but honest is not the same
+                        as matching. A `heading-lg` renders 38px caps inside a 42.6px
+                        line box, so roughly 7.6px of optical air sits above and below
+                        the letterforms for free. The cube word fills its box edge to
+                        edge: zero air, hard silhouettes.
+
+                        So the site's usual `mt-3` between an eyebrow and a headline
+                        reads as ~20px of optical gap for text and exactly 12px here.
+                        `mt-5` puts this back on the site's optical rhythm rather than
+                        its numeric one — the same apparent distance, arrived at by
+                        paying for the air the type would have brought with it. */}
+                    <h2 className="heading-lg mt-5 work-head-title" data-zone-title>
                         Projects
                     </h2>
 
-                    <p className="body-lg measure-tight mt-6">
+                    {/* And a clear break out of it. The eyebrow belongs to the title —
+                        it is a label for it — while the lead is a separate thought,
+                        so these two gaps should not be equal. 36px is a little over
+                        half the word's own height, which is the proportion that reads
+                        as deliberate rather than as leftover space. */}
+                    <p className="body-lg measure-tight mt-9">
                         Three systems built end to end — each one measured
                         against a real baseline and written up with its limits
                         intact.
@@ -87,7 +100,10 @@ export default function FeaturedWork() {
                 different presentation — not a duplicate of the case studies.
                 Outside .section-container because the Double U-Net panel
                 bleeds its architecture diagram to the viewport edge. */}
-            <div className="mt-14 md:mt-20">
+            {/* Wider than it was: the header now ends in a display-scale cube
+                wordmark rather than a 38px line of type, and the zone below it is a
+                full-bleed sticky region. 80px between the two read as a seam. */}
+            <div className="mt-14 md:mt-24">
                 <CaseStudyZone />
             </div>
         </section>
