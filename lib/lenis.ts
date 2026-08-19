@@ -13,10 +13,36 @@ import type Lenis from "lenis";
 let instance: Lenis | null = null;
 let lockCount = 0;
 
-/** Set by ScrollProvider on mount/unmount. Not for general use. */
+/**
+ * Set by ScrollProvider on mount/unmount. Not for general use.
+ *
+ * A LOCK TAKEN BEFORE LENIS EXISTED IS STILL A LOCK, and this used to throw it
+ * away — `lockCount = 0` on every registration.
+ *
+ * That is an ordering race with one guaranteed loser. ScrollProvider registers
+ * from inside the gsap ticker, which first runs on the next animation frame,
+ * and mount effects run before that frame. So the signal gate — which mounts
+ * with the page and locks immediately — ALWAYS called `lockScroll()` against a
+ * null instance, and this line then cleared the count it had just taken.
+ *
+ * The consequence was not the obvious one. `overflow: hidden` was still on the
+ * root, so the scrollbar was gone and the wheel did nothing; but Lenis was
+ * never stopped, and Lenis scrolls the window PROGRAMMATICALLY from the
+ * ticker, which no overflow rule can prevent. The entrance looked locked and
+ * the page underneath moved anyway, so pressing ENTER revealed the site
+ * wherever the reader had got to.
+ *
+ * Unregistering still resets — that is a teardown, and the count belongs to
+ * the instance that is going away.
+ */
 export function registerLenis(next: Lenis | null): void {
     instance = next;
-    lockCount = 0;
+
+    if (!next) {
+        lockCount = 0;
+        return;
+    }
+    if (lockCount > 0) next.stop();
 }
 
 export function getLenis(): Lenis | null {

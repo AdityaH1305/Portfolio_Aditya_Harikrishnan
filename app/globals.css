@@ -3515,3 +3515,52 @@ html.glyph-dragging body {
     display: none;
   }
 }
+
+/* ══════════════════════════════════════════════════════
+   THE ENTRANCE HOLDS THE DOCUMENT
+
+   Blocking `wheel` and `touchmove` on the overlay stops the
+   two inputs it can see and none of the others. THE
+   SCROLLBAR THUMB IS A DIFFERENT PATH ENTIRELY, and so are
+   the arrow keys, space, Page Up/Down, Home and End. A
+   visitor could drag the bar behind a fully opaque overlay
+   and land somewhere mid-page the moment it lifted — which
+   is exactly what was happening.
+
+   `overflow: hidden` on the root closes all of them at once.
+   It is also the right lever rather than the convenient one:
+   it does NOT change the measured height of the document.
+   Content still lays out full length and simply cannot be
+   scrolled, so every ScrollTrigger the page builds while the
+   gate is up still measures against the real page. Pinning
+   the body to `100vh` would have looked equivalent and
+   quietly handed every trigger on the site a one-screen
+   document to compute against.
+
+   ── The sideways shift this was once avoided for ──
+   Hiding the overflow collapses `scrollbar-gutter: stable`
+   above — it reserves the gutter for `auto` and `scroll`
+   only — so everything in flow slides over by the bar's
+   width. That cost is why the gate blocked events instead,
+   and it is answered here by WHEN the class comes off rather
+   than by compensating for it.
+
+   The lock is released at `burst`: the same instant
+   `--gate-bg` goes transparent and the site becomes visible.
+   Nothing was on screen to shift, so nothing is seen to
+   shift — the page arrives already in its final position —
+   and scrolling becomes available at precisely the moment
+   there is something to scroll.
+
+   Added from an effect rather than from the pre-paint script
+   in `app/layout.tsx`, deliberately. That script runs before
+   hydration and would close the window entirely, but a
+   component that then failed to hydrate would leave the
+   whole site permanently unscrollable. The gate's own rule
+   is that a failure to hydrate hands the visitor the site;
+   a lock applied by the same code that removes it keeps
+   that true.
+   ══════════════════════════════════════════════════════ */
+html.gate-locked {
+  overflow: hidden;
+}

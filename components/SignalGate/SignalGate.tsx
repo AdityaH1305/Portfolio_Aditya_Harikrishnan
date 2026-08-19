@@ -8,7 +8,7 @@ import {
     useSyncExternalStore,
 } from "react";
 import { gsap } from "@/lib/motion";
-import { lockScroll, unlockScroll } from "@/lib/lenis";
+import { getLenis, lockScroll, unlockScroll } from "@/lib/lenis";
 import { claimEntrance, releaseEntrance } from "@/lib/entrance";
 import { publishBurst } from "@/lib/handoff";
 import { ATLAS_QUIET_EVENT, CURSOR_TINT_EVENT } from "@/lib/zone";
@@ -258,6 +258,70 @@ export default function SignalGate() {
     const liveRef = useRef(REST_LIVE);
 
     const open = wanted && !dismissed;
+
+    /* Derived so the hold below runs once per state CHANGE rather than once
+       per phase. `idle` and `parting` are both "held"; `burst` is the release. */
+    const holdScroll = open && phase !== "burst";
+
+    /* ── THE DOCUMENT, HELD, AND IT TAKES ALL THREE ──
+       Scrolling behind the entrance has three separate paths and stopping any
+       two of them leaves the page moving.
+
+       1. `overflow: hidden` on the root (`gate-locked` in globals.css) closes
+          the NATIVE paths — the scrollbar thumb, the arrow keys, space, Page
+          Up/Down, Home and End. The overlay's own `wheel`/`touchmove` handlers
+          only ever covered two of those.
+
+       2. `lockScroll()` stops LENIS, and this is the one that was missing.
+          Lenis scrolls the window programmatically from the gsap ticker, and
+          no overflow rule prevents a programmatic scroll — measured directly:
+          with `gate-locked` applied and the scrollbar gone, setting
+          `scrollTop` still moved the page. The lock was being taken and then
+          silently discarded by `registerLenis`; see the note there.
+
+       3. Neither of those undoes a scroll that has ALREADY happened — from
+          the browser restoring a position on reload, or from the window
+          between first paint and this effect running. So the position is
+          forced to the top on the way in and pinned there.
+
+       KEYED ON A DERIVED BOOLEAN, not on `phase` directly, so the idle →
+       parting change does not tear the whole hold down and rebuild it. That
+       would drop the lock count to zero for a frame and let Lenis start.
+
+       Released at `burst`: the instant `--gate-bg` goes transparent and the
+       site becomes visible. Nothing was on screen before that, so the reflow
+       from restoring the scrollbar has nothing to shift against, and scrolling
+       arrives exactly when there is something to scroll. Reduced motion goes
+       straight from `idle` to `burst` and takes the same path. */
+    useEffect(() => {
+        if (!holdScroll) return;
+
+        const html = document.documentElement;
+        html.classList.add("gate-locked");
+        lockScroll();
+
+        /* `force` so it executes while Lenis is stopped, the same reason
+           `scrollToSection` passes it. Lenis keeps its own idea of the scroll
+           position, so a bare `window.scrollTo` would be undone the moment it
+           started again. */
+        const toTop = () => {
+            const lenis = getLenis();
+            if (lenis) lenis.scrollTo(0, { immediate: true, force: true });
+            else window.scrollTo(0, 0);
+        };
+        toTop();
+
+        const pin = () => {
+            if (window.scrollY !== 0) toTop();
+        };
+        window.addEventListener("scroll", pin, { passive: true });
+
+        return () => {
+            window.removeEventListener("scroll", pin);
+            html.classList.remove("gate-locked");
+            unlockScroll();
+        };
+    }, [holdScroll]);
 
     useEffect(() => {
         reducedRef.current = window.matchMedia(
@@ -792,34 +856,21 @@ export default function SignalGate() {
             }),
         );
 
-        /* `lockScroll()` alone does NOT hold this one, and the reason is an
-           ordering race rather than a bug in the lock.
+        /* These two are the wheel and nothing else, and that is all they were
+           ever worth. The document is held by the `holdScroll` effect above —
+           overflow, Lenis and the pinned position together.
 
-           It works by calling `lenis.stop()`, but ScrollProvider registers the
-           Lenis instance from inside the gsap ticker, which first runs on the
-           next animation frame. Mount effects run before that frame, so this
-           call always finds a null instance and does nothing, and
-           `registerLenis` then resets the lock count to zero, discarding it
-           outright. Measured: the gate was up with `overflow: visible` and no
-           `lenis-stopped` class, so the page scrolled freely behind it and a
-           visitor would have landed somewhere mid-page on reconnect.
-
-           Blocking the events on the overlay itself is immune to that
-           ordering, and unlike putting `overflow: hidden` on the root it does
-           not remove the scrollbar, so nothing shifts sideways at the exact
-           moment of the reveal. The lock below is still called: it is
-           reference-counted and correct once Lenis is up. */
+           They stay because a wheel that reaches Lenis is a wheel Lenis will
+           try to act on, and stopping it at the overlay costs nothing. */
         const block = (e: Event) => e.preventDefault();
         node?.addEventListener("wheel", block, { passive: false });
         node?.addEventListener("touchmove", block, { passive: false });
 
-        lockScroll();
         buttonRef.current?.focus();
 
         return () => {
             node?.removeEventListener("wheel", block);
             node?.removeEventListener("touchmove", block);
-            unlockScroll();
             window.dispatchEvent(
                 new CustomEvent(ATLAS_QUIET_EVENT, {
                     detail: { source: "boot", quiet: false },
