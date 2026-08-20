@@ -1139,7 +1139,18 @@ html.zone-immersive {
      `DRAW_ZONES` is sitewide, not `#work`-specific, and nothing requires this
      column to stop where the atlas's own clip does — the panel's opaque
      `.shell-bezel` simply sits in front of whatever the canvas draws under
-     it. The split moved back toward the media: `64vw` rather than `52vw`.
+     it. The split moved to `64vw`, then again to `74vw` once the atlas had
+     already been dialled back to 0.5 opacity below: with the diagram already
+     reading as ambient rather than a subject, giving it every remaining pixel
+     right of the media column bought nothing, and the figures could still
+     grow.
+
+     `74vw` is not "as much as fits" — it stops well short of `DRAW_ZONES`'s
+     own `right: 0.99`, deliberately. At every width the atlas keeps roughly
+     28vw of the viewport with nothing drawn over it at all (measure the gap
+     between the slots box's right edge and 99vw live when this changes), so
+     "visible but not the star" stays true at a glance, not just in the
+     opacity number.
 
      The width is still derived, not typed: the slots box starts at the
      container's own content edge, which is `padding-left` plus whatever the
@@ -1148,7 +1159,7 @@ html.zone-immersive {
   .zone-act-slots {
     --zone-gutter: 2.5rem;
     --zone-col: calc(
-      64vw - max(0px, (100vw - var(--page-max)) / 2) - 8rem -
+      74vw - max(0px, (100vw - var(--page-max)) / 2) - 8rem -
         var(--zone-gutter)
     );
 
@@ -1235,11 +1246,15 @@ html.zone-immersive {
      track the column's own aspect on a short laptop screen. Taking the
      height from the viewport and capping the width against it means the
      panel gets NARROWER on a short screen rather than squashed — see the
-     grid's own comment for why. Raised in step with the wider `--zone-col`
-     above; measure the resulting box at 1440×900, 1280×720 and 1024px wide
-     the way that comment did, and keep these numbers current. */
+     grid's own comment for why. Raised again in step with `--zone-col`'s
+     second widening (74vw); the CAP moved further than it needed to on
+     purpose, so that width — not this — stays the binding constraint at
+     every measured breakpoint and the panel keeps using the full column
+     rather than getting cut off by its own ceiling. Measure the resulting
+     box at 1440×900, 1280×720 and 1024px wide when either changes, and keep
+     these numbers current. */
   .zone-act-media {
-    --zone-media-h: clamp(13rem, 44vh, 27rem);
+    --zone-media-h: clamp(16rem, 52vh, 32rem);
 
     position: relative;
     top: auto;

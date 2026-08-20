@@ -331,7 +331,7 @@ export default function CaseStudyStage({
                                                         src={m.poster!}
                                                         alt={m.alt}
                                                         fill
-                                                        sizes="(max-width: 1023px) 100vw, 46vw"
+                                                        sizes="(max-width: 1023px) 100vw, 50vw"
                                                         className="object-contain"
                                                     />
                                                 </div>
@@ -382,7 +382,7 @@ export default function CaseStudyStage({
                                                     src={m.src}
                                                     alt={m.alt}
                                                     fill
-                                                    sizes="(max-width: 1023px) 100vw, 46vw"
+                                                    sizes="(max-width: 1023px) 100vw, 50vw"
                                                     className="object-contain"
                                                 />
 
