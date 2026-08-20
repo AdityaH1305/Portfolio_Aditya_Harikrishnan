@@ -179,9 +179,9 @@ export default function CaseStudyStage({
        lightbox on a video player.
 
        The affordance matches the full write-up's. The concise stage plays a
-       clip muted and silent and renders a figure at ~560px, and until this
-       existed there was no way to look properly at either without leaving for
-       /work/<slug>. */
+       clip muted and silent and renders a figure inside a fixed panel, and
+       until this existed there was no way to look properly at either without
+       leaving for /work/<slug>. */
     const [expanded, setExpanded] = useState<number | null>(null);
     const mediaRef = useRef<HTMLDivElement>(null);
 
@@ -241,7 +241,7 @@ export default function CaseStudyStage({
         expanded === null ? undefined : stillIndexOf.get(expanded);
 
     return (
-        <article data-act className="zone-act">
+        <article data-act data-act-index={index} className="zone-act">
             <div className="zone-act-frame section-container">
                 <div className="zone-act-slots">
                     {/* h3: the page's h1 is the hero and FeaturedWork owns the
@@ -331,7 +331,7 @@ export default function CaseStudyStage({
                                                         src={m.poster!}
                                                         alt={m.alt}
                                                         fill
-                                                        sizes="(max-width: 1023px) 100vw, 560px"
+                                                        sizes="(max-width: 1023px) 100vw, 46vw"
                                                         className="object-contain"
                                                     />
                                                 </div>
@@ -382,20 +382,20 @@ export default function CaseStudyStage({
                                                     src={m.src}
                                                     alt={m.alt}
                                                     fill
-                                                    sizes="(max-width: 1023px) 100vw, 560px"
+                                                    sizes="(max-width: 1023px) 100vw, 46vw"
                                                     className="object-contain"
                                                 />
 
                                                 {/* The same control the video
                                                     slides carry. A figure
-                                                    rendered at 560px inside a
-                                                    fixed panel is a thumbnail
-                                                    of a diagram, and Gait's
-                                                    and Double U-Net's slides
-                                                    had no way to be read at
-                                                    all — the asymmetry only
-                                                    became obvious once Ludex
-                                                    next to them could open. */}
+                                                    rendered inside a fixed
+                                                    panel is a thumbnail of a
+                                                    diagram, and Gait's and
+                                                    Double U-Net's slides had
+                                                    no way to be read at all —
+                                                    the asymmetry only became
+                                                    obvious once Ludex next to
+                                                    them could open. */}
                                                 <button
                                                     type="button"
                                                     data-cursor="zoom"

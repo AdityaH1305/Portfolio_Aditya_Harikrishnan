@@ -1130,26 +1130,25 @@ html.zone-immersive {
 
   /* ── THE LEFT BAND, AND WHY THE COLUMN IS SOLVED RATHER THAN GUESSED ──
 
-     Everything from `52vw` rightward belongs to the atlas — that is
-     `DRAW_ZONES.desktop.left` in LivingArchitecture/config.ts, and this is
-     the second place that number now lives. The act used to run the full
-     measure, which put the media panel over 78.5% of the band and the head
-     over the same span again; the canvas was faded to 8% and frozen because
-     there was no point drawing under it.
+     This used to hand everything from `52vw` rightward to the atlas —
+     `DRAW_ZONES.desktop.left` in LivingArchitecture/config.ts — on the
+     reasoning that the diagram needed its whole band back after an earlier
+     version ran the media panel over 78.5% of it. That fixed one problem and
+     caused the next one: the figures ended up in a ~500px box, sized like
+     thumbnails, while the atlas sat at full opacity a few lines below this.
+     `DRAW_ZONES` is sitewide, not `#work`-specific, and nothing requires this
+     column to stop where the atlas's own clip does — the panel's opaque
+     `.shell-bezel` simply sits in front of whatever the canvas draws under
+     it. The split moved back toward the media: `64vw` rather than `52vw`.
 
-     So the content gets the left band and the diagram gets the right one. The
-     width is derived, not typed: the slots box starts at the container's own
-     content edge, which is `padding-left` plus whatever the centring margin
-     is once the container hits `--page-max`. Subtract both from 52vw and take
-     a gutter off the end.
-
-     Measured: 501px at 1440, 498px at 1280, 365px at 1024 — against a media
-     panel that was 560px. The figures give up 3.5% of their width and the
-     atlas gets its whole band back. */
+     The width is still derived, not typed: the slots box starts at the
+     container's own content edge, which is `padding-left` plus whatever the
+     centring margin is once the container hits `--page-max`. Subtract both
+     from the vw fraction and take a gutter off the end. */
   .zone-act-slots {
     --zone-gutter: 2.5rem;
     --zone-col: calc(
-      52vw - max(0px, (100vw - var(--page-max)) / 2) - 8rem -
+      64vw - max(0px, (100vw - var(--page-max)) / 2) - 8rem -
         var(--zone-gutter)
     );
 
@@ -1232,13 +1231,15 @@ html.zone-immersive {
      ── SIZED BY HEIGHT, WIDTH DERIVED ──
      The binding constraint is vertical, not horizontal: the column has to
      hold a head, a panel, a beat and a CTA row inside 100vh. Setting the
-     width and letting the height fall out gives a 2.35:1 letterbox on a
-     720px-tall laptop. Taking the height from the viewport and capping the
-     width against it means the panel gets NARROWER on a short screen rather
-     than squashed — 501×342 at 1440×900, 443×274 at 1280×720, both close to
-     the 1.56:1 the panel has always been. */
+     width and letting the height fall out gives a letterbox that does not
+     track the column's own aspect on a short laptop screen. Taking the
+     height from the viewport and capping the width against it means the
+     panel gets NARROWER on a short screen rather than squashed — see the
+     grid's own comment for why. Raised in step with the wider `--zone-col`
+     above; measure the resulting box at 1440×900, 1280×720 and 1024px wide
+     the way that comment did, and keep these numbers current. */
   .zone-act-media {
-    --zone-media-h: clamp(11rem, 38vh, 22.5rem);
+    --zone-media-h: clamp(13rem, 44vh, 27rem);
 
     position: relative;
     top: auto;
@@ -1348,6 +1349,52 @@ html.zone-immersive {
     font-size: 0.6875rem;
     letter-spacing: 0.1em;
   }
+
+  /* ── THE DEFAULT STATE MUST MATCH WHAT GSAP SETS, NOT WHAT CSS LEAVES ──
+
+     Everything above stacks three acts on top of each other (`.zone-act {
+     position: absolute; inset: 0 }`) and three beats in one grid cell
+     (`.zone-act-beat { grid-row: 3 }`), and tells them apart only through
+     inline `opacity`/`visibility` that `buildAct` in CaseStudyStage.tsx
+     applies. That happens inside a `useGSAP` layout effect, so it runs
+     before the BROWSER paints on a client re-render — but it cannot run
+     before the very first paint, which is the server-rendered HTML,
+     unstyled, arriving before any JS has executed. Reload with the
+     scroll position already inside `#work` (browser scroll restoration
+     does this on every refresh) and that first paint is what a reader
+     sees: every act and every beat after the first, fully opaque, all
+     occupying the same rectangle — three case studies' worth of text
+     mashed together. That was the "Gait's description overlaps" report,
+     and Gait is only the visible one because it is `CASE_STUDIES[0]`,
+     the one act meant to already be composed at rest.
+
+     This is the same class of bug `[data-reveal]`/`[data-hero]` already
+     carry a CSS rescue for elsewhere in this file: give the SSR default
+     the same hidden state JS would have applied, so there is nothing
+     for a pre-hydration paint to expose. `visibility: hidden` alongside
+     `opacity: 0` because that is what GSAP's `autoAlpha` sets, and a
+     hidden-but-interactive gap (an invisible CTA row still tabbable) is
+     its own small bug.
+
+     Scoped to THIS block on purpose. It shares this media query's
+     `scripting: enabled` condition, so a true no-JS visitor never
+     reaches it — they get the stacked, always-visible default outside
+     this block. The only reader this protects is one with JS that has
+     not finished hydrating yet, which is exactly who was affected. */
+  .zone-act:not([data-act-index="0"]) {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .zone-act-beat:not([data-beat-index="0"]) {
+    opacity: 0;
+    visibility: hidden;
+  }
+
+  .zone-act-slide:not([data-slide-index="0"]) {
+    opacity: 0;
+    visibility: hidden;
+  }
 }
 
 /* Promote only while the zone is on screen. Held permanently these would be
@@ -1404,39 +1451,34 @@ html.zone-immersive .atmosphere-noise {
 }
 
 /* ══════════════════════════════════════════════════════
-   THE ATLAS IS THE ONE THING HERE THAT DOES NOT RECEDE
+   THE ATLAS IS AMBIENT HERE, NOT THE SUBJECT
 
-   It used to. This rule read `opacity: 0.08` and the draw
-   loop was paused on top of it, on the reasoning that a
-   full-viewport canvas redrawing every frame was the most
-   expensive continuous thing on the page and `#work` was
-   the longest region of it.
+   It was fully off once — `opacity: 0.08` with the draw loop
+   paused on top of it — on the reasoning that a full-viewport
+   canvas redrawing every frame was the most expensive
+   continuous thing on the page and `#work` was its longest
+   region. That switched off the densest state of the diagram
+   (`STAGES[2]`, the only stage with all five secondaries lit)
+   in the exact section built to show the work it represents,
+   and a reader scrolling the case studies saw a frozen ghost.
 
-   That reasoning had the geometry right and the subject
-   backwards. `#work` is where the atlas reaches its VISUAL
-   PEAK — the only stage with all five secondary branches
-   lit, the only one that saturates the signal pool, and the
-   maximum on both cluster density and cluster opacity. The
-   load shedding was switching off the densest state of the
-   diagram in the exact region built to show the work it
-   represents, and a reader scrolling the case studies saw a
-   frozen ghost at 8%.
+   The fix for THAT overcorrected into a second problem: raised
+   to full opacity, the atlas became the loudest thing on
+   screen, competing with — and, at the narrow column this
+   section used to reserve for media, usually beating — the
+   actual project screenshots. This is the project section; the
+   work should be what a reader's eye lands on first.
 
    So the room still darkens and every other piece of chrome
-   still recedes — the nav to 0.25, the grid to 0.12, the
-   grain to 0.012 — and the atlas alone comes UP. Against
-   `--surface-0` at `#0E161B` rather than `#1B262C`, the same
-   accent reads considerably brighter than it does on the
-   rest of the page; the 12.5× opacity change does the rest.
-
-   The layout is the other half of this. The act's content
-   is confined to the left band so the canvas has somewhere
-   to be seen — see the choreographed block above. Raising
-   this without that would light a canvas that the media
-   panel covers 78.5% of.
-   ══════════════════════════════════════════════════════ */
+   still recedes — the nav to 0.25, the grid to 0.12, the grain
+   to 0.012 — and the atlas comes up partway rather than all the
+   way. Enough that `STAGES[2]`'s density is still visibly
+   drawing and moving — "the diagram is alive back there" — not
+   enough to out-compete an opaque screenshot panel sitting in
+   front of it. Tune this number live against the media panel's
+   own contrast, not in isolation. */
 html.zone-immersive .living-architecture-canvas {
-  opacity: 1;
+  opacity: 0.5;
 }
 
 .side-nav,
