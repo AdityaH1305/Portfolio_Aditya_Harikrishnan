@@ -651,16 +651,43 @@ export function buildAct(
 
         /* The outgoing slide settles back as the incoming one comes forward,
            both over the full hop window. Overlapping rather than sequential:
-           a gap between the two would show the empty panel through them. */
+           a gap between the two would show the empty panel through them.
+
+           `immediateRender: false` ON BOTH, and that is not optional past the
+           first pair. `fromTo`'s immediateRender applies its FROM state the
+           instant the tween is BUILT, not when the timeline reaches it — true
+           regardless of the tween's own position, which is exactly what makes
+           the entry tweens above work at position 0. Here it is a bug: a study
+           with three media slides runs this loop twice, and the second
+           iteration's `slides[prev]` is the FIRST iteration's `slides[next]`.
+           Its `{ autoAlpha: 1 }` from-state rendered immediately overwrote the
+           correct resting-hidden state `gsap.set` had just given that slide,
+           so the middle slide of any three-slide study came up visible at
+           full opacity from the first frame — one image painted over another,
+           both captions in the same box at once. `gsap.set` above already
+           states the true starting condition; these two only need to fire
+           when the timeline actually arrives. */
         tl.fromTo(
             slides[prev],
             { autoAlpha: 1, scale: 1 },
-            { autoAlpha: 0, scale: SLIDE_OUT_SCALE, duration, ease: EASE },
+            {
+                autoAlpha: 0,
+                scale: SLIDE_OUT_SCALE,
+                duration,
+                ease: EASE,
+                immediateRender: false,
+            },
             p(from),
         ).fromTo(
             slides[next],
             { autoAlpha: 0, scale: SLIDE_IN_SCALE },
-            { autoAlpha: 1, scale: 1, duration, ease: EASE },
+            {
+                autoAlpha: 1,
+                scale: 1,
+                duration,
+                ease: EASE,
+                immediateRender: false,
+            },
             p(from),
         );
     }
