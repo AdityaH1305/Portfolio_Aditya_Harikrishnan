@@ -89,5 +89,4 @@ I enjoy building systems where data, engineering, and usability come together to
 ## Connect
 
 **Portfolio:** [adityaharikrishnan.vercel.app](https://adityaharikrishnan.vercel.app)  
-**GitHub:** [github.com/AdityaH1305](https://github.com/AdityaH1305)  
 **LinkedIn:** [linkedin.com/in/aditya-harikrishnan-3932192a](https://www.linkedin.com/in/aditya-harikrishnan-3932192a/)
