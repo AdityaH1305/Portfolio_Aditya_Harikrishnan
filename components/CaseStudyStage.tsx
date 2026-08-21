@@ -136,7 +136,10 @@ export const slideForBeat = (beat: number, slideCount: number): number =>
  * between two case studies. Deliberately small: two full text compositions
  * at half opacity on top of each other is mud, not a crossfade.
  */
-const ACT_OVERLAP = 0.05;
+/* Exported so `CaseStudyZone` can compute the same "is this act currently
+   in play" window for layer promotion (see the `zone-act-promoted` comment
+   there) without a second literal drifting out of step with this one. */
+export const ACT_OVERLAP = 0.05;
 
 /**
  * Span of the two slow drifts that run the length of an act — the head's and
@@ -355,7 +358,8 @@ export default function CaseStudyStage({
                                                     aria-label={`Expand ${m.caption}`}
                                                     className="absolute top-3 right-3 z-10 flex items-center gap-2
                                                                px-3 py-2 rounded-full
-                                                               bg-surface-0/90 backdrop-blur-sm border border-edge-strong
+                                                               bg-surface-0/90 border border-edge-strong
+                                                               backdrop-blur-none group-hover/media:backdrop-blur-sm focus-visible:backdrop-blur-sm
                                                                text-secondary hover:text-accent hover:border-accent
                                                                opacity-0 group-hover/media:opacity-100 focus-visible:opacity-100
                                                                transition-all duration-200"
@@ -403,7 +407,8 @@ export default function CaseStudyStage({
                                                     aria-label={`Expand ${m.caption}`}
                                                     className="absolute top-3 right-3 z-10 flex items-center gap-2
                                                                px-3 py-2 rounded-full
-                                                               bg-surface-0/90 backdrop-blur-sm border border-edge-strong
+                                                               bg-surface-0/90 border border-edge-strong
+                                                               backdrop-blur-none group-hover/media:backdrop-blur-sm focus-visible:backdrop-blur-sm
                                                                text-secondary hover:text-accent hover:border-accent
                                                                opacity-0 group-hover/media:opacity-100 focus-visible:opacity-100
                                                                transition-all duration-200"

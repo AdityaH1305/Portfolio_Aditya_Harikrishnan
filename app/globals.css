@@ -413,6 +413,10 @@ body {
   font-family: var(--font-space-grotesk), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* surface-shift: see the comment above the (now instant) --surface-*
+     class swap. This is the element the room's darkening is actually
+     visible on for the whole page. */
+  transition: background-color 1200ms var(--ease);
 }
 
 ::selection {
@@ -981,20 +985,34 @@ body {
    tokens, and the overlays only ever transition opacity.
    ══════════════════════════════════════════════════════ */
 
-/* Longhands, not the `transition` shorthand. A custom-property name inside
-   the shorthand (`transition: --surface-0 700ms ...`) is dropped by the CSS
-   pipeline, and it takes the surrounding rules with it — the entire zone
-   block silently vanished from the emitted stylesheet.
+/* THE FOUR TOKENS THEMSELVES NO LONGER TRANSITION.
 
-   1200ms, and the class is applied while the zone is still approaching (see
-   the boundary trigger's `top 85%` start). 700ms fired at the boundary itself
-   read as a switch being flipped; this reads as walking into a different
-   room. */
-:root {
-  transition-property: --surface-0, --surface-1, --surface-2, --surface-3;
-  transition-duration: 1200ms;
-  transition-timing-function: var(--ease);
-}
+   They used to: `transition-property: --surface-0, --surface-1, --surface-2,
+   --surface-3` on `:root`, all four `inherits: true`. That is correct CSS —
+   the `@property` block above is what makes it *able* to interpolate rather
+   than snap — but "inherited" is the trap. Every element on the page reads
+   these four through inheritance, so the moment the browser starts
+   interpolating them on `:root`, every one of those elements has a changed
+   inherited value on every intermediate frame and must be re-matched against
+   its style rules. Measured on this page (659 nodes): 33.8ms of style
+   recalculation PER FRAME for the full 1200ms, against a 16.7ms budget —
+   and it lands exactly when the reader crosses into the case-study zone,
+   stacked on top of ZoneTitle's draw and the choreography timeline starting.
+   An unregistered, unused custom property costs the same 33.8ms doing
+   nothing at all, which is what proves the cost is the inherited recalc and
+   not the color interpolation itself.
+
+   The class swap below is now instantaneous (0.65ms, once) and the 1200ms
+   walk to the deeper room happens on `background-color`/`border-color`
+   transitions declared on the handful of elements that actually paint one of
+   these four tokens — `body`, `.shell-bezel`, the scrollbar chrome. Those
+   are ordinary (non-inherited) properties, so each only costs a recalc of
+   itself, not of 659 descendants, and the visible result is identical: same
+   four colours, same 1200ms, same curve. Search this file for
+   "surface-shift" to find every element carrying one of these transitions —
+   a new element that paints `var(--surface-N)` and is visible for the whole
+   zone traversal (not a modal that mounts fresh) needs the same treatment or
+   it will snap instead of walking in. */
 
 /* The indigo room.
 
@@ -1412,14 +1430,28 @@ html.zone-immersive {
   }
 }
 
-/* Promote only while the zone is on screen. Held permanently these would be
-   a dozen extra composited layers for the whole session; the atmosphere
-   layers already carry four. */
-html.zone-immersive .zone-act,
-html.zone-immersive .zone-act-head,
-html.zone-immersive .zone-act-media,
-html.zone-immersive .zone-act-beat,
-html.zone-immersive .zone-act-ctas {
+/* Promote only the act(s) actually in play, not every act for the whole
+   zone traversal.
+
+   This used to be `html.zone-immersive .zone-act, ...` — every act, head,
+   media panel, beat and CTA row promoted the instant the reader crossed
+   into the zone. With three acts that is 21 composited layers created in
+   one frame at the exact moment the palette is also mid-transition, most of
+   them for acts that are `visibility: hidden` and will stay that way for
+   thousands of pixels of scroll.
+
+   `zone-act-promoted` is a class `CaseStudyZone` toggles on `.zone-act`
+   itself, driven by the same `tl.time()` the choreography timeline already
+   reports — an act carries it from `ACT_OVERLAP` before its own boundary
+   (where its entry tween starts) through the end of its own span, so both
+   sides of a crossfade stay promoted and nothing else does. At most two
+   acts' worth of layers exist at once instead of three, and for most of the
+   zone's travel it is one. */
+.zone-act.zone-act-promoted,
+.zone-act.zone-act-promoted [data-act-head],
+.zone-act.zone-act-promoted [data-act-media],
+.zone-act.zone-act-promoted [data-act-beat],
+.zone-act.zone-act-promoted [data-act-ctas] {
   will-change: transform, opacity;
 }
 
@@ -1568,7 +1600,12 @@ html.zone-immersive .zone-bar {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :root,
+  /* `:root` carried the surface-token transition here; it no longer
+     transitions anything itself (see the surface-shift comment), but `body`
+     and `.shell-bezel` now carry the equivalent background-color transition
+     and need the same reduced-motion opt-out. */
+  body,
+  .shell-bezel,
   .side-nav,
   .atmosphere-grid,
   .living-architecture-canvas,
@@ -3299,6 +3336,11 @@ html.cursor-custom [data-cursor="text"] {
   background: var(--surface-1);
   padding: 0.5rem;
   border-radius: var(--panel-radius);
+  /* surface-shift: the case-study slide frames are on screen for the whole
+     zone traversal, so they need their own walk to the deeper room rather
+     than inheriting one from `:root`. See the comment above the
+     (now instant) --surface-* class swap. */
+  transition: background-color 1200ms var(--ease);
 }
 
 .core-bezel {

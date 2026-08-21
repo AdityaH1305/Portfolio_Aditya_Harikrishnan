@@ -16,6 +16,17 @@ const ACCENT_FALLBACK = { r: 34, g: 211, b: 238 };
 let accentRGB = ACCENT_FALLBACK;
 
 /**
+ * `accent()` is called roughly 130 times a frame at the atlas's densest
+ * stage (stage 2, `#work`) — every stroke and fill on the canvas re-derives
+ * its own colour string. Quantising the alpha to 3 decimals (invisible at
+ * 8-bit output — the compositor cannot resolve a difference finer than
+ * 1/255) turns that into a small, stable key space, so repeated calls at the
+ * same rounded opacity return the same string instead of allocating a new
+ * one. Cleared whenever `accentRGB` actually changes, which is the only
+ * thing that can make a cached string wrong. */
+const accentCache = new Map<number, string>();
+
+/**
  * Global opacity trim for the atlas.
  *
  * Every alpha in stages.ts was tuned for gold on a #050505 canvas, then
@@ -42,13 +53,22 @@ export function syncAccentFromCSS(): void {
     .getPropertyValue("--accent-rgb")
     .trim();
   const [r, g, b] = raw.split(/[\s,/]+/).map(Number);
-  if ([r, g, b].every((n) => Number.isFinite(n))) accentRGB = { r, g, b };
+  if ([r, g, b].every((n) => Number.isFinite(n))) {
+    accentRGB = { r, g, b };
+    accentCache.clear();
+  }
 }
 
 /** Build an rgba string in the portfolio's accent color. */
 export function accent(opacity: number): string {
-  const o = Math.max(0, Math.min(1, opacity * ACCENT_WEIGHT));
-  return `rgba(${accentRGB.r},${accentRGB.g},${accentRGB.b},${o})`;
+  const o =
+    Math.round(Math.max(0, Math.min(1, opacity * ACCENT_WEIGHT)) * 1000) /
+    1000;
+  const cached = accentCache.get(o);
+  if (cached !== undefined) return cached;
+  const str = `rgba(${accentRGB.r},${accentRGB.g},${accentRGB.b},${o})`;
+  accentCache.set(o, str);
+  return str;
 }
 
 // ── Breakpoint Modes ───────────────────────────────────

@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
 import CaseStudyStage, {
+    ACT_OVERLAP,
     buildAct,
     REST,
     slideForBeat,
@@ -190,6 +191,36 @@ export default function CaseStudyZone() {
                     }
                 };
 
+                /* ── Per-act layer promotion ──────────────────────────
+                   `globals.css` used to promote every act's `will-change:
+                   transform, opacity` for the acts, heads, media panels,
+                   beats and CTAs unconditionally under `zone-immersive` —
+                   21 composited layers created in one frame the instant the
+                   reader crossed into the zone, most of them for acts that
+                   were `visibility: hidden` and would stay that way for
+                   thousands of pixels of scroll.
+
+                   `zone-act-promoted` (a class on `.zone-act` itself; the
+                   CSS cascades `will-change` down to its known descendants —
+                   see the `.zone-act-promoted` rule) is instead driven by
+                   the same `tl.time()` this already reads for video sync, so
+                   only the act(s) actually in play carry the promotion. An
+                   act is in play from `ACT_OVERLAP` before its own boundary
+                   — the point its entry tween starts, matching `entryAt` in
+                   `buildAct` — through the end of its own span, so both
+                   sides of a crossfade stay promoted for its duration and
+                   nothing else does. */
+                const syncPromotion = (time: number) => {
+                    acts.forEach((act, i) => {
+                        const lower = i === 0 ? 0 : i - ACT_OVERLAP;
+                        const upper = i + 1;
+                        act.classList.toggle(
+                            "zone-act-promoted",
+                            time >= lower - 0.001 && time <= upper + 0.001,
+                        );
+                    });
+                };
+
                 const tl = gsap.timeline({
                     scrollTrigger: {
                         trigger: root,
@@ -229,15 +260,29 @@ export default function CaseStudyZone() {
                    would start playing while the panel was still travelling.
                    `tl.time()` IS the rendered state, and with one unit per act
                    it already reads as actIndex + localProgress. */
-                tl.eventCallback("onUpdate", () => syncClips(tl.time()));
+                tl.eventCallback("onUpdate", () => {
+                    const time = tl.time();
+                    syncClips(time);
+                    syncPromotion(time);
+                });
 
                 acts.forEach((act, i) => buildAct(tl, act, i, 1));
+
+                /* `onUpdate` only fires once the playhead actually moves;
+                   without this, an act loaded already inside the zone (a
+                   restored scroll position, a deep link) would sit
+                   unpromoted until the next scroll frame. */
+                syncPromotion(tl.time());
 
                 return () => {
                     /* Leaving a video playing behind a torn-down timeline is
                        exactly the kind of non-idempotent leftover that makes
-                       scrolling back up look broken. */
+                       scrolling back up look broken. Same reasoning for a
+                       promoted layer surviving the teardown. */
                     clips.forEach((c) => c.video!.pause());
+                    acts.forEach((act) =>
+                        act.classList.remove("zone-act-promoted"),
+                    );
                     tl.scrollTrigger?.kill();
                     tl.kill();
                 };

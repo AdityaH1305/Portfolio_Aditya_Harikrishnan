@@ -121,6 +121,25 @@ const TEXT_SELECTOR =
 
 const lerp = (a: number, b: number, t: number) => a + (b - a) * t;
 
+/* The ring's 97-point waveform loop below reads `Math.cos(t)`/`Math.sin(t)`
+   for a `t` that only ever takes these 97 values (`i / 96` around the
+   circle) — the harmonic wave riding on top of them depends on `phase` and
+   `spec.harm` and genuinely changes every frame, but the point's raw
+   position on the circle does not. Precomputing it once removes 194
+   `Math.cos`/`Math.sin` calls a frame with bit-identical output; only the
+   two harmonic `Math.sin` calls per point, which cannot be tabulated, stay
+   inline in the draw loop. */
+const RING_STEPS = 96;
+const RING_T: number[] = [];
+const RING_COS: number[] = [];
+const RING_SIN: number[] = [];
+for (let i = 0; i <= RING_STEPS; i++) {
+    const t = (i / RING_STEPS) * Math.PI * 2;
+    RING_T.push(t);
+    RING_COS.push(Math.cos(t));
+    RING_SIN.push(Math.sin(t));
+}
+
 export default function Cursor() {
     const rootRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -201,6 +220,10 @@ export default function Cursor() {
         // Last written size, so a settled lock stops touching layout.
         let lastBoxW = -1;
         let lastBoxH = -1;
+
+        // Cached label chip width, re-measured only when the text changes.
+        let lastLabelText: string | null = null;
+        let lastLabelWidth = 0;
 
         // Easter-egg charge arc.
         let charge = 0;
@@ -451,19 +474,32 @@ export default function Cursor() {
                 // true circle when the pointer has been still.
                 const amp =
                     ampEase * (WAVE_BASE + speed * WAVE_PER_SPEED) * (1 - idle);
+
                 ctx.beginPath();
-                for (let i = 0; i <= 96; i++) {
-                    const t = (i / 96) * Math.PI * 2;
-                    const w =
-                        Math.sin(t * spec.harm + phase) * amp +
-                        Math.sin(t * spec.harm * 2 + phase * 1.6) * amp * 0.25;
-                    const rr = R + w;
-                    const x = ox + Math.cos(t) * rr;
-                    const y = oy + Math.sin(t) * rr;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
+                if (amp < 0.05) {
+                    /* At this amplitude the harmonic term is sub-pixel and
+                       the loop below draws a 96-gon so close to a true
+                       circle the difference cannot be seen. `arc()` is the
+                       same circle, exactly, for two fill/stroke calls
+                       instead of 97 point computations — this is the
+                       resting state of a cursor that has been still for
+                       IDLE_AFTER_MS, i.e. most of the time a reader spends
+                       actually reading. */
+                    ctx.arc(ox, oy, R, 0, Math.PI * 2);
+                } else {
+                    for (let i = 0; i <= RING_STEPS; i++) {
+                        const t = RING_T[i];
+                        const w =
+                            Math.sin(t * spec.harm + phase) * amp +
+                            Math.sin(t * spec.harm * 2 + phase * 1.6) * amp * 0.25;
+                        const rr = R + w;
+                        const x = ox + RING_COS[i] * rr;
+                        const y = oy + RING_SIN[i] * rr;
+                        if (i === 0) ctx.moveTo(x, y);
+                        else ctx.lineTo(x, y);
+                    }
+                    ctx.closePath();
                 }
-                ctx.closePath();
 
                 /* Stroked twice from the same path: a dark carrier first,
                    then the accent on top. A single accent hairline vanishes
@@ -684,9 +720,21 @@ export default function Cursor() {
                the two read as unrelated objects.
 
                Flips to the left near the right edge, or the chip runs off
-               screen — `READ CASE STUDY` is ~150px wide. */
+               screen — `READ CASE STUDY` is ~150px wide.
+
+               `offsetWidth` forces a layout read, and the label's own text
+               is what determines it — so it only needs re-reading on the
+               frame the text actually changed, which `label.textContent !==
+               text` above already detects. Most labels ("READ CASE STUDY",
+               "EXPAND", ...) sit unchanged for the whole hover; even the
+               probe readout repeats its width across the 3 frames between
+               `PROBE_EVERY` samples. */
             if (text) {
-                const w = label.offsetWidth;
+                if (text !== lastLabelText) {
+                    lastLabelWidth = label.offsetWidth;
+                    lastLabelText = text;
+                }
+                const w = lastLabelWidth;
                 const flip = eased.x > window.innerWidth - (w + 34);
                 const lx = flip ? eased.x - w - 18 : eased.x + 18;
                 const ly = Math.min(eased.y + 16, window.innerHeight - 34);

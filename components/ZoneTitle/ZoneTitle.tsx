@@ -98,6 +98,21 @@ export default function ZoneTitle() {
         let h = 0;
         let sources: Vec2[] = [];
 
+        /* `.zone-title-canvas`'s `color` is `var(--accent)`, and the zone's
+           palette shift deliberately leaves the accent alone (see
+           globals.css and CLAUDE.md — "the zone leaves the accent alone
+           entirely"). So this string cannot change while the draw loop is
+           running; reading it every frame was a forced style recalculation
+           for a value that is, in practice, a constant for the session.
+           Read once here and refreshed only where geometry already is
+           (resize, ScrollTrigger refresh) rather than on the hot path. */
+        let edge = "50,130,184";
+        const readAccent = () => {
+            const key = getComputedStyle(canvas).color;
+            const rgb = key.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+            if (rgb?.length === 3) edge = `${rgb[0]},${rgb[1]},${rgb[2]}`;
+        };
+
         const size = () => {
             const r = canvas.getBoundingClientRect();
             if (r.width < 1 || r.height < 1) return;
@@ -134,8 +149,33 @@ export default function ZoneTitle() {
             if (r.width < 1 || r.height < 1) return;
             slotEl.style.minHeight = `${wordScreenHeight(r.width, r.height)}px`;
         };
+
+        /* The heading's horizontal position and size do not change with
+           scroll — only its vertical position does, and by exactly
+           `window.scrollY`. Measuring `slotDocTop` (the document-relative
+           top) once here and re-deriving the viewport-relative top from
+           `scrollY` each frame is the same technique
+           `LivingArchitecture.tsx`'s `attachScrub` uses for its anchors: it
+           trades a forced-layout `getBoundingClientRect()` on every frame
+           the word is animating for one arithmetic subtraction. */
+        let slotLeft = 0;
+        let slotWidth = 0;
+        let slotHeight = 0;
+        let slotDocTop = 0;
+        const measureSlot = () => {
+            if (!slotEl) return;
+            const r = slotEl.getBoundingClientRect();
+            if (r.width < 1) return;
+            slotLeft = r.left;
+            slotWidth = r.width;
+            slotHeight = r.height;
+            slotDocTop = r.top + window.scrollY;
+        };
+
         fitHeading();
         size();
+        measureSlot();
+        readAccent();
 
         let progress = 0;
         let blank = false;
@@ -145,8 +185,8 @@ export default function ZoneTitle() {
             if (w < 1) size();
             if (w < 1 || !slotEl) return;
 
-            // Early-out BEFORE any style read, for the same reason GlyphA's is
-            // first: this ticker runs for the rest of the page.
+            // Early-out BEFORE any geometry read, for the same reason
+            // GlyphA's is first: this ticker runs for the rest of the page.
             if (progress <= 0 || progress >= 1) {
                 if (!blank) {
                     blank = true;
@@ -156,10 +196,7 @@ export default function ZoneTitle() {
             }
             blank = false;
 
-            const key = getComputedStyle(canvas).color;
-            const rgb = key.match(/[\d.]+/g)?.slice(0, 3).map(Number);
-            if (rgb?.length !== 3) return;
-            const edge = `${rgb[0]},${rgb[1]},${rgb[2]}`;
+            if (slotWidth < 1) return;
 
             /* ── LEFT-ALIGNED, NOT CENTRED IN THE COLUMN ──
                This used to anchor on `box.left + box.width / 2`. The box is the
@@ -172,12 +209,14 @@ export default function ZoneTitle() {
                Anchoring on the word's own half-width puts its INK edge on the
                column edge, which is what "aligned" means for type. The
                vertical stays centred because `fitHeading` has already given
-               the box the word's exact height. */
-            const box = slotEl.getBoundingClientRect();
-            if (box.width < 1) return;
+               the box the word's exact height.
+
+               `slotTop` is `slotDocTop - scrollY` rather than a fresh
+               `getBoundingClientRect()` — see `measureSlot` above. */
+            const slotTop = slotDocTop - window.scrollY;
             const anchor = anchorWorld(
-                box.left + wordScreenWidth(w, h) / 2,
-                box.top + box.height / 2,
+                slotLeft + wordScreenWidth(w, h) / 2,
+                slotTop + slotHeight / 2,
                 WORD_Z,
                 w,
                 h,
@@ -246,6 +285,7 @@ export default function ZoneTitle() {
         const ro = new ResizeObserver(() => {
             fitHeading();
             size();
+            measureSlot();
         });
         ro.observe(canvas);
 
@@ -297,6 +337,7 @@ export default function ZoneTitle() {
             onRefresh: () => {
                 fitHeading();
                 size();
+                measureSlot();
             },
             onUpdate: (self) => {
                 progress = self.progress;

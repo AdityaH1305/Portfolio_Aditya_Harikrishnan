@@ -1345,8 +1345,40 @@ export class LivingArchitectureEngine {
     }
   }
 
+  /** Endpoints for one cluster segment, sharing the breathe/offset math the
+   *  two draw paths below both need. */
+  private clusterSegEndpoints(
+    cluster: ClusterState,
+    seg: ClusterSegment,
+    breatheAmt: number,
+  ): { x1: number; y1: number; x2: number; y2: number } {
+    const breathe =
+      breatheAmt > 0
+        ? Math.sin((TAU * this.time) / cluster.breatheRate + seg.breathePhase)
+        : 0;
+    const len = seg.length + breathe * breatheAmt;
+    const half = len / 2;
+    const cx = cluster.x + seg.offsetX;
+    const cy = cluster.y + seg.offsetY;
+    return {
+      x1: cx + Math.cos(seg.angle) * half,
+      y1: cy + Math.sin(seg.angle) * half,
+      x2: cx - Math.cos(seg.angle) * half,
+      y2: cy - Math.sin(seg.angle) * half,
+    };
+  }
+
+  /** Draw a cluster's segments, up to its current density.
+   *
+   *  All but (at most) one segment share the density gate's full alpha —
+   *  only the single segment straddling `currentDensity`'s fractional part
+   *  draws at a partial one. Those share a `strokeStyle`, so they are one
+   *  path and one `stroke()` rather than one of each per segment: 2 draw
+   *  calls per pass instead of up to 5, ~16 instead of ~80 across a stage-2
+   *  atlas's 8 clusters. Same endpoints, same alphas, same colours — the
+   *  only change is how many `stroke()` calls produce them. */
   private drawCluster(cluster: ClusterState, visibilityAlpha: number): void {
-    const { ctx, time } = this;
+    const { ctx } = this;
     const cfg = CLUSTER_CONFIGS[this.mode];
     const breatheAmt = cfg.breatheAmount;
 
@@ -1358,39 +1390,43 @@ export class LivingArchitectureEngine {
     ctx.lineCap = "round";
 
     const density = cluster.currentDensity;
+    const fullCount = Math.min(
+      Math.floor(density),
+      cluster.segments.length,
+    );
+    const fracIndex = fullCount;
+    const fracAlpha = density - Math.floor(density);
+    const hasFrac =
+      fracIndex < cluster.segments.length && fracAlpha >= 0.01;
 
     for (let pass = 0; pass < 2; pass++) {
       const isGlow = pass === 0;
-      for (let si = 0; si < cluster.segments.length; si++) {
-        // Per-segment density gating
-        let segAlpha: number;
-        if (si < Math.floor(density)) {
-          segAlpha = 1;
-        } else if (si < Math.ceil(density)) {
-          segAlpha = density - Math.floor(density);
-        } else {
-          continue;
+      ctx.lineWidth = isGlow ? cfg.lineWidth + 1.5 : cfg.lineWidth;
+
+      if (fullCount > 0) {
+        const baseOp = (cluster.baseOpacity + flashBoost) * visibilityAlpha;
+        ctx.strokeStyle = accent(isGlow ? baseOp * 0.12 : baseOp);
+        ctx.beginPath();
+        for (let si = 0; si < fullCount; si++) {
+          const { x1, y1, x2, y2 } = this.clusterSegEndpoints(
+            cluster,
+            cluster.segments[si],
+            breatheAmt,
+          );
+          ctx.moveTo(x1, y1);
+          ctx.lineTo(x2, y2);
         }
-        if (segAlpha < 0.01) continue;
+        ctx.stroke();
+      }
 
-        const seg = cluster.segments[si];
-        const breathe =
-          breatheAmt > 0
-            ? Math.sin((TAU * time) / cluster.breatheRate + seg.breathePhase)
-            : 0;
-        const len = seg.length + breathe * breatheAmt;
-        const half = len / 2;
-
-        const cx = cluster.x + seg.offsetX;
-        const cy = cluster.y + seg.offsetY;
-        const x1 = cx + Math.cos(seg.angle) * half;
-        const y1 = cy + Math.sin(seg.angle) * half;
-        const x2 = cx - Math.cos(seg.angle) * half;
-        const y2 = cy - Math.sin(seg.angle) * half;
-
+      if (hasFrac) {
+        const { x1, y1, x2, y2 } = this.clusterSegEndpoints(
+          cluster,
+          cluster.segments[fracIndex],
+          breatheAmt,
+        );
         const baseOp =
-          (cluster.baseOpacity + flashBoost) * visibilityAlpha * segAlpha;
-        ctx.lineWidth = isGlow ? cfg.lineWidth + 1.5 : cfg.lineWidth;
+          (cluster.baseOpacity + flashBoost) * visibilityAlpha * fracAlpha;
         ctx.strokeStyle = accent(isGlow ? baseOp * 0.12 : baseOp);
         ctx.beginPath();
         ctx.moveTo(x1, y1);
