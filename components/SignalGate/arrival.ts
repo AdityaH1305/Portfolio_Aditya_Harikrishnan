@@ -8,7 +8,7 @@
    moment and always as a hard cut. The first thing anybody
    sees on this site popped into being.
 
-   So now the room is empty for half a second, and then they
+   So now the room is empty for a brief beat, and then they
    sweep in from beyond the edges of the screen and settle
    into exactly the places the physics is expecting.
 
@@ -32,7 +32,7 @@ import type { Cube } from "./cubes.ts";
 import { easeOut } from "./finale.ts";
 
 /** The room, empty, before anything moves. */
-export const ARRIVE_DELAY = 500;
+export const ARRIVE_DELAY = 300;
 
 /** Spread between the first block leaving and the last. */
 export const ARRIVE_STAGGER = 400;

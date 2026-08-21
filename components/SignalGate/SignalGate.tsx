@@ -233,11 +233,11 @@ export default function SignalGate() {
 
     /* ── When the field came into being ────────────────
        `performance.now()` at the first frame the blocks exist, which is what
-       `arrival.ts` measures its half-second beat and its flight from.
+       `arrival.ts` measures its `ARRIVE_DELAY` beat and its flight from.
 
        MOUNT, NOT PAGE LOAD, and that is the whole point of the change. This
-       canvas waits on hydration and on a dynamic chunk, so "half a second
-       after the page loads" may already have gone by the time it can draw
+       canvas waits on hydration and on a dynamic chunk, so a fixed delay
+       "after the page loads" may already have gone by the time it can draw
        anything — and then the blocks are back to appearing in one cut, which
        is the thing being fixed. Anchored here, the beat is always the same
        length and the arrival can never be skipped. */

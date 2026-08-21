@@ -46,7 +46,7 @@ function fieldFor(w: number, h: number, seed = 11) {
 
 /* ══ The beat before anything moves ══════════════════ */
 
-test("NOTHING MOVES FOR THE FIRST HALF SECOND", () => {
+test("NOTHING MOVES BEFORE ARRIVE_DELAY", () => {
     /* The whole point of the change. The blocks used to appear whenever the
        chunk happened to land; the fixed beat is what makes the arrival read as
        designed rather than as loading. */
