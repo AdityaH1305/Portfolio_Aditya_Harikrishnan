@@ -1,71 +1,66 @@
-# 🚀 Aditya Harikrishnan — Portfolio
+# Aditya Harikrishnan — Portfolio
 
-A modern, interactive developer portfolio built with Next.js, showcasing projects in machine learning, full-stack development, and systems design.
+A modern, interactive developer portfolio built with Next.js, showcasing work in machine learning, full-stack development, and systems design.
 
----
-
-## 🌐 Live Website
-🔗 https://adityaharikrishnan.vercel.app
+**Live site:** https://adityaharikrishnan.vercel.app
 
 ---
 
-## ✨ Features
+## Features
 
-- Generative canvas "system atlas" that grows a new stage per section as you scroll
+- A generative canvas "system atlas" that grows a new stage per section as you scroll
 - Command palette (`Ctrl`/`Cmd` + `K`)
-- Interactive project showcase with click-to-enlarge previews
-- Walkthrough videos that load only when scrolled into view
-- Hidden easter egg (👀)
-- Fully responsive, `prefers-reduced-motion` aware throughout
+- Interactive project showcases with click-to-enlarge previews
+- Walkthrough videos that load only once scrolled into view
+- A hidden easter egg
+- Fully responsive and `prefers-reduced-motion` aware throughout
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
-- **Frontend:** Next.js 16, React 19, TypeScript
-- **Styling:** Tailwind CSS v4 (tokens in `app/globals.css`, no config file)
-- **Type:** Space Grotesk + JetBrains Mono
-- **Animations:** Framer Motion + a hand-rolled canvas engine
+- **Framework:** Next.js 16, React 19, TypeScript
+- **Styling:** Tailwind CSS v4 — design tokens live in `app/globals.css`, with no separate config file
+- **Type:** Inter, with JetBrains Mono for code and data
+- **Animation:** GSAP and Lenis, alongside a hand-rolled canvas engine for the generative visuals
 - **Deployment:** Vercel
 
 ---
 
-## 📂 Projects Highlighted
+## Projects
 
-### 🎯 Ludex
-Hybrid recommendation system combining Content-Based Filtering and Collaborative Filtering.  
-- +27% Precision@20 vs CBF  
-- +13% vs CF  
-- 57K+ items, 1.2K+ users  
+### Ludex
+A hybrid recommendation engine for Steam games, combining content-based and collaborative filtering.
+
+- +27% Precision@20 over the content-based baseline
+- +13% over collaborative filtering alone
+- Trained and evaluated across 57,000+ titles and 1,200+ players
 - Full technical report published on the site
 
----
+### PlayNexus
+A full-stack platform for exploring Steam games.
 
-### 🎮 PlayNexus
-Full-stack platform for exploring Steam games with:
-- Price comparison across regions  
-- Value scoring system  
-- Vibe-based discovery
-- Real-time API integration  
+- Multi-region price comparison
+- Custom value-scoring algorithm
+- Vibe-based game discovery
+- Real-time Steam API integration
 
----
+### SynthRescue
+An AI-powered disaster analysis system built on computer vision.
 
-### 🚑 SynthRescue
-AI-powered disaster analysis system using computer vision:
-- YOLO-based structural damage detection  
-- AI-generated emergency reports (Gemini)  
-- Real-time image analysis pipeline  
-- Fault-tolerant system design  
+- YOLO-based structural damage detection
+- AI-generated emergency reports via Gemini
+- Real-time image analysis pipeline
+- Designed for fault-tolerant, rapid deployment
 
 ---
 
----
+## About
 
-## 🧠 About
+This portfolio reflects a focus on:
 
-This portfolio reflects my focus on:
-- Machine Learning Systems  
-- Backend Engineering  
-- Scalable Application Design  
+- Machine learning systems
+- Backend engineering
+- Scalable application design
 
-I enjoy building systems that combine **data, intelligence, and usability**.
+I enjoy building systems that bring together data, intelligence, and usability.
