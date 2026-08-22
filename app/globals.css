@@ -581,6 +581,19 @@ body {
   color: var(--text-tertiary);
 }
 
+/* Each case-study act's own eyebrow ("01 · Gait Biometrics / Computer
+   Vision") is the first thing read on every project and sits directly on
+   the bare zone background — no card, no panel behind it — so it is the
+   most exposed `.label-muted` on the site and reads as too quiet there.
+   Bumped to `--text-secondary` (7.4:1, up from tertiary's ~5-6:1) for this
+   one instance only; every other `.label-muted` — table captions, the
+   Contact block, the video player's duration — keeps the quieter tertiary
+   tone that is correct for those, so the override is scoped to
+   `.zone-act-head` rather than changed on the shared class. */
+.zone-act-head .label-muted {
+  color: var(--text-secondary);
+}
+
 .mono {
   font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
