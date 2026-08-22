@@ -55,13 +55,3 @@ export const ATLAS_QUIET_EVENT = "atlas:quiet";
  * touched.)
  */
 export const CURSOR_TINT_EVENT = "cursor:tint";
-
-/**
- * Length of the chrome fade in globals.css.
- *
- * Consumers that stop work entirely — the atlas pauses its draw loop — defer
- * by this long on the way IN so the freeze lands after the fade rather than
- * during it, and act immediately on the way out. Keep in step with the
- * `transition: opacity 700ms` on `.living-architecture-canvas`.
- */
-export const ZONE_FADE_MS = 700;

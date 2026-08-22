@@ -81,14 +81,28 @@ export default function CaseStudyZone() {
                 );
             };
 
-            /* Starts BEFORE the zone arrives — `top 85%` is roughly 15vh of
-               lead — so the 1200ms palette transition is already under way as
-               the reader approaches and has settled by the time the stage
-               fills the viewport. Fired at the boundary itself it read as a
-               switch being flipped.
+            /* `top bottom` — the moment the zone's top edge enters the
+               viewport, a full 100vh of lead.
+
+               THIS EDGE IS SHARED WITH `ZoneTint`, and that is the whole
+               reason for the number. The room's ground darkening is
+               scroll-linked across exactly `top bottom` → `top top`; these
+               class-driven chrome fades (nav, grid, atlas, vignette, bars)
+               are time-linked at 1200ms. Starting them on the same pixel
+               makes the two read as one event — the ground and the chrome
+               recede together. It was `top 85%`, roughly 15vh of lead, which
+               would have let the ground reach ~85% of its depth before the
+               chrome so much as began: two separate events a beat apart.
+
+               They stay differently governed on purpose. Scrubbing the other
+               four would mean scroll-linking properties that are pure CSS
+               today, for no gain — at any plausible scroll rate 100vh takes
+               roughly 1.2–2s, so a 1200ms fade lands within a beat of the
+               ramp either way.
 
                `end` stays at the true boundary: that is where the sticky
-               travel actually ends, and the fade out plays as you leave.
+               travel actually ends, and it already coincides with the start
+               of ZoneTint's ramp-out, so the exit is symmetric for free.
 
                Only THIS trigger moves. The choreography timeline's trigger
                must stay top-top/bottom-bottom because that range IS the
@@ -96,7 +110,7 @@ export default function CaseStudyZone() {
                one can be tuned without touching that. */
             const boundary = ScrollTrigger.create({
                 trigger: root,
-                start: "top 85%",
+                start: "top bottom",
                 end: "bottom bottom",
                 onToggle: (self) => setImmersive(self.isActive),
             });

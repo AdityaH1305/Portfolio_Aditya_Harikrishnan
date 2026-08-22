@@ -67,10 +67,10 @@ export default function AtmosphereParallax() {
                    position here. */
                 .to(".atmosphere-grid", { y: TRAVEL.grid, ease: "none" }, 0);
 
-            /* Stand down inside the case-study zone. Four promoted layers move
-               every frame here, and in there the grid is at opacity 0.25
-               behind a vignette — almost none of it is visible, and it is the
-               longest region of the page.
+            /* Stand down inside the case-study zone. The grid is dimmed to
+               0.16 and sits behind a vignette in there, so almost none of its
+               travel is visible — and this is the longest region of the page
+               by a wide margin.
 
                disable(false) leaves the current transforms in place; passing
                true would revert them, so the layers would jump back to their
