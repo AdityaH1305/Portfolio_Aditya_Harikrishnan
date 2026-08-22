@@ -1298,12 +1298,12 @@ body {
        body measures ~102px — buys the figure back about 13%. */
     row-gap: clamp(0.625rem, 1.9vh, 2rem);
 
-    /* ── THE LETTERBOX BARS ARE RESERVED, NOT SHARED ──
-       `.zone-bar--top/--bottom` are fixed, opaque and paint at
-       `z-index: 45`, far above this. Anything the act lays out inside that
-       band is not merely dimmed by the framing, it is hidden behind it — so
-       the band has to come out of the column's own box rather than being
-       territory both things believe they own.
+    /* ── THE LETTERBOX BAND IS RESERVED, NOT SHARED ──
+       `.zone-bar--bottom` is fixed, opaque and paints at `z-index: 45`, far
+       above this. Anything the act lays out inside that band is not merely
+       dimmed by the framing, it is hidden behind it — so the band has to come
+       out of the column's own box rather than being territory both things
+       believe they own.
 
        It went wrong exactly once the media panel grew. On a 900px-tall
        screen the column had ~123px of slack and `align-content: center`
@@ -1311,16 +1311,22 @@ body {
        nothing looked wrong. On a 720px laptop the column filled the stage
        exactly, the head started at y=13 against an 18px bar, and the first
        line of every act — `01 · Gait Biometrics / Computer Vision` — was
-       painted over by the top bar before it was ever read.
+       painted over before it was ever read.
 
        `--head-drift` is added on top because the head does not stay where it
        is laid out: it drifts upward across the act (see `HEAD_DRIFT` in
        CaseStudyStage.tsx, which this must stay in step with). Reserving the
        bar alone would clear the eyebrow at rest and then walk it back under
-       the bar as the reader scrolled — which is precisely the "not visible
-       when scrolling" half of the report. Bar + drift means the eyebrow is
-       above the band for the ENTIRE act, at its lowest point and its
-       highest. */
+       it as the reader scrolled — which is precisely the "not visible when
+       scrolling" half of the report. Bar + drift means the eyebrow clears the
+       band for the ENTIRE act, at its lowest point and its highest.
+
+       THE TOP RESERVE STAYS EVEN THOUGH THE TOP BAR IS GONE. It is now plain
+       breathing room rather than a reserve, and it is deliberate: reclaiming
+       it would lift every act's eyebrow by `--zone-bar-h` and re-open the
+       clearance question above on short viewports, for a spacing change
+       nobody asked for. If it is ever reclaimed, re-verify at 1024x640 —
+       that is the binding worst case the numbers here were solved against. */
     --head-drift: 16px;
     padding-top: calc(
       clamp(0.75rem, 3vh, 2.75rem) + var(--zone-bar-h) + var(--head-drift)
@@ -1807,11 +1813,13 @@ html.zone-immersive .zone-tint {
   );
 }
 
-.zone-bar--top {
-  top: 0;
-  border-bottom: 1px solid var(--border-subtle);
-}
+/* NO `.zone-bar--top`. There was one, pinned to `top: 0` with a hairline
+   under it, and it is gone on purpose — the top edge already carries the
+   scroll progress bar and the uplink chip, so a third band appearing there on
+   approach read as a stray rule across the page instead of as framing. The
+   bottom edge is uncontested, so that bar stays and still frames the act.
 
+   `.zone-act-slots` keeps its top reserve regardless; see the note there. */
 .zone-bar--bottom {
   bottom: 0;
   border-top: 1px solid var(--border-subtle);
