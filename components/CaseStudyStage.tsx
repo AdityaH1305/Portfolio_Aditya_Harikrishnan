@@ -153,6 +153,20 @@ export const ACT_OVERLAP = 0.05;
  */
 const DRIFT_SPAN = ACT.exit[0] - ACT.entry[1];
 
+/**
+ * How far the head travels upward across an act, in px.
+ *
+ * WRITTEN TWICE ON PURPOSE — `--head-drift` in `.zone-act-slots` reserves the
+ * same distance in the column's top padding, and the comment there explains
+ * why. The head is the one element that leaves the box the grid gave it, so
+ * the layout has to know how far it goes; a drift larger than the reserve
+ * ends with the eyebrow behind the opaque top letterbox bar, part way
+ * through the act, on short viewports only.
+ *
+ * It was 26px against no reserve at all, which is how that shipped.
+ */
+const HEAD_DRIFT = 16;
+
 const BEAT_LABELS = ["What it is", "How it works", "The result"] as const;
 
 /* ══════════════════════════════════════════════════════ */
@@ -570,7 +584,15 @@ export function buildAct(
     );
 
     /* Head: rises in, then drifts up across the act so the composition keeps
-       moving even while a beat is being read. */
+       moving even while a beat is being read.
+
+       THE DRIFT IS RESERVED FOR IN CSS, and the two must stay in step.
+       `.zone-act-slots` adds `--head-drift` to its top padding precisely
+       because the head does not stay where the grid puts it — without that,
+       this tween walks the eyebrow up underneath the fixed, opaque
+       `.zone-bar--top` partway through every act. Raising the number here
+       without raising it there reopens exactly that bug, and it only shows
+       on short viewports, where the column has no slack to absorb it. */
     tl.fromTo(
         head,
         { y: ei(28, 0), opacity: ei(0, 1) },
@@ -578,7 +600,7 @@ export function buildAct(
         entryAt,
     ).to(
         head,
-        { y: -26, duration: span * DRIFT_SPAN, ease: "none" },
+        { y: -HEAD_DRIFT, duration: span * DRIFT_SPAN, ease: "none" },
         p(ACT.entry[1]),
     );
 
