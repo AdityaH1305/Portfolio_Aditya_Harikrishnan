@@ -413,10 +413,6 @@ body {
   font-family: var(--font-space-grotesk), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  /* surface-shift: see the comment above the (now instant) --surface-*
-     class swap. This is the element the room's darkening is actually
-     visible on for the whole page. */
-  transition: background-color 1200ms var(--ease);
 }
 
 ::selection {
@@ -660,7 +656,24 @@ body {
 
 /* One rhythm for every section, replacing six different
    py- pairs scattered across components. */
+/* `position: relative` IS LOAD-BEARING, and it is not about offsets.
+
+   `.zone-tint` is a `fixed; z-index: 0` overlay that darkens the page ground
+   for the case-study room. Painting order puts positioned elements ABOVE
+   non-positioned block content, so a STATIC section would have its text and
+   figures painted underneath that overlay and dimmed with the ground — while
+   `#work` and `#intro`, which already declared `relative`, stayed bright.
+   The visible symptom was subtle and only during the two ramps: `#research`
+   dimming as you entered the room and `#projects` arriving dimmed and
+   brightening as you left it, neither matching the section on screen beside
+   them.
+
+   Declared here rather than as a `relative` class on each `<section>` so a
+   section added later cannot miss it. Verified safe: no absolutely-positioned
+   descendant in any of these six sections resolves against an ancestor above
+   its own section, so making them containing blocks re-anchors nothing. */
 .section-y {
+  position: relative;
   padding-top: var(--space-section);
   padding-bottom: var(--space-section);
 }
@@ -993,51 +1006,49 @@ body {
    in both scroll directions.
 
    Everything here is a state change on a class — no per-frame
-   JavaScript, no repaint loop. The palette retints because
-   every colour on the site already derives from these two
-   tokens, and the overlays only ever transition opacity.
+   JavaScript, no repaint loop. The overlays only ever
+   transition opacity.
    ══════════════════════════════════════════════════════ */
 
-/* THE FOUR TOKENS THEMSELVES NO LONGER TRANSITION.
+/* ── THE PALETTE DOES NOT CHANGE HERE ANY MORE ─────────
 
-   They used to: `transition-property: --surface-0, --surface-1, --surface-2,
-   --surface-3` on `:root`, all four `inherits: true`. That is correct CSS —
-   the `@property` block above is what makes it *able* to interpolate rather
-   than snap — but "inherited" is the trap. Every element on the page reads
-   these four through inheritance, so the moment the browser starts
-   interpolating them on `:root`, every one of those elements has a changed
-   inherited value on every intermediate frame and must be re-matched against
-   its style rules. Measured on this page (659 nodes): 33.8ms of style
-   recalculation PER FRAME for the full 1200ms, against a 16.7ms budget —
-   and it lands exactly when the reader crosses into the case-study zone,
-   stacked on top of ZoneTitle's draw and the choreography timeline starting.
-   An unregistered, unused custom property costs the same 33.8ms doing
+   There WAS a `html.zone-immersive { --surface-0…--surface-3 }` rule at this
+   spot, re-pointing all four surface tokens to a darker ramp. Its absence is
+   the design, not an oversight, and the measurement below is why — read it
+   before reaching for a token again.
+
+   THE TRAP IS THE WORD "INHERITED". All four are `@property`-registered with
+   `inherits: true`, so every element on the page reads them through
+   inheritance. Transition them on `:root` and every one of those elements
+   has a changed inherited value on every intermediate frame and must be
+   re-matched against its style rules. Measured on this page (659 nodes):
+   **33.8ms of style recalculation PER FRAME** for the full 1200ms, against a
+   16.7ms budget — landing exactly as the reader crosses into the zone, on
+   top of ZoneTitle's draw and the choreography timeline starting. An
+   unregistered, entirely unused custom property costs the same 33.8ms doing
    nothing at all, which is what proves the cost is the inherited recalc and
-   not the color interpolation itself.
+   not the colour interpolation. A class toggle that changes nothing
+   inherited costs 0.65ms by comparison.
 
-   The class swap below is now instantaneous (0.65ms, once) and the 1200ms
-   walk to the deeper room happens on `background-color`/`border-color`
-   transitions declared on the handful of elements that actually paint one of
-   these four tokens — `body`, `.shell-bezel`, the scrollbar chrome. Those
-   are ordinary (non-inherited) properties, so each only costs a recalc of
-   itself, not of 659 descendants, and the visible result is identical: same
-   four colours, same 1200ms, same curve. Search this file for
-   "surface-shift" to find every element carrying one of these transitions —
-   a new element that paints `var(--surface-N)` and is visible for the whole
-   zone traversal (not a modal that mounts fresh) needs the same treatment or
-   it will snap instead of walking in. */
+   So the transition was dropped, which made it correct and instant — and
+   instant is what then read as a switch being flipped, because `<main>`
+   paints an opaque `bg-surface-0` over the whole document with no transition
+   of its own, while the grid, nav, atlas and vignette all still faded over
+   1200ms. Smooth opacity dims layered over a hard flat-fill jump.
 
-/* The indigo room.
+   Both problems have one answer and it is not a token. `.zone-tint` is a
+   single fixed overlay whose OPACITY is scrubbed against scroll position —
+   compositor work, no style recalc at all, and tied to the scroll rather
+   than to a clock so the room closes in as you walk into it. Everything that
+   used to ride the token swap now simply does not change: the scrollbar
+   chrome, `.resume-pill`, `.keycap` and `.uplink-timer-chip` all used to snap
+   at this boundary and no longer can, and the scrollbar in particular is
+   painted outside the page canvas where no overlay could ever have reached
+   it.
 
-   The first version only DARKENED — #0B0F14 → #05080b, same hue — and every
-   other zone rule was subtractive: nav, grid, noise and atlas all just faded
-   down. Nothing new ever arrived, so it read as the lights dimming rather
-   than as a different space.
+   If you find yourself wanting one of these four tokens to animate: this
+   paragraph is the reason not to. Change `--zone-tint-alpha` instead. */
 
-   These carry a real blue-violet cast while staying dark enough for the
-   figures to sit on. The accent is untouched, so cyan metrics and labels read
-   as the same site — which is what stops the shift looking like a theme swap
-   and makes it look like a room. */
 /* The room, as a shift in VALUE rather than hue.
 
    It used to swing the whole ramp to indigo and fade in a violet field. That
@@ -1045,13 +1056,12 @@ body {
    of the seven light layers this design removed. Deepening toward black does
    the same job: the walls close in, the amber stays exactly as bright, and
    because nothing else on the page emits light the case studies are the only
-   thing left to look at. */
-html.zone-immersive {
-  --surface-0: #0E161B;
-  --surface-1: #10222F;
-  --surface-2: #0F2E44;
-  --surface-3: #0D3A59;
-}
+   thing left to look at.
+
+   The depth itself now lives in `--zone-tint-alpha`, declared with
+   `--zone-bar-h` further down. It is deliberately about HALF what the token
+   swap was: that landed on #0E161B, a 48% wash, which is what read as too
+   heavy and left the section feeling empty. */
 
 /* ── The choreographed stage ──────────────────────────
    Three case studies share ONE sticky 100vh box. Each act is absolutely
@@ -1289,7 +1299,7 @@ html.zone-immersive {
     row-gap: clamp(0.625rem, 1.9vh, 2rem);
 
     /* ── THE LETTERBOX BARS ARE RESERVED, NOT SHARED ──
-       `.zone-bar--top/--bottom` are fixed, opaque `--surface-0` and paint at
+       `.zone-bar--top/--bottom` are fixed, opaque and paint at
        `z-index: 45`, far above this. Anything the act lays out inside that
        band is not merely dimmed by the framing, it is hidden behind it — so
        the band has to come out of the column's own box rather than being
@@ -1537,16 +1547,25 @@ html.zone-immersive {
 }
 
 /* Chrome recedes so nothing competes with the work. Pointer events stay on:
-   the nav must remain usable, just quiet. */
+   the nav must remain usable, just quiet.
+
+   0.34, up from 0.25. The rail is the only wayfinding a reader has for the
+   thirteen screens this zone runs, and at 0.25 its labels were effectively
+   gone. It sits ABOVE `.zone-tint`, so raising it costs nothing in contrast
+   terms — the ground behind it is darker than it used to be, not lighter. */
 html.zone-immersive .side-nav {
-  opacity: 0.25;
+  opacity: 0.34;
 }
 
-/* Further than the nav: the backdrop brings its own finer violet grid, and
-   two grids at different cell sizes on top of each other is moiré, not
-   texture. */
+/* Still recedes, but less far than it did.
+
+   0.16, up from 0.12. The grid is the "instrumentation" motif and it is the
+   main texture the room loses — with the ground shift now half what it was,
+   dimming the grid as hard as before is most of what made the section read
+   as an empty field rather than a darker room. It paints ABOVE `.zone-tint`,
+   so this is a straight visibility gain against a darker ground. */
 html.zone-immersive .atmosphere-grid {
-  opacity: 0.12;
+  opacity: 0.16;
 }
 
 /* THIS RULE WAS DEAD FOR ITS ENTIRE LIFE, and the way it died is worth
@@ -1591,21 +1610,87 @@ html.zone-immersive .atmosphere-noise {
    work should be what a reader's eye lands on first.
 
    So the room still darkens and every other piece of chrome
-   still recedes — the nav to 0.25, the grid to 0.12, the grain
+   still recedes — the nav to 0.34, the grid to 0.16, the grain
    to 0.012 — and the atlas comes up partway rather than all the
    way. Enough that `STAGES[2]`'s density is still visibly
    drawing and moving — "the diagram is alive back there" — not
    enough to out-compete an opaque screenshot panel sitting in
    front of it. Tune this number live against the media panel's
-   own contrast, not in isolation. */
+   own contrast, not in isolation.
+
+   0.62, up from 0.5, and the canvas paints ABOVE `.zone-tint` — so the
+   diagram is drawing at full strength over a ground that is now DARKER than
+   it used to be, and gains contrast twice over. That was the explicit ask:
+   the atlas is the point of this section and it should not read as a ghost.
+   Tunable 0.55–0.70. Do NOT go to 1.0; the paragraph above is the record of
+   what happened last time it did. */
 html.zone-immersive .living-architecture-canvas {
-  opacity: 0.5;
+  opacity: 0.62;
 }
 
 .side-nav,
 .atmosphere-grid,
 .living-architecture-canvas {
   transition: opacity 1200ms var(--ease);
+}
+
+/* ══════════════════════════════════════════════════════
+   THE ROOM IS AN OVERLAY, NOT A PALETTE
+
+   Fixed, inert, always mounted, and the ONLY property that ever changes is
+   opacity — written inline by `ZoneTint.tsx` and scrubbed against SCROLL
+   POSITION rather than a clock. That is the whole point: the previous
+   mechanism re-pointed four inherited `--surface-*` tokens, which can only
+   ever be a class swap (instant, and it read as a switch being flipped) or a
+   timed transition (which cost 33.8ms of style recalc per frame — see "THE
+   PALETTE DOES NOT CHANGE HERE ANY MORE" above, which has the measurement).
+
+   An overlay's opacity is compositor work. No style recalc, no repaint of
+   the tree, and it can be tied to scroll, so the room closes in as you walk
+   into it.
+
+   ── z-index 0, BUT THE MOUNT POSITION IS WHAT PLACES IT ──
+   Every ambient layer on this site is `fixed; z-index: 0` and every page
+   `<section>` is `position: relative; z-index: auto`, so all of them land in
+   ONE painting bucket ordered by TREE ORDER, not by z-index. `ZoneTint` is
+   mounted FIRST in the Background Systems block in `app/page.tsx`, which
+   puts this plane above the page ground and below everything else — the
+   grid, the grain, the atlas and every section's content all paint over it
+   at full strength against a darker ground.
+
+   That split IS the design: the room darkens, the work does not. Move the
+   mount point and you change which half of the page goes dark.
+
+   ── NEVER GIVE THIS A CSS TRANSITION ──
+   GSAP rewrites its opacity every scrub frame; a transition on that property
+   is permanent visible lag. It is also why this needs no reduced-motion
+   opt-out below — there is no CSS animation here for the global
+   `transition-duration: 50ms !important` to clamp into a stutter. */
+.zone-tint {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  opacity: 0;
+  background: var(--zone-tint-color);
+}
+
+/* Promoted only while the room is actually on, the same discipline
+   `.zone-act-promoted` follows. A permanently promoted full-viewport layer is
+   several MB of GPU texture for a whole session, next to three canvases that
+   each already carry one. */
+html.zone-immersive .zone-tint {
+  will-change: opacity;
+}
+
+/* No JS, no scrub, no room — and none is needed. `zone-immersive` has always
+   been JS-applied, so a scripting:none reader already gets the base palette
+   and the stacked, everything-visible layout. Matches `.zone-title-canvas`
+   and `.glyph-a-canvas`. */
+@media (scripting: none) {
+  .zone-tint {
+    display: none;
+  }
 }
 
 /* Cinematic framing. Both are fixed, pointer-events:none, and only their
@@ -1652,18 +1737,74 @@ html.zone-immersive .living-architecture-canvas {
    long, and a 40px bar crowds content over that distance.
 
    THE HEIGHT IS A VARIABLE BECAUSE THE ACT HAS TO RESERVE IT. These bars are
-   fixed, opaque `--surface-0` and sit at `z-index: 45` — well above the act —
+   fixed, opaque and sit at `z-index: 45` — well above the act —
    so anything the act lays out inside that band is not dimmed, it is COVERED.
    `.zone-act-slots` therefore pads itself by this same value; see the note
    there. Written once so the reserve can never drift from the bar it is
    reserving for. */
 :root {
   --zone-bar-h: clamp(14px, 2.5vh, 26px);
+
+  /* ── THE ROOM'S DEPTH, AS TWO NUMBERS ────────────────
+     The case-study room used to be four re-pointed `--surface-*` tokens on
+     `html.zone-immersive`. It is now ONE composited overlay (`.zone-tint`),
+     and these are the only two values that describe it. `ZoneTint.tsx` reads
+     the alpha at mount through `getComputedStyle`, so CSS is the single
+     source and there is no copy of the number in JS.
+
+     0.22 over `--surface-0` (#1B262C) composites to #151E22 — about HALF the
+     old token swap, which landed on #0E161B and was equivalent to a 48%
+     wash. That heaviness is what read as "a major shift in tone" and left
+     the section feeling empty.
+
+     Tunable 0.18–0.28 (#161F24 … #131B20). Tune it against the MEDIA PANELS,
+     which deliberately no longer darken: what this number actually sets is
+     the panel-to-ground separation, not the ground on its own.
+
+     Neutral black rather than the vignette's `rgb(4 6 20)` ink, so the wash
+     preserves the base hue instead of pulling the room toward indigo — the
+     shift is meant to be in VALUE, not hue. */
+  --zone-tint-color: rgb(0 0 0);
+  --zone-tint-alpha: 0.22;
 }
 
+/* THE BARS CARRY THE TINT THEMSELVES, and they are the one element that has
+   to. They sit at `z-index: 45`, above `.zone-tint`, so the overlay can never
+   reach them — and with the surface tokens now frozen they would otherwise
+   stay at the base `--surface-0` while the ground behind them darkened,
+   giving two LIGHTER bands framing a darker picture. The exact inverse of a
+   letterbox.
+
+   Derived from the same two tokens the overlay uses rather than typed as a
+   literal, so the mask can never drift from the ground it is masking.
+   `calc(0.22 * 100%)` resolves to `22%`, which `color-mix()` accepts.
+
+   Static, not animated: the bars are only ever visible while `zone-immersive`
+   is on, and during the two ramps they are themselves at partial opacity, so
+   a bar fractionally darker than a still-brightening ground reads as the
+   letterbox arriving — which is what a letterbox arriving should look like.
+
+   DO NOT HAND-WRITE A FALLBACK ABOVE THIS. One was tried — `background:
+   var(--surface-0)` first, on the theory that a browser without
+   `color-mix()` should land on the base surface — and it does not survive
+   the build. Lightning CSS cannot statically resolve a mix of two custom
+   properties, so it emits its OWN approximation ahead of the real
+   declaration, and that approximation is `background: var(--zone-tint-color)`
+   — i.e. pure black. It does that whether or not a fallback is written here,
+   so writing one only adds a line that the minifier discards.
+
+   Shipped cascade, confirmed in the emitted chunk: the black approximation,
+   then the real `color-mix()`. Every browser that supports `color-mix()`
+   takes the second and lands on #151E22, which is exactly the composited
+   ground; anything that does not gets black bars, and is already failing at
+   `@property`, which this file's whole animated-token layer depends on. */
 .zone-bar {
   height: var(--zone-bar-h);
-  background: var(--surface-0);
+  background: color-mix(
+    in srgb,
+    var(--zone-tint-color) calc(var(--zone-tint-alpha) * 100%),
+    var(--surface-0)
+  );
 }
 
 .zone-bar--top {
@@ -1685,12 +1826,16 @@ html.zone-immersive .zone-bar {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  /* `:root` carried the surface-token transition here; it no longer
-     transitions anything itself (see the surface-shift comment), but `body`
-     and `.shell-bezel` now carry the equivalent background-color transition
-     and need the same reduced-motion opt-out. */
-  body,
-  .shell-bezel,
+  /* `body` and `.shell-bezel` were listed here while they carried
+     background-color transitions for the old palette swap. Neither
+     transitions anything now — the palette does not change — so both are
+     gone from the list.
+
+     `.zone-tint` is deliberately NOT here either: it has no CSS transition
+     to opt out of, only an inline opacity GSAP writes per scrub frame. A
+     flat colour tracking scroll position involves no translation and no
+     parallax, so it is gentler than the instant palette swap a reduced-motion
+     reader used to get. */
   .side-nav,
   .atmosphere-grid,
   .living-architecture-canvas,
@@ -3417,15 +3562,15 @@ html.cursor-custom [data-cursor="text"] {
    Media keeps a mat at all when body copy does not, and that is deliberate:
    these screenshots have light content in them and would otherwise bleed
    straight into the page. */
+/* NO `transition: background-color` HERE any more, and its absence is the
+   point: `--surface-1` no longer changes in the case-study room. The mats
+   hold their tone while the ground darkens around them, which is what makes
+   the work the brightest thing on screen rather than something that recedes
+   with everything else. */
 .shell-bezel {
   background: var(--surface-1);
   padding: 0.5rem;
   border-radius: var(--panel-radius);
-  /* surface-shift: the case-study slide frames are on screen for the whole
-     zone traversal, so they need their own walk to the deeper room rather
-     than inheriting one from `:root`. See the comment above the
-     (now instant) --surface-* class swap. */
-  transition: background-color 1200ms var(--ease);
 }
 
 .core-bezel {

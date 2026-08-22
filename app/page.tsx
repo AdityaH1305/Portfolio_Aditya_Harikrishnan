@@ -14,6 +14,7 @@ import ScrollProgress from "@/components/ScrollProgress";
 import CommandPalette from "@/components/CommandPalette";
 import BackgroundAtmosphere from "@/components/BackgroundAtmosphere";
 import AtmosphereParallax from "@/components/AtmosphereParallax";
+import ZoneTint from "@/components/ZoneTint";
 import SignalGate from "@/components/SignalGate/SignalGate";
 import UplinkTimer from "@/components/SignalGate/UplinkTimer";
 
@@ -57,6 +58,16 @@ export default function Home() {
             <UplinkTimer />
 
             {/* ── Background Systems ── */}
+            {/* THE POSITION IN THIS LIST IS THE MECHANISM, not housekeeping.
+                Everything in this block is `fixed; z-index: 0` and every
+                <section> below is `position: relative; z-index: auto`, so all
+                of them paint in ONE bucket ordered by tree order. Mounted
+                first, the case-study room's tint darkens the page ground and
+                nothing that follows it — the grid, the grain, the atlas and
+                every section's content all paint over it at full strength.
+                Move this line and you change which half of the page goes
+                dark. See components/ZoneTint.tsx. */}
+            <ZoneTint />
             <BackgroundAtmosphere />
             <AtmosphereParallax />
             <LivingArchitecture />
