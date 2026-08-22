@@ -1233,11 +1233,44 @@ html.zone-immersive {
 
        With the panel as `1fr` the column always fits — measured: with the
        panel fixed instead, the CTA row ran 4px past the 100vh stage and
-       `.zone-stage`'s `overflow: hidden` quietly ate the bottom of it. */
+       `.zone-stage`'s `overflow: hidden` quietly ate the bottom of it.
+
+       ── THE BEAT TRACK WAS SIZED FOR A COLUMN THAT NO LONGER EXISTS ──
+       It was `clamp(11.75rem, 22vh, 14rem)` — a 188px floor, set when the
+       longest beat body measured 188px in a 501px-wide column. The column is
+       779px wide now, so the same sentences wrap to fewer lines and the
+       tallest beat across all three acts measures 134px: the track was
+       holding ~54px of nothing, on the one axis this layout has none to
+       spare. Reclaiming it is what pays for the letterbox reserve below
+       without taking a pixel back off the media panel.
+
+       THE TRACK IS ALLOWED TO BE SHORTER THAN THE TALLEST BEAT, and that is
+       deliberate rather than an oversight. Beats are the LAST row and sit
+       `align-self: start`, so one that outgrows its track paints down into
+       the slack below instead of resizing anything — the grid's total height
+       does not change, so nothing above it moves. At 1024px the column
+       narrows enough that "How it works" wraps to 158px against a 150px
+       track, and it still clears the bottom bar by 64px. That slack, not the
+       floor, is the real guarantee; a floor big enough for the narrowest
+       column would cost the media panel ~30px of height at 720, which is
+       the opposite of what this section is for. What must be re-measured on
+       a copy change is the BOTTOM margin, not whether the beat fits.
+
+       THE FLOOR IS NOT FREE TO LOWER, WHICH IS COUNTER-INTUITIVE. Shrinking
+       it does not buy bottom clearance — it costs it. The column is centred
+       with `align-content: center`, so when the content overflows the stage
+       it is pushed UP; a shorter track means less overflow, less upward
+       push, and the overflowing beat ends up LOWER than before. Measured at
+       the worst case (1024x640, where the column is narrow enough to wrap
+       the beats tall and the viewport is too short to absorb it): 8.75rem
+       leaves the eyebrow 19px clear and the beat 1px clear, while 8rem
+       improves the eyebrow to 25px and drives the beat 5px UNDER the bottom
+       bar. The two ends trade against each other through the centring, and
+       this value is where both are positive. */
     grid-template-rows:
       auto
       auto
-      clamp(11.75rem, 22vh, 14rem);
+      clamp(8.75rem, 19.5vh, 11rem);
 
     /* Every track is content-sized now, so the column is shorter than the
        stage and the whole composition is centred in it. It cannot be a `1fr`
@@ -1254,7 +1287,35 @@ html.zone-immersive {
        relayout. Trimming both to what the content actually needs — the beat
        body measures ~102px — buys the figure back about 13%. */
     row-gap: clamp(0.625rem, 1.9vh, 2rem);
-    padding-block: clamp(0.75rem, 3vh, 2.75rem);
+
+    /* ── THE LETTERBOX BARS ARE RESERVED, NOT SHARED ──
+       `.zone-bar--top/--bottom` are fixed, opaque `--surface-0` and paint at
+       `z-index: 45`, far above this. Anything the act lays out inside that
+       band is not merely dimmed by the framing, it is hidden behind it — so
+       the band has to come out of the column's own box rather than being
+       territory both things believe they own.
+
+       It went wrong exactly once the media panel grew. On a 900px-tall
+       screen the column had ~123px of slack and `align-content: center`
+       absorbed the difference, so the eyebrow cleared the bar by 65px and
+       nothing looked wrong. On a 720px laptop the column filled the stage
+       exactly, the head started at y=13 against an 18px bar, and the first
+       line of every act — `01 · Gait Biometrics / Computer Vision` — was
+       painted over by the top bar before it was ever read.
+
+       `--head-drift` is added on top because the head does not stay where it
+       is laid out: it drifts upward across the act (see `HEAD_DRIFT` in
+       CaseStudyStage.tsx, which this must stay in step with). Reserving the
+       bar alone would clear the eyebrow at rest and then walk it back under
+       the bar as the reader scrolled — which is precisely the "not visible
+       when scrolling" half of the report. Bar + drift means the eyebrow is
+       above the band for the ENTIRE act, at its lowest point and its
+       highest. */
+    --head-drift: 16px;
+    padding-top: calc(
+      clamp(0.75rem, 3vh, 2.75rem) + var(--zone-bar-h) + var(--head-drift)
+    );
+    padding-bottom: calc(clamp(0.75rem, 3vh, 2.75rem) + var(--zone-bar-h));
   }
 
   .zone-act-head {
@@ -1588,9 +1649,20 @@ html.zone-immersive .living-architecture-canvas {
 }
 
 /* Thinner than the original 18–40px: the zone is now several case studies
-   long, and a 40px bar crowds content over that distance. */
+   long, and a 40px bar crowds content over that distance.
+
+   THE HEIGHT IS A VARIABLE BECAUSE THE ACT HAS TO RESERVE IT. These bars are
+   fixed, opaque `--surface-0` and sit at `z-index: 45` — well above the act —
+   so anything the act lays out inside that band is not dimmed, it is COVERED.
+   `.zone-act-slots` therefore pads itself by this same value; see the note
+   there. Written once so the reserve can never drift from the bar it is
+   reserving for. */
+:root {
+  --zone-bar-h: clamp(14px, 2.5vh, 26px);
+}
+
 .zone-bar {
-  height: clamp(14px, 2.5vh, 26px);
+  height: var(--zone-bar-h);
   background: var(--surface-0);
 }
 
