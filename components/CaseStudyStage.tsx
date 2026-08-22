@@ -589,10 +589,12 @@ export function buildAct(
        THE DRIFT IS RESERVED FOR IN CSS, and the two must stay in step.
        `.zone-act-slots` adds `--head-drift` to its top padding precisely
        because the head does not stay where the grid puts it — without that,
-       this tween walks the eyebrow up underneath the fixed, opaque
-       `.zone-bar--top` partway through every act. Raising the number here
-       without raising it there reopens exactly that bug, and it only shows
-       on short viewports, where the column has no slack to absorb it. */
+       this tween walks the eyebrow up past the top of the stage partway
+       through every act. There is no longer a top letterbox bar to be hidden
+       behind (it was removed; see the note in CaseStudyZone), but the stage
+       still clips at `overflow: hidden`, so raising the number here without
+       raising it there reopens the same bug — and it only shows on short
+       viewports, where the column has no slack to absorb it. */
     tl.fromTo(
         head,
         { y: ei(28, 0), opacity: ei(0, 1) },

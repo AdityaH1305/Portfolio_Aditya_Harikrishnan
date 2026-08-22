@@ -321,9 +321,20 @@ export default function CaseStudyZone() {
                 glowing field was the last of the seven light layers. */}
 
             {/* Cinematic framing. Fixed, inert, always mounted; only their
-                opacity changes, driven by the `zone-immersive` class. */}
+                opacity changes, driven by the `zone-immersive` class.
+
+                THERE IS NO TOP BAR, and its absence is deliberate. It used to
+                be here, mirroring the bottom one — but the site already has
+                two fixed elements pinned to the top edge (the scroll progress
+                bar, and the uplink chip), so a third band arriving underneath
+                them on approach read as a stray rule across the page rather
+                than as a letterbox. The bottom bar has that edge to itself
+                and still frames the composition, so it stays.
+
+                `.zone-act-slots` deliberately KEEPS its top reserve — see the
+                note there. Reclaiming it would lift every act's eyebrow by
+                the bar's height, which is a layout change this was not. */}
             <div className="zone-vignette" aria-hidden="true" />
-            <div className="zone-bar zone-bar--top" aria-hidden="true" />
             <div className="zone-bar zone-bar--bottom" aria-hidden="true" />
 
             <div
