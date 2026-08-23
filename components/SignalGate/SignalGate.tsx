@@ -111,7 +111,7 @@ function announce(): void {
             "Telemetry nominal. You are reading the source, which means\n" +
             "you are the audience this was built for.\n\n" +
             "%cThe console is not the only thing here that rewards poking.\n" +
-            "Press ⌘K. Something in that list is not documentation.",
+            "Press Ctrl K. Something in that list is not documentation.",
         brand,
         body,
         "color:#7892A3;font-style:italic",

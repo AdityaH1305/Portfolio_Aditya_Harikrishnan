@@ -10,6 +10,24 @@ import MagneticLink from "@/components/MagneticLink";
    makes it read as the terminus.
    ══════════════════════════════════════════════════════ */
 
+/**
+ * The footer's meta items, in order.
+ *
+ * A list rather than four hand-written spans so the separators between them
+ * are generated and can never be authored into the copy by accident — the
+ * previous version had its one middle dot living inside a string, which is
+ * how a screen reader ends up reading punctuation aloud.
+ *
+ * The uplink line is deliberately NOT here: it carries a `<kbd>` element
+ * rather than a string, and widening this to `ReactNode` to accommodate one
+ * entry would make the simple case carry the complicated one's weight.
+ */
+const META = [
+    { label: "Status: Available" },
+    { label: "Focus: ML Systems" },
+    { label: "Built with Next.js + TypeScript" },
+] as const;
+
 export default function Contact() {
     return (
         <section
@@ -79,32 +97,69 @@ export default function Contact() {
                 90% viewport height so the footer sits below it either way. */}
             <footer className="mt-16 pt-8">
                 <div className="section-container">
-                    <div className="max-w-sm pb-10 flex flex-col gap-2.5">
-                        <div className="flex flex-wrap gap-x-6 gap-y-2">
-                            <span className="label-muted">
-                                Status: Available
-                            </span>
-                            <span className="label-muted">
-                                Focus: ML Systems
-                            </span>
-                        </div>
-                        <span className="label-muted">
-                            Built with Next.js + TypeScript
-                        </span>
+                    <div className="max-w-sm pb-10">
+                        {/* ── A CONSISTENT VERTICAL LIST ──
+                            These are four items of the same kind — status,
+                            focus, stack, telemetry — and they used to be laid
+                            out as three different things: a two-item wrap row,
+                            then an orphaned line, then a `.signal-strip` line.
+                            Same weight, same colour, same size, three
+                            different arrangements, which is what made the
+                            block read as unfinished.
 
-                        {/* Telemetry, and the only place the site admits the
-                            command palette exists. Deliberately reads as an
-                            instrument line rather than an instruction: anyone
-                            who tries the shortcut finds a list, and one entry
-                            in that list is not documentation. No fake version
-                            string, and one middle dot at most. */}
-                        <span className="label-muted signal-strip">
-                            Uplink nominal
-                            <span aria-hidden="true">·</span>
-                            <kbd className="keycap">⌘K</kbd>
-                        </span>
+                            A SINGLE SEPARATED ROW WAS TRIED FIRST AND IS
+                            WRONG HERE. This block is capped at `max-w-sm`
+                            (384px) to clear the atlas — see the note above —
+                            against roughly 810px of content, so a row wraps at
+                            EVERY viewport, not merely narrow ones. Measured at
+                            320px it broke to four lines with an interpunct
+                            dangling at the start of each, which is worse than
+                            no separator at all.
 
-                        <p className="text-xs text-tertiary mt-1">
+                            So: one item per line, one even gap, and no
+                            separators — the line breaks already do that job.
+                            `gap-2` rather than the old `gap-2.5` because 12px
+                            uppercase mono at 0.14em tracking wants an even
+                            rhythm rather than a tight one. */}
+                        <ul className="flex flex-col gap-2">
+                            {META.map((item) => (
+                                <li key={item.label} className="label-muted">
+                                    {item.label}
+                                </li>
+                            ))}
+
+                            {/* Telemetry, and the only place the site admits
+                                the command palette exists. Deliberately reads
+                                as an instrument line rather than an
+                                instruction: anyone who tries the shortcut
+                                finds a list, and one entry in that list is not
+                                documentation.
+
+                                Its own item rather than a `META` entry because
+                                it carries an element, not a string.
+
+                                NO ALIGNMENT UTILITY HERE. `.signal-strip`
+                                already sets `align-items: center`, and it is
+                                declared after Tailwind's utilities in
+                                globals.css — so an `items-baseline` here loses
+                                at equal specificity and silently does nothing,
+                                the same trap `.section-container` documents for
+                                `mt-*`. Centring is also the right answer: the
+                                keycap is 23px against ~17px of type, and
+                                baseline-aligning a bordered box to running text
+                                hangs it low. */}
+                            <li className="label-muted signal-strip">
+                                Uplink nominal
+                                <kbd className="keycap">Ctrl K</kbd>
+                            </li>
+                        </ul>
+
+                        {/* A rule, not just a margin. The meta row above is
+                            the same 12px mono as everything else in this
+                            block, so without a hairline the copyright reads
+                            as a fifth meta item rather than as the end of the
+                            page. */}
+                        <p className="text-xs text-tertiary mt-5 pt-5 border-t border-edge">
                             © {new Date().getFullYear()} Aditya Harikrishnan
                         </p>
                     </div>
