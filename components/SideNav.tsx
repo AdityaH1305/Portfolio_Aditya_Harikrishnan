@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useRef, useCallback } from "react";
 import useMagnetic from "@/hooks/useMagnetic";
+import Logo from "@/components/Logo";
 
 const RESUME_URL =
     "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
@@ -152,7 +153,7 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
             <MagneticResumeLink />
 
             {/* The palette's only affordance. Nothing else on the page reveals
-                that Ctrl/⌘K does anything, which made the command list, and
+                that Ctrl K does anything, which made the command list, and
                 the one thing hiding in it, effectively undiscoverable. Sits
                 under the nav rail so it reads as part of the instrument
                 chrome rather than as a tooltip. */}
@@ -162,7 +163,7 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                 }`}
                 aria-hidden="true"
             >
-                <kbd className="keycap">⌘K</kbd>
+                <kbd className="keycap">Ctrl K</kbd>
             </div>
 
             {/* Mobile: Fluid Island Nav */}
@@ -185,12 +186,24 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                     shrinks to content and justify-between has nothing to
                     distribute — the logo and links end up touching. */}
                 <div className="flex justify-between items-center gap-6 px-5 py-3">
+                    {/* `href`, `onClick` and `select-none` are all load-bearing
+                        and must survive any restyling of this mark.
+
+                        `handleEasterEgg` pushes into the SAME timestamp ring
+                        the desktop rail items use and dispatches
+                        `cursor:charge` on every click, which `Cursor` listens
+                        for to draw its charge arc. It does NOT preventDefault,
+                        so the anchor still navigates on each of the five
+                        clicks. Drop the handler and both the game and the
+                        cursor feedback die silently; drop `select-none` and
+                        five rapid clicks select the text instead. */}
                     <a
                         href="#intro"
                         onClick={handleEasterEgg}
-                        className="text-sm font-medium tracking-tight text-primary select-none"
+                        aria-label="Aditya Harikrishnan — top of page"
+                        className="text-primary select-none"
                     >
-                        AH
+                        <Logo />
                     </a>
                     <div className="flex items-center gap-3">
                         <a

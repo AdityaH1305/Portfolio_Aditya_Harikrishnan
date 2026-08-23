@@ -2165,6 +2165,52 @@ html.zone-immersive .zone-bar {
   border: 1px solid var(--border-default);
 }
 
+/* ══════════════════════════════════════════════════════
+   The AH monogram
+
+   The site's only brand mark. Deliberately in the same visual language as
+   `.keycap` above — mono face, hairline box, tight radius — because the mark
+   should read as another piece of the instrument chrome rather than as a
+   logo pasted onto it.
+
+   `color: currentColor` and a transparent ground, NOT `--text-secondary` and
+   `--surface-2` like the keycap: this is dropped into two different pieces
+   of chrome (a sticky route header and a translucent mobile pill), and both
+   already establish their own tone. Inheriting means the mark follows the
+   case-study room's palette shift for free and can never fight the surface
+   it sits on. `border-color` is derived from `currentColor` for the same
+   reason — a fixed token would drift from the letterforms beside it.
+   ══════════════════════════════════════════════════════ */
+.logo-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.2rem 0.4rem;
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  line-height: 1;
+  /* Tighter than `.label`'s 0.14em. Two letters at display-adjacent size
+     read as an initialism rather than as a tracked-out label. */
+  letter-spacing: 0.08em;
+  color: currentColor;
+  border: 1px solid color-mix(in srgb, currentColor 32%, transparent);
+  border-radius: 0.3rem;
+  transition:
+    color 0.25s var(--ease),
+    border-color 0.25s var(--ease);
+}
+
+/* The hover belongs to the LINK, not the mark — `a:hover .logo-mark` rather
+   than `.logo-mark:hover`, so hovering anywhere on the control lights the
+   whole thing. A mark that only responds when the pointer is inside its own
+   1px box reads as two separate targets. */
+a:hover .logo-mark,
+a:focus-visible .logo-mark {
+  color: var(--accent-text);
+  border-color: color-mix(in srgb, var(--accent-text) 55%, transparent);
+}
+
 .signal-strip {
   display: inline-flex;
   align-items: center;
@@ -3851,6 +3897,79 @@ html.glyph-dragging body {
   .zone-title-canvas {
     display: none;
   }
+}
+
+/* ══════════════════════════════════════════════════════
+   The 404's cube word
+
+   `z-index: 0`, NOT `1` like `.zone-title-canvas` above — and the difference
+   is the whole reason the copy on that page can sit wherever it looks best.
+   The zone title draws inside a transparent heading's own box and never
+   crosses live type; this word travels the entire viewport and crosses the
+   copy constantly, so it goes BEHIND it.
+
+   That, plus the one-fill-face render rule in `NotFoundCubes.tsx`, is what
+   keeps the body text at 6.56:1 even at the corner lift's peak. Filling all
+   six faces the way the other canvases do would composite to 3.57:1 — a WCAG
+   failure that looks perfectly fine in review. `digits.test.ts` asserts both
+   directions.
+   ══════════════════════════════════════════════════════ */
+.not-found-cubes {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  z-index: 0;
+  pointer-events: none;
+  background: transparent;
+  color: var(--accent);
+}
+
+/* No JS, no canvas — and nothing is lost, because the heading, the copy and
+   the link are all real DOM. Matches `.zone-title-canvas` and
+   `.glyph-a-canvas`. */
+@media (scripting: none) {
+  .not-found-cubes {
+    display: none;
+  }
+}
+
+/* `.section-container`'s own rhythm rather than the class itself: this page
+   has no section, and the container's `margin: 0 auto` would fight the grid
+   centring (the same trap documented against `mt-*` on `.section-container`
+   elsewhere in this file). */
+.not-found-stage {
+  position: relative;
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: grid;
+  align-content: center;
+  padding: 6rem 1.5rem;
+}
+
+@media (min-width: 768px) {
+  .not-found-stage {
+    padding-left: 5rem;
+    padding-right: 5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .not-found-stage {
+    /* Clears the nav rail's gutter, like `.section-container` does. */
+    padding-left: 8rem;
+    padding-right: 5rem;
+  }
+}
+
+/* Above the canvas. Left-aligned, because every headline on this site is —
+   a centred column here would be the one page breaking that rule. */
+.not-found-copy {
+  position: relative;
+  z-index: 1;
+  max-width: 34rem;
 }
 
 /* ══════════════════════════════════════════════════════

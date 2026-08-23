@@ -7,6 +7,7 @@ import dynamic from "next/dynamic";
 import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger } from "@/lib/motion";
 import { caseStudyByPath, CASE_STUDIES } from "@/lib/caseStudies";
+import Logo from "@/components/Logo";
 
 /* ══════════════════════════════════════════════════════
    CaseStudyChrome
@@ -85,6 +86,29 @@ export default function CaseStudyChrome({
             <header className="sticky top-0 z-30 bg-surface-0/80 backdrop-blur-md">
                 <div className="section-container">
                     <div className="flex items-center gap-4 h-14 md:h-16">
+                        {/* THE ONLY ROUTE BACK TO THE SITE ROOT. The back link
+                            beside this goes to `/#work` — the projects
+                            section — so before the mark existed a reader who
+                            arrived on a case study from a search result had no
+                            path to the home page at all, and no branding
+                            telling them whose work they were reading.
+
+                            `shrink-0` so the truncating title beside it can
+                            never squeeze the mark; see the row's width budget
+                            at 375px in the header comment. */}
+                        <Link
+                            href="/"
+                            aria-label="Aditya Harikrishnan — home"
+                            className="shrink-0 text-tertiary transition-colors duration-200"
+                        >
+                            <Logo />
+                        </Link>
+
+                        <span
+                            aria-hidden="true"
+                            className="w-px h-4 bg-edge-strong shrink-0"
+                        />
+
                         <Link
                             href="/#work"
                             className="group/back flex items-center gap-2 shrink-0

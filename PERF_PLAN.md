@@ -420,7 +420,7 @@ npx tsc --noEmit && npx eslint . --quiet && npx next build
 ```
 
 ```bash
-node --experimental-strip-types --test components/LivingArchitecture/blend.test.ts components/SkillOrbit/layout.test.ts components/SkillOrbit/flight.test.ts components/SignalGate/gate.test.ts components/SignalGate/ecg.test.ts components/SignalGate/cubes.test.ts components/SignalGate/forces.test.ts components/SignalGate/finale.test.ts components/SignalGate/arrival.test.ts components/GlyphA/glyph.test.ts components/ZoneTitle/word.test.ts lib/handoff.test.ts lib/lenis.test.ts lib/entrance.test.ts
+node --experimental-strip-types --test components/LivingArchitecture/blend.test.ts components/SkillOrbit/layout.test.ts components/SkillOrbit/flight.test.ts components/SignalGate/gate.test.ts components/SignalGate/ecg.test.ts components/SignalGate/cubes.test.ts components/SignalGate/forces.test.ts components/SignalGate/finale.test.ts components/SignalGate/arrival.test.ts components/GlyphA/glyph.test.ts components/ZoneTitle/word.test.ts components/NotFound/digits.test.ts lib/handoff.test.ts lib/lenis.test.ts lib/entrance.test.ts
 ```
 
 Visual gates, since "change nothing visible" is the whole constraint:
