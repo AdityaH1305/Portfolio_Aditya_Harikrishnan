@@ -6,6 +6,7 @@ import SideNav from "@/components/SideNav";
 import Hero from "@/components/Hero";
 import FeaturedWork from "@/components/FeaturedWork";
 import ProjectsEnhanced from "@/components/ProjectsEnhanced";
+import Experience from "@/components/Experience";
 import ResearchMindset from "@/components/ResearchMindset";
 import Skills from "@/components/Skills";
 import Journey from "@/components/Journey";
@@ -83,6 +84,11 @@ export default function Home() {
                 LivingArchitecture/stages.ts and `sections` in SideNav.tsx,
                 which index the atlas growth stage and the nav rail. */}
             <Hero />
+            {/* Deliberately NOT a section id — see the note in the component.
+                It sits between the hero and `#research` and leads into it, so
+                `SECTION_IDS`, the nav rail and the palette are all untouched
+                and the atlas still draws seven stages for seven sections. */}
+            <Experience />
             <ResearchMindset />
             <FeaturedWork />
             <ProjectsEnhanced />

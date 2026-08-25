@@ -41,7 +41,10 @@ const timelineEntries = [
             "SynthRescue put computer vision into a full pipeline, from upload to report.",
     },
     {
-        year: "2025",
+        /* 2026, not 2025. The internship ran June–July 2026; the earlier year
+           was wrong and is corrected here. It still sits immediately before
+           "What's next", so the timeline stays in ascending order. */
+        year: "2026",
         title: "Research internship at ISRO",
         description:
             "Cross-view gait recognition at the Liquid Propulsion Systems Centre — 98.00% Rank-1 on CASIA-B, with an honest account of where occlusion breaks it.",
