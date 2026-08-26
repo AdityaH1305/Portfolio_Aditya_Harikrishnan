@@ -89,8 +89,23 @@ export const FORM_MS = 700;
  * as a glitch rather than as a beat — and worse, it would read as the site
  * having lied about doing anything. Measured from the press, so the morph is
  * inside it rather than added to it.
+ *
+ * 1500, up from 900. At the shorter value the ring only existed in its formed
+ * state for ~20ms on a warm cache: the morph does not finish until
+ * `FORM_AT + FORM_MS` = 880ms, so the beat was almost entirely blocks still
+ * travelling into place. This gives the assembled ring roughly 800ms of its
+ * own — 620ms here plus the 180ms it holds after the handover, before the
+ * gather starts — which is enough to watch it turn and to read the number
+ * under it.
+ *
+ * The cost is honest and worth stating: on a warm cache the whole entrance is
+ * now MIN_HOLD_MS + FINALE_MS ≈ 3.8s from the press, against 2.3s before.
+ * `gate.ts`'s own ceiling test (`FINALE_MS <= 3000`) still passes because it
+ * measures the finale alone, which is unchanged — but a reader is on this
+ * screen for longer than that test was written to bound, and that is a
+ * deliberate choice rather than an oversight.
  */
-export const MIN_HOLD_MS = 900;
+export const MIN_HOLD_MS = 1500;
 
 /**
  * The ceiling.
@@ -195,9 +210,17 @@ export function segmentAlpha(i: number, n: number, progress: number): number {
  *   displayed value is capped by elapsed/MIN_HOLD_MS so it always takes the
  *   full beat to cross, which is what stops the whole loader flashing past.
  *
- *   NEVER STALLED AT ZERO. With three tasks, nothing at all moves until the
- *   first settles. The floor keeps the number climbing from the first frame,
- *   so the ring is alive before it has anything to report.
+ * CAPPED BY BOTH, and that is the whole of it: `min(real, paced)`. The work
+ * caps it so the number cannot claim more than has actually landed, and the
+ * clock caps it so a warm cache cannot race to 100% and vanish. In practice
+ * the three imports settle inside ~300ms, so for most of the beat `paced` is
+ * the binding term and the number simply climbs the floor smoothly; on a slow
+ * connection `real` binds instead and it tracks the work honestly.
+ *
+ * It does sit at 0 until the first task settles — a beat, not a stall. That
+ * is deliberate: a number that moved before anything had loaded would be the
+ * one dishonest thing on the screen, which is exactly the objection that got
+ * the old boot readout deleted.
  *
  * It reaches exactly 1 only when the work is genuinely done AND the beat has
  * been served — which is the condition the caller then uses to hand over.
