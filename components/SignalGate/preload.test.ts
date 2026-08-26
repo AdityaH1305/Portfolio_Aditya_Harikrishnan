@@ -340,12 +340,36 @@ test("a slow load holds the ring, however long it takes", () => {
     }
 });
 
-test("the ring is alive before it has anything to report", () => {
-    /* With three tasks nothing moves until the first settles. The paced floor
-       is what keeps the number climbing from the first frame. */
-    assert.ok(displayProgress(0, 200) === 0, "shows progress with none made");
-    assert.ok(displayProgress(0.5, 100) > 0, "stalled at zero while working");
-    assert.ok(displayProgress(1, 300) > 0.3, "too slow off the mark");
+test("THE NUMBER IS CAPPED BY BOTH THE WORK AND THE CLOCK", () => {
+    /* `min(real, paced)`. Either term alone is wrong: the clock alone would
+       let it claim 100% before anything had loaded, and the work alone would
+       let a warm cache flash past. Expressed against MIN_HOLD_MS rather than
+       absolute milliseconds, so retiming the beat does not silently retune
+       what this is asserting. */
+
+    // The work caps it — no number without something behind it.
+    assert.equal(displayProgress(0, 200), 0, "claimed progress with none made");
+    assert.equal(
+        displayProgress(0.25, MIN_HOLD_MS * 4),
+        0.25,
+        "outran the work once the clock was satisfied",
+    );
+
+    // The clock caps it — a finished load still crosses the whole beat.
+    assert.equal(displayProgress(1, 0), 0);
+    assert.ok(
+        Math.abs(displayProgress(1, MIN_HOLD_MS / 2) - 0.5) < 1e-9,
+        "did not track the beat at its halfway point",
+    );
+
+    // And between them it is always a real fraction.
+    for (const real of [0, 0.33, 0.66, 1]) {
+        for (const ms of [0, 300, MIN_HOLD_MS, MIN_HOLD_MS * 2]) {
+            const v = displayProgress(real, ms);
+            assert.ok(v >= 0 && v <= 1, `real=${real} ms=${ms} gave ${v}`);
+            assert.ok(v <= real + 1e-9, "showed more than had loaded");
+        }
+    }
 });
 
 /* ── The schedule ────────────────────────────────────── */
@@ -358,13 +382,35 @@ test("the ring starts forming before the copy has finished leaving", () => {
     assert.equal(FORM_AT, CONVERGE_AT, "the two openings should share a beat");
 });
 
-test("the beat fits inside the floor, and the ceiling is generous", () => {
-    // The morph must complete within the minimum hold, or a warm-cache load
-    // would hand over while blocks were still travelling into the ring.
+test("THE FORMED RING GETS TIME OF ITS OWN", () => {
+    /* The point of the floor is not merely that the loader exists — it is
+       that the ASSEMBLED ring is on screen long enough to be watched and its
+       number read. The morph does not finish until FORM_AT + FORM_MS, so a
+       floor only slightly above that leaves the ring formed for a few frames
+       and the whole beat is blocks still travelling.
+
+       At MIN_HOLD_MS 900 that residue was ~20ms, which is what prompted
+       raising it. 500ms is the floor below which this stops being a beat
+       somebody can take in. */
+    const formed = MIN_HOLD_MS - (FORM_AT + FORM_MS);
+    assert.ok(
+        formed >= 500,
+        `the assembled ring is only up for ${formed}ms before the handover`,
+    );
+
+    // The morph must still complete inside the hold, or the handover lands
+    // while blocks are mid-flight into the ring.
     assert.ok(
         FORM_AT + FORM_MS <= MIN_HOLD_MS,
         `morph ends at ${FORM_AT + FORM_MS}ms but the floor is ${MIN_HOLD_MS}ms`,
     );
+
+    /* And it must not become an endurance test. The finale adds ~2.3s after
+       this, so the whole entrance is MIN_HOLD_MS + FINALE_MS on a warm cache. */
+    assert.ok(MIN_HOLD_MS <= 2000, `${MIN_HOLD_MS}ms is too long to hold a stranger`);
+});
+
+test("the ceiling is generous, and bounded", () => {
     assert.ok(MAX_WAIT_MS > MIN_HOLD_MS * 3, "the ceiling is too close to the floor");
     assert.ok(MAX_WAIT_MS <= 10_000, "nobody should wait this long");
 });
