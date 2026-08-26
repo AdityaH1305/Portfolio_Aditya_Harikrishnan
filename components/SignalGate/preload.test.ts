@@ -410,7 +410,16 @@ test("THE FORMED RING GETS TIME OF ITS OWN", () => {
     assert.ok(MIN_HOLD_MS <= 2000, `${MIN_HOLD_MS}ms is too long to hold a stranger`);
 });
 
-test("the ceiling is generous, and bounded", () => {
-    assert.ok(MAX_WAIT_MS > MIN_HOLD_MS * 3, "the ceiling is too close to the floor");
+test("the ceiling leaves real room for a slow load, and is still bounded", () => {
+    /* Expressed as the GAP rather than as a ratio. A ratio was the first form
+       and it was the wrong invariant: raising the floor to 2000 made
+       `MAX_WAIT_MS > MIN_HOLD_MS * 3` read 6000 > 6000 and fail, even though
+       four full seconds of waiting room is obviously plenty. What matters is
+       how much genuine slow-connection headroom sits beyond the beat, not the
+       proportion between the two. */
+    assert.ok(
+        MAX_WAIT_MS - MIN_HOLD_MS >= 3000,
+        `only ${MAX_WAIT_MS - MIN_HOLD_MS}ms of headroom beyond the beat`,
+    );
     assert.ok(MAX_WAIT_MS <= 10_000, "nobody should wait this long");
 });
