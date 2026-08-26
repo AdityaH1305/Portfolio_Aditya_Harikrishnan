@@ -2603,6 +2603,63 @@ a:focus-visible .logo-mark {
   color: var(--accent);
 }
 
+/* ══════════════════════════════════════════════════════
+   The loading readout
+
+   One number under the turning ring, while real work is in flight.
+
+   POSITIONED AGAINST THE VIEWPORT, not against the content column. The ring
+   is drawn in world space and lands on the centre of the canvas, so the
+   number has to be centred on the same axis — `.signal-gate-inner` is a
+   left-aligned column and would put it well off to one side of the formation
+   it belongs to.
+
+   87% down, and that number is measured rather than picked: the ring's lowest
+   point is `ringScreenSpan + ringScreenRadius` below centre, and at
+   `RING_RADIUS = 0.8` that leaves between 23px (landscape phone, the binding
+   case) and 185px of clearance across every viewport tested.
+   `preload.test.ts` asserts it, so a change to the ring's radius fails there
+   rather than overlapping here.
+
+   `z-index: 1` puts it above the backdrop and its canvas, matching
+   `.signal-gate-inner`. It sits outside that element, so the copy-exit
+   stagger — which keys on `:not([data-phase="idle"])` — never touches it. Its
+   own visibility is the rule below. */
+.signal-gate-progress {
+  position: absolute;
+  top: 87%;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  margin: 0;
+  text-align: center;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.14em;
+  /* Tabular, so the number does not jitter sideways as its digits change —
+     the same reason `.metric-card` sets it. */
+  font-variant-numeric: tabular-nums;
+  color: var(--gate-dim);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 300ms var(--ease);
+}
+
+/* Only while the ring is actually turning. It goes at the gather, so the
+   collapse is watched rather than read — and it must not linger into the
+   burst, where the overlay is already handing over to the page. */
+.signal-gate[data-phase="loading"] .signal-gate-progress {
+  opacity: 1;
+}
+
+/* No ring on this path — the reduced-motion branch goes straight from the
+   press to the burst with no ticker at all — so there is no number either. */
+@media (prefers-reduced-motion: reduce) {
+  .signal-gate-progress {
+    display: none;
+  }
+}
+
 /* ── Target-lock brackets ──
    Four corners drawn with gradients rather than four elements. Same motif
    the cursor draws on a locked target, which is what ties the entrance to

@@ -41,6 +41,18 @@ import {
 import { stepField } from "./forces";
 import { ARRIVE_TOTAL, arriveAt } from "./arrival";
 import { convergeAt, poseOf, shatter, type Fragment } from "./finale";
+import {
+    FORM_AT,
+    FORM_MS,
+    MAX_WAIT_MS,
+    MIN_HOLD_MS,
+    displayProgress,
+    formAt,
+    readyToMerge,
+    ringPose,
+    segmentAlpha,
+} from "./preload";
+import { preloadAssets } from "@/lib/preloadAssets";
 
 /* The blocks' edge colour. Ice, against accent-blue faces — the pair is what
    makes them read as lit glass rather than as wireframe. Written here because
@@ -189,7 +201,14 @@ export default function SignalGate() {
        and a green verdict banner. Those were a LOADING SCREEN, and the screen
        they interrupted was not loading anything. The choreography is the
        transition now and there are no words in it at all. */
-    const [phase, setPhase] = useState<"idle" | "parting" | "burst">("idle");
+    /* `loading` is INSERTED rather than replacing `parting`, and that keeps
+       every existing CSS rule working untouched: the copy-exit stagger keys on
+       `:not([data-phase="idle"])`, so it covers all three non-idle values
+       without a single selector changing. `loading` gets one rule of its own,
+       for the readout. */
+    const [phase, setPhase] = useState<
+        "idle" | "loading" | "parting" | "burst"
+    >("idle");
     const [dismissed, setDismissed] = useState(false);
 
     const gateRef = useRef<HTMLDivElement>(null);
@@ -212,6 +231,33 @@ export default function SignalGate() {
 
     /** The blocks' poses at the moment the gather begins, frozen. See `convergeAt`. */
     const fromRef = useRef<Pose[]>([]);
+
+    /* ── The loading era ───────────────────────────────
+       `performance.now()` at the press, or 0 while idle. Where `finaleRef` is
+       now set only when LOADING FINISHES, this is set immediately — so the two
+       together say which of the three eras the draw loop is in:
+
+         loadRef 0,   finaleRef 0   → idle, the physics field
+         loadRef set, finaleRef 0   → the ring, turning, work in flight
+         loadRef set, finaleRef set → the finale, exactly as it always was
+
+       Re-originating the clock rather than stretching it is what lets every
+       constant in `gate.ts` stay untouched: `BURST_AT` is still 1400ms and
+       `FINALE_MS` still 2300ms, just measured from a later instant. All eight
+       finale tests pass unchanged, which is the proof the contract held. */
+    const loadRef = useRef(0);
+
+    /** The blocks' poses when they leave the physics for the ring. */
+    const formFromRef = useRef<Pose[]>([]);
+
+    /** Real progress, 0…1, written by the preloader as each task settles. */
+    const progressRef = useRef(0);
+
+    /** What is actually drawn and printed — paced, monotone. See `preload.ts`. */
+    const shownRef = useRef(0);
+
+    /** The percentage element, written directly rather than through state. */
+    const readoutRef = useRef<HTMLParagraphElement>(null);
 
     /* ── The field, and why it is a ref ────────────────
        SPAWNED ONCE PER VISIT, and that has to survive things other than a
@@ -537,13 +583,21 @@ export default function SignalGate() {
        that cube shatters into the hero, so this loop runs the whole way and
        the effect is keyed on `open` alone.
 
-       Three regimes in one loop, chosen by the finale clock rather than by
-       React state, because a state update per frame would be sixty renders a
-       second of a component holding three canvases:
+       Regimes in one loop, chosen by TWO CLOCKS rather than by React state —
+       a state update per frame would be sixty renders a second of a component
+       holding three canvases:
 
-         idle      the physics field, as before
-         parting   the physics stops; the blocks ease to one pose
-         burst     27 fragments, flying and fading
+         loadRef 0,   finaleRef 0    the physics field, drifting
+         loadRef set, finaleRef 0    the ring: blocks morph out of the field
+                                     and turn while real work is in flight
+         loadRef set, finaleRef set  the gather, then the merged cube
+         ms >= BURST_AT              nothing — handed to GlyphA, which draws
+                                     the 27 fragments on its own canvas
+
+       The middle one is unbounded, which is the whole reason the finale's
+       clock starts when loading FINISHES rather than at the press. Every
+       constant in `gate.ts` then keeps its value and simply measures from a
+       later instant, and all eight of its tests pass untouched.
 
        At the end there is nothing left to draw and nothing left to pay for. */
     useEffect(() => {
@@ -734,6 +788,87 @@ export default function SignalGate() {
                something to say, and the handover is exact: `convergeAt(from, 0)`
                returns `from` unchanged, so the first frame of the gather draws
                precisely what the physics frame would have. */
+            /* ── The loading ring ───────────────────────────────
+               Between the press and the gather, the blocks leave the physics
+               and turn as a ring while `lib/preloadAssets.ts` does real work
+               behind it. `preload.ts` owns every decision here.
+
+               THE `ms < CONVERGE_AT` HALF OF THIS CONDITION IS LOAD-BEARING.
+               Once loading finishes `finaleRef` is set, and for the next 180ms
+               `ms` is below `CONVERGE_AT` — which is the physics branch's own
+               range. Without this clause those three frames would run the
+               field again and snap all six blocks out of the ring and back to
+               wherever the simulation had drifted them, immediately before the
+               gather. The loader owns that window; the physics does not get it
+               back.
+
+               The freeze below is the other half: it must capture RING poses,
+               not field poses, or the gather starts from positions that have
+               not been on screen since the press. */
+            if (
+                loadRef.current !== 0 &&
+                (finaleRef.current === 0 || ms < CONVERGE_AT)
+            ) {
+                const since2 = now - loadRef.current;
+
+                /* Frozen once, on the first frame at or after FORM_AT, for
+                   exactly the reason the gather's freeze is: the physics ran
+                   right up to this instant, so this is where the blocks are.
+                   `formAt(from, ring, 0)` returns `from` unchanged, so the
+                   first morph frame draws what the last physics frame would
+                   have. */
+                if (since2 >= FORM_AT && formFromRef.current.length === 0) {
+                    formFromRef.current = field.map((c) =>
+                        poseOf(c, depthAt(c, seconds), seconds),
+                    );
+                }
+
+                if (formFromRef.current.length === 0) {
+                    /* Still in the beat before the ring forms — keep the field
+                       alive rather than freezing it, same as the gather's own
+                       lead-in. A dead field at the moment of contact reads as
+                       a hitch. */
+                    const env = envFor(w, h);
+                    for (const c of field) {
+                        c.r = collisionRadius(c, depthAt(c, seconds));
+                    }
+                    stepField(field, dt, seconds, {
+                        ...env,
+                        pointer: pointerRef.current,
+                    });
+                    const solids = field
+                        .map((c) => renderCube(c, seconds, w, h))
+                        .sort((a, z) => a.near - z.near);
+                    for (const s of solids) paint(s.faces, s.near, edge, 1);
+                    return;
+                }
+
+                const n = formFromRef.current.length;
+                const u = Math.min(1, (since2 - FORM_AT) / FORM_MS);
+                const shown = shownRef.current;
+
+                const ring = formFromRef.current.map((from, i) =>
+                    formAt(from, ringPose(i, n, seconds, w, h), u),
+                );
+                const order = ring
+                    .map((pose, i) => ({ pose, i, near: nearness(pose.z) }))
+                    .sort((a, z) => a.near - z.near);
+
+                /* Each block owns one slice of the bar, so the ring fills like
+                   a segmented gauge rather than every block brightening at
+                   once — which is what makes it read as progress and not
+                   merely as activity. */
+                for (const o of order) {
+                    paint(
+                        facesOf(o.pose),
+                        o.near,
+                        edge,
+                        segmentAlpha(o.i, n, shown),
+                    );
+                }
+                return;
+            }
+
             if (ms < CONVERGE_AT) {
                 const env = envFor(w, h);
                 for (const c of field) c.r = collisionRadius(c, depthAt(c, seconds));
@@ -763,9 +898,25 @@ export default function SignalGate() {
                it. The comment was correct about the intent and the code did
                the opposite; see `fieldRef` above. */
             if (fromRef.current.length === 0) {
-                fromRef.current = field.map((c) =>
-                    poseOf(c, depthAt(c, seconds), seconds),
-                );
+                /* FROM THE RING, NOT FROM THE FIELD. The blocks have not been
+                   at their simulated positions since `FORM_AT` — the loader
+                   has been drawing them on the ring, and the field has gone on
+                   drifting underneath, unseen. Freezing `field` here would
+                   collapse the cube from six places nobody has looked at,
+                   which on screen is all six jumping on the first gather
+                   frame.
+
+                   `ringPose` is pure, so recomputing it at this instant gives
+                   exactly the pose the previous frame drew. */
+                const n = formFromRef.current.length;
+                fromRef.current =
+                    n > 0
+                        ? formFromRef.current.map((_, i) =>
+                              ringPose(i, n, seconds, w, h),
+                          )
+                        : field.map((c) =>
+                              poseOf(c, depthAt(c, seconds), seconds),
+                          );
             }
 
             /* ── Burst: HANDED OVER, not drawn ──
@@ -921,26 +1072,24 @@ export default function SignalGate() {
         releaseEntrance();
     }, []);
 
-    const reconnect = useCallback(() => {
-        if (phase !== "idle") return;
-        commit();
+    /* ── The finale, started when the loading is done ──
+       Everything in here used to be armed in `reconnect` at the click. All of
+       it had to move, because all of it is measured from `finaleRef` — and
+       `finaleRef` no longer starts at the click.
 
-        if (reducedRef.current) {
-            /* No gather and no shatter. A reader who asked for less motion
-               gets the copy fading and the overlay going, which is the honest
-               version of this — not a slower explosion. */
-            setPhase("burst");
-            liveRef.current = 1;
-            timers.current.push(window.setTimeout(close, EXIT_MS + 120));
-            return;
-        }
+       The `FINALE_MS + 400` backstop is the one that mattered most. It fires
+       BLIND: unlike `app/template.tsx`'s failsafe it does not check whether
+       the overlay is still on screen. Left armed at the click it would have
+       released the entrance 2.7s in while the ring was still turning, and the
+       whole page would have animated itself to completion behind the
+       preloader — which is precisely the bug `template.tsx` documents at
+       length and exists to prevent.
 
-        /* The finale's clock starts HERE and the draw loop reads it directly.
-           Everything below is scheduled as an absolute offset from the click
-           rather than chained, so a dropped frame cannot push the sequence
-           long — the same reasoning the boot log used. */
+       Called at most once; `finaleRef` is the guard. */
+    const beginFinale = useCallback(() => {
+        if (finaleRef.current !== 0) return;
+
         finaleRef.current = performance.now();
-        shardsRef.current = shatter(Math.random);
         setPhase("parting");
 
         /* ── The fragments, handed on ──
@@ -950,19 +1099,20 @@ export default function SignalGate() {
            reader watched leave, and a second cut would give 27 different ones
            with the same statistics and none of the continuity.
 
-           PUBLISHED HERE, AT THE CLICK, rather than in the burst callback
-           below — and dated forward to when the burst will actually happen,
-           in the same clock `finaleRef` uses.
+           Dated forward to when the burst will actually happen, in the same
+           clock the draw loop reads. It is published a full beat before
+           `releaseEntrance()` rather than beside it, because that release runs
+           its subscribers SYNCHRONOUSLY and the glyph's subscriber is what
+           calls `takeBurst()` — adjacent, the two lines are order-dependent,
+           and the wrong order gets null and a silent fallback to a fresh
+           `shatter()`.
 
-           It belongs at the click because `releaseEntrance()` runs its
-           subscribers SYNCHRONOUSLY and the glyph's subscriber is what calls
-           `takeBurst()`. Publishing beside that release makes two adjacent
-           lines order-dependent: get them the wrong way round and the letter
-           asks for the fragments one line before they exist, gets null, and
-           falls back to a fresh `shatter()`. Nothing errors — the debris just
-           quietly stops being the debris that left, which is the one thing
-           this handover is for. A full second of daylight removes the hazard
-           instead of documenting it. */
+           PUBLISHED HERE RATHER THAN AT THE CLICK, and that move is required
+           rather than tidy. Dating the fragments at the press would date them
+           to an instant that passes while the ring is still turning, and
+           `flyAt` clamps — so any load longer than `ASSEMBLE_MS` would open
+           the letter at u >= 1 and skip its flight entirely. The A would
+           appear in the hero already assembled, with nothing in the console. */
         publishBurst(shardsRef.current, finaleRef.current + BURST_AT);
 
         timers.current.push(
@@ -984,13 +1134,69 @@ export default function SignalGate() {
         );
         timers.current.push(window.setTimeout(close, FINALE_MS));
 
-        /* The entrance's backstop. app/template.tsx deliberately refuses to
+        /* The entrance's backstop. `app/template.tsx` deliberately refuses to
            release while this overlay is on screen, because a reader may take
            any amount of time to press the button — so the only bounded window
-           is the one that starts at the click. Idempotent, so on the normal
-           path the release above has already happened and this costs nothing. */
+           is the one that starts HERE, at the handover, not at the press.
+           Idempotent, so on the normal path the release above has already
+           happened and this costs nothing. */
         timers.current.push(
             window.setTimeout(releaseEntrance, FINALE_MS + 400),
+        );
+    }, [close]);
+
+    const reconnect = useCallback(() => {
+        if (phase !== "idle") return;
+        commit();
+
+        if (reducedRef.current) {
+            /* No gather, no shatter, AND NO LOADING RING. A reader who asked
+               for less motion gets the copy fading and the overlay going,
+               which is the honest version of this — not a slower explosion.
+
+               Neither canvas effect attaches a ticker on this path, so a ring
+               built on one would draw a single frozen frame and sit there. And
+               holding somebody for a 900ms beat they cannot see is the
+               opposite of what they asked for.
+
+               The preload still runs — fired and forgotten, so the chunks warm
+               up in the background — but nothing waits on it. */
+            setPhase("burst");
+            liveRef.current = 1;
+            void preloadAssets(() => {}, MAX_WAIT_MS);
+            timers.current.push(window.setTimeout(close, EXIT_MS + 120));
+            return;
+        }
+
+        /* ── The loading era opens here; the finale's clock does NOT ──
+           `loadRef` starts now, `finaleRef` stays 0 until the work is done.
+           That split is the whole design: every constant in `gate.ts` keeps
+           its value and simply measures from a later instant, so the eight
+           finale tests pass untouched instead of needing a variable
+           `FINALE_MS` that would break the `<= 3000ms` ceiling outright. */
+        loadRef.current = performance.now();
+        shardsRef.current = shatter(Math.random);
+        setPhase("loading");
+
+        /* Real work, and the ring cannot fill until it lands. `preloadAssets`
+           never rejects and resolves on its own ceiling, so the two ways this
+           could trap somebody — a 404 and a hang — are both closed there
+           rather than here. */
+        void preloadAssets((f) => {
+            progressRef.current = f;
+        }, MAX_WAIT_MS).then(() => {
+            progressRef.current = 1;
+        });
+
+        /* THE ABSOLUTE BACKSTOP, from the click.
+           `preloadAssets` has its own ceiling and the ticker below hands over
+           when the beat is served — but both of those live inside a rAF loop,
+           and a rAF loop is exactly what a backgrounded tab stops delivering.
+           This is the one timer that cannot be starved, so nothing can leave a
+           visitor on the entrance indefinitely. Generous on purpose: it should
+           never be what ends the sequence. */
+        timers.current.push(
+            window.setTimeout(beginFinale, MAX_WAIT_MS + MIN_HOLD_MS),
         );
 
         /* Ramp the trace from its resting rhythm up to full, so the press
@@ -1004,7 +1210,49 @@ export default function SignalGate() {
             if (p < 1) requestAnimationFrame(ramp);
         };
         requestAnimationFrame(ramp);
-    }, [phase, commit, close]);
+    }, [phase, commit, close, beginFinale]);
+
+    /* ── The loader's own clock ────────────────────────
+       Progress is paced, printed and handed over from one rAF loop, for the
+       same reason the draw loop reads `finaleRef` rather than React state: a
+       setState per frame would be sixty renders a second of a component that
+       owns three canvases.
+
+       It is a separate loop from the canvas draw because it must keep running
+       for the whole loading era regardless of what the canvas is doing, and
+       because the readout is DOM rather than canvas. It stops the moment the
+       finale starts. */
+    useEffect(() => {
+        if (phase !== "loading") return;
+
+        let raf = 0;
+        let printed = -1;
+
+        const step = () => {
+            const elapsed = performance.now() - loadRef.current;
+            const shown = displayProgress(progressRef.current, elapsed);
+
+            /* Monotone by construction in `displayProgress`, but pinned here
+               too: the ref is what the canvas reads, and a number that ever
+               went backwards on screen would read as broken. */
+            if (shown > shownRef.current) shownRef.current = shown;
+
+            const whole = Math.round(shownRef.current * 100);
+            if (whole !== printed && readoutRef.current) {
+                printed = whole;
+                readoutRef.current.textContent = `${whole}%`;
+            }
+
+            if (readyToMerge(progressRef.current, elapsed)) {
+                beginFinale();
+                return;
+            }
+            raf = requestAnimationFrame(step);
+        };
+
+        raf = requestAnimationFrame(step);
+        return () => cancelAnimationFrame(raf);
+    }, [phase, beginFinale]);
 
     // Clear anything pending if the component goes away mid-sequence.
     useEffect(() => () => timers.current.forEach((t) => window.clearTimeout(t)), []);
@@ -1047,6 +1295,34 @@ export default function SignalGate() {
 
             {/* Target-lock brackets, the same motif the cursor draws. */}
             <span className="signal-gate-frame" aria-hidden="true" />
+
+            {/* ── The readout ────────────────────────────
+                One number, beneath the ring, while it turns.
+
+                THIS IS NOT THE BOOT LOG COMING BACK. That was seven lines and
+                a green "ALL SYSTEMS OPERATIONAL" banner, and it was deleted
+                for two reasons: it was FAKE — the screen it interrupted was
+                not loading anything — and it was WORDS narrating a transition
+                the choreography was already carrying. Both are answered here
+                rather than dodged. This one cannot reach 100% until the
+                imports it is waiting on have actually settled, and it is a
+                single figure rather than a paragraph.
+
+                `aria-hidden`: the ring and the number are one ornament for a
+                wait, and a screen reader announcing a percentage that changes
+                sixty times a second is worse than silence. The button that
+                started it already said what was happening.
+
+                Written by the rAF loop above, never by React — sixty renders
+                a second of a component holding three canvases is exactly what
+                `finaleRef` exists to avoid. */}
+            <p
+                ref={readoutRef}
+                className="signal-gate-progress mono"
+                aria-hidden="true"
+            >
+                0%
+            </p>
 
             <div className="signal-gate-inner">
                 {/* ── The masthead ───────────────────────
