@@ -90,22 +90,27 @@ export const FORM_MS = 700;
  * having lied about doing anything. Measured from the press, so the morph is
  * inside it rather than added to it.
  *
- * 1500, up from 900. At the shorter value the ring only existed in its formed
- * state for ~20ms on a warm cache: the morph does not finish until
- * `FORM_AT + FORM_MS` = 880ms, so the beat was almost entirely blocks still
- * travelling into place. This gives the assembled ring roughly 800ms of its
- * own — 620ms here plus the 180ms it holds after the handover, before the
- * gather starts — which is enough to watch it turn and to read the number
- * under it.
+ * 2000, raised twice from an original 900. At that first value the ring only
+ * existed in its formed state for ~20ms on a warm cache: the morph does not
+ * finish until `FORM_AT + FORM_MS` = 880ms, so the beat was almost entirely
+ * blocks still travelling into place. This gives the assembled ring roughly
+ * 1.3s of its own — 1120ms here plus the 180ms it holds after the handover,
+ * before the gather starts — which is time to watch it turn and read the
+ * number under it rather than merely register that something happened.
  *
  * The cost is honest and worth stating: on a warm cache the whole entrance is
- * now MIN_HOLD_MS + FINALE_MS ≈ 3.8s from the press, against 2.3s before.
- * `gate.ts`'s own ceiling test (`FINALE_MS <= 3000`) still passes because it
- * measures the finale alone, which is unchanged — but a reader is on this
- * screen for longer than that test was written to bound, and that is a
- * deliberate choice rather than an oversight.
+ * now MIN_HOLD_MS + FINALE_MS ≈ 4.3s from the press, against 2.3s before the
+ * loader existed. `gate.ts`'s own ceiling test (`FINALE_MS <= 3000`) still
+ * passes because it measures the finale alone, which is unchanged — but a
+ * reader is on this screen for considerably longer than that test was written
+ * to bound, and that is a deliberate choice rather than an oversight.
+ *
+ * THIS IS THE TOP OF THE RANGE. `preload.test.ts` caps it here, and the cap
+ * is the point: past two seconds a stranger who has not yet decided to care
+ * is being made to wait on an animation. Anything longer needs a better
+ * reason than "it looks good", because by then it does not.
  */
-export const MIN_HOLD_MS = 1500;
+export const MIN_HOLD_MS = 2000;
 
 /**
  * The ceiling.
