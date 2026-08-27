@@ -1019,6 +1019,37 @@ export default function SignalGate() {
 
         buttonRef.current?.focus();
 
+        /* ── A TAB THAT IS NOT BEING LOOKED AT GETS NO ENTRANCE ──
+           This is the "fresh tab is blank, refreshing fixes it" bug, and the
+           `forwards` fill in globals.css only closes half of it.
+
+           The gate's copy arrives on a CSS animation whose first keyframe is
+           `opacity: 0`. In a tab that opens in the background — or one Chrome
+           prerenders from the address bar — the document timeline never
+           advances, so an animation that HAS been given a start time sits at
+           `currentTime: 0` forever and holds its element at that first
+           keyframe. Measured exactly that way: the frame bracket pinned at
+           opacity 0 with `playState: "running"`, while the headline, whose
+           animation had not been started yet, showed correctly. Which
+           elements lose the race is arbitrary, so the result is a gate that is
+           partly or entirely invisible — with no button to press, which also
+           meant the entrance was never released and the page behind it stayed
+           held.
+
+           `forwards` fixes the not-yet-started case. This fixes the
+           started-but-frozen one, and it is the honest behaviour anyway: an
+           entrance animation performed for somebody who is not watching is not
+           an entrance. They arrive to a composed screen instead of a
+           mid-animation one.
+
+           Read once, at mount, and never re-armed. If the tab is revealed
+           later the copy is already settled, and starting a 620ms rise under
+           somebody who is now looking at a finished screen would be worse than
+           not animating at all. */
+        if (document.visibilityState !== "visible") {
+            node?.setAttribute("data-still", "");
+        }
+
         return () => {
             node?.removeEventListener("wheel", block);
             node?.removeEventListener("touchmove", block);

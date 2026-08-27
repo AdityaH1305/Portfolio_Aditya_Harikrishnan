@@ -2692,7 +2692,9 @@ a:focus-visible .logo-mark {
       var(--bracket) no-repeat,
     linear-gradient(90deg, var(--gate-key), var(--gate-key)) 100% 100% /
       var(--bracket) 1px no-repeat;
-  animation: signal-rise 700ms var(--ease) both;
+  /* `forwards`, never `both` — a backwards fill pins this at opacity 0 in a
+     tab that never starts its animations. See the note on the copy below. */
+  animation: signal-rise 700ms var(--ease) forwards;
 }
 
 /* POSITIONED, and that is not cosmetic. This was `static`, which paints it
@@ -2715,12 +2717,59 @@ a:focus-visible .logo-mark {
   }
 }
 
+/* ── `forwards`, NEVER `both`. THIS IS A BUG FIX, NOT A PREFERENCE ──
+
+   `both` includes `backwards`, which applies the keyframe's `from` state for
+   the whole period BEFORE the animation starts. With a zero delay that period
+   is normally nothing — but a document that is not being rendered does not
+   start its animations at all, and in that case "before it starts" is
+   forever.
+
+   A tab opened in the background, or one Chrome prerenders from the address
+   bar, loads exactly like that. So the entrance opened on a flat dark
+   rectangle with every word, the trace and the button pinned at `opacity: 0`,
+   and the reader had no button to press — which also meant the entrance was
+   never released and the page behind it stayed held. Reported as "a fresh tab
+   is blank, refreshing fixes it", and refreshing fixed it because a refresh
+   happens in a tab that is already visible.
+
+   `forwards` keeps the settle-in on arrival and removes the backwards fill,
+   so the resting state of this copy is simply visible. The failure direction
+   is inverted: an animation that never runs now costs the entrance its
+   flourish rather than its content.
+
+   Same rule as `[data-hero]` and `[data-reveal]`, which carry explicit
+   rescues for the same reason — anything whose only route to being visible is
+   a script or an animation needs a state it can fail into. */
 .signal-gate-meta,
 .signal-gate-title,
 .signal-gate-body,
 .signal-gate-ecg,
 .signal-gate-action {
-  animation: signal-rise 620ms var(--ease) both;
+  animation: signal-rise 620ms var(--ease) forwards;
+}
+
+/* ── The other half of that fix ────────────────────────
+   `forwards` saves an animation that has not STARTED. It does nothing for one
+   that has started and can never advance, which is what happens to whichever
+   elements won the race before a background or prerendered tab froze its
+   timeline: `playState: "running"`, `currentTime: 0`, pinned at the first
+   keyframe's `opacity: 0` indefinitely.
+
+   `SignalGate` sets `data-still` at mount when the document is not visible,
+   and this takes the animations off entirely so every one of these sits at its
+   own resting style. It also covers the frame bracket, which is not in the
+   list above because it is ornament rather than copy — but ornament pinned at
+   zero is still a bug.
+
+   Both halves are kept. Either alone leaves a real case broken. */
+.signal-gate[data-still] .signal-gate-meta,
+.signal-gate[data-still] .signal-gate-title,
+.signal-gate[data-still] .signal-gate-body,
+.signal-gate[data-still] .signal-gate-ecg,
+.signal-gate[data-still] .signal-gate-action,
+.signal-gate[data-still] .signal-gate-frame {
+  animation: none;
 }
 
 /* ══════════════════════════════════════════════════════
@@ -3177,7 +3226,12 @@ html.signal-connected .signal-gate {
   top: 1.5rem;
   left: 1.5rem;
   z-index: 60;
-  animation: uplink-in 600ms var(--ease) both;
+  /* `forwards`, never `both`. A backwards fill holds this at opacity 0 for as
+     long as the animation has not started, and a background or prerendered
+     tab never starts it — which left the clearance chip permanently invisible
+     on exactly the loads where it is the only thing telling the reader the
+     entrance can be replayed. Same fix as the gate's copy below. */
+  animation: uplink-in 600ms var(--ease) forwards;
 }
 
 .uplink-timer-chip {
