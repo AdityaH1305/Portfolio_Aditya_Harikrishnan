@@ -92,6 +92,26 @@ export default function RootLayout({
     <html
       lang="en"
       className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      /* ── THE FIRST PAINT IS THE SITE'S OWN COLOUR ──
+         Inline, and it has to be. `colorScheme: "dark"` above tells the
+         browser to paint a dark canvas before any stylesheet arrives, and
+         Chrome's dark canvas is a flat neutral grey — so on a cold cache the
+         entrance opened on several seconds of grey that read as the page
+         failing to load rather than as the page arriving. Reported exactly
+         that way.
+
+         An external rule cannot fix it, because the gap being covered is the
+         one before the external rule exists. An inline style is part of the
+         HTML and applies at parse time, so the very first frame is already
+         #1B262C and the gate simply resolves out of the right ground.
+
+         THIRD COPY OF THIS HEX, and deliberately so: `--surface-0` in
+         globals.css is the source, `themeColor` above mirrors it for the
+         mobile browser chrome, and this mirrors it for the pre-stylesheet
+         paint. All three exist for the same reason — they are consumed by
+         something that cannot read a CSS custom property — and all three must
+         move together. */
+      style={{ background: "#1B262C" }}
       /* The script below adds `signal-connected` to this element BEFORE React
          hydrates, which is the whole point of it running pre-paint. React then
          compares the class list it rendered on the server against the one in

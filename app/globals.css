@@ -3916,17 +3916,34 @@ html.glyph-dragging body {
   }
 }
 
-/* ── The heading is hidden, not removed ──
+/* ── The heading is hidden, not removed — AND ONLY ONCE THE CANVAS IS LIVE ──
    Under the choreographed gate the canvas draws this word out of the atlas's
    cubes, so the DOM copy would be a duplicate. It keeps its box — the canvas
-   measures it every frame to know where to put the word — and it keeps its
-   place in the accessibility tree, which a `display: none` would cost.
+   measures it to know where to put the word — and it keeps its place in the
+   accessibility tree, which a `display: none` would cost.
 
-   The gate is byte-identical to the zone's own and to `ZoneTitle`'s: anywhere
-   the canvas will not mount, this is simply the section title. */
+   `[data-cubes]` IS THE WHOLE POINT OF THIS RULE, and it was not here at
+   first. The media query alone is a claim about the VIEWPORT, not about the
+   canvas — so the heading went transparent whether or not anything was
+   actually drawing in its place. Any failure in `ZoneTitle` (a chunk that
+   never arrives, a measurement taken before layout settled, a thrown error)
+   left the Projects heading permanently invisible, with the section reading
+   as an empty band. It was reported exactly that way, and a reload "fixed"
+   it, which is the signature of a race rather than a bug in the art.
+
+   `ZoneTitle` now sets the attribute itself, from inside its draw loop, on
+   the first frame it genuinely paints. So the failure direction is inverted:
+   if the canvas does not run, the reader simply gets the section title. It is
+   the rule `Cursor.tsx` follows for `cursor-custom` — the class that hides
+   the native cursor is added by the same code that replaces it, so the
+   failure mode is "no custom cursor", never "no cursor at all".
+
+   The media query stays, byte-identical to the zone's and to `ZoneTitle`'s,
+   because it is still the right gate for WHERE the canvas is allowed to
+   mount. The attribute is the gate for WHETHER it did. */
 @media (min-width: 1024px) and (prefers-reduced-motion: no-preference) and
   (scripting: enabled) {
-  .work-head-title {
+  .work-head-title[data-cubes] {
     /* Not `visibility: hidden` — that would take it out of the a11y tree too.
        Transparent text keeps the box, the line count and the heading. */
     color: transparent;
