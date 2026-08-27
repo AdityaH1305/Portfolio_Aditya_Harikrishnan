@@ -143,11 +143,13 @@ export default function ZoneTitle() {
            Nothing sets it where the canvas does not mount — reduced motion,
            no JS, a narrow screen — and that is correct: there is no word being
            drawn there, so the heading should be its own natural size. */
+        let fitted = false;
         const fitHeading = () => {
             if (!slotEl) return;
             const r = canvas.getBoundingClientRect();
             if (r.width < 1 || r.height < 1) return;
             slotEl.style.minHeight = `${wordScreenHeight(r.width, r.height)}px`;
+            fitted = true;
         };
 
         /* The heading's horizontal position and size do not change with
@@ -172,6 +174,26 @@ export default function ZoneTitle() {
             slotDocTop = r.top + window.scrollY;
         };
 
+        /* ── Marking the heading only once this is really drawing ──
+           `.work-head-title` is `color: transparent` under the choreographed
+           media query, so if this canvas never paints the heading is invisible
+           and the section reads as an empty band. That was reported, and a
+           reload cleared it — the signature of a race, not of broken art.
+
+           So the CSS now waits on `[data-cubes]` and this sets it, from inside
+           the draw loop, on the first frame that actually puts ink down. Not
+           at mount: mounting proves the chunk arrived, not that the geometry
+           resolved. The failure direction is inverted — no canvas means you
+           read the section title, which is the same discipline `Cursor.tsx`
+           uses when it hides the native cursor only from the code that
+           replaces it. */
+        let marked = false;
+        const markLive = () => {
+            if (marked || !slotEl) return;
+            marked = true;
+            slotEl.dataset.cubes = "";
+        };
+
         fitHeading();
         size();
         measureSlot();
@@ -184,6 +206,33 @@ export default function ZoneTitle() {
         const draw = () => {
             if (w < 1) size();
             if (w < 1 || !slotEl) return;
+
+            /* ── RETRY UNTIL THIS CANVAS IS PROVEN, THEN NEVER AGAIN ──
+               This is the reported bug. `measureSlot` and `fitHeading` run at
+               mount and on refresh, and both BAIL if their element has no box
+               yet — which is the case while the stylesheet is still landing,
+               or before `#work` has been laid out. Nothing then asked again:
+               the ResizeObserver watches this canvas, which is `100vw/100vh`
+               fixed and does not resize when a heading finally gets its box.
+               So one unlucky early measurement left `slotWidth` at 0 and the
+               draw returning forever — with `.work-head-title` already
+               transparent, which is why the section read as an empty band and
+               why a reload cleared it.
+
+               It sits ABOVE the progress early-out on purpose. The heading has
+               to be marked as soon as the canvas is known-good, not when the
+               reader first scrolls the word into range — mark it there and the
+               DOM title would be visible on arrival and then blink out
+               mid-animation.
+
+               It costs one rect read per frame ONLY while unproven. Once
+               marked, the early-out below is the first thing again, exactly as
+               it was. */
+            if (!marked) {
+                if (slotWidth < 1) measureSlot();
+                if (!fitted) fitHeading();
+                if (slotWidth >= 1 && fitted) markLive();
+            }
 
             // Early-out BEFORE any geometry read, for the same reason
             // GlyphA's is first: this ticker runs for the rest of the page.
@@ -355,6 +404,11 @@ export default function ZoneTitle() {
             ro.disconnect();
             st.kill();
             document.removeEventListener("visibilitychange", onVisibility);
+            /* Hand the heading back. `[data-cubes]` is what makes it
+               transparent, so leaving it behind on a torn-down canvas would
+               strand an invisible title — the exact failure this attribute was
+               added to prevent, reintroduced by its own cleanup. */
+            if (slotEl) delete slotEl.dataset.cubes;
         };
     }, []);
 
