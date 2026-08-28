@@ -83,14 +83,53 @@ export default function Experience() {
                             it is the part a reader is scanning for. Both
                             strings are reused verbatim from elsewhere in the
                             repo rather than restated: the affiliation from
-                            `lib/caseStudies.ts` and "Research Intern" from
-                            the hero's fact column. */}
+                            `lib/caseStudies.ts` and the role from the hero's
+                            fact column, which must move with this one.
+
+                            ONE ROLE, TWO FACETS — "&", not a third middot.
+                            The line already spends its `·` separating the
+                            role from the date, so "Research Intern · ML
+                            Intern · June – July 2026" reads as three peers
+                            and leaves the reader to work out that the first
+                            two are titles and the third is not. The
+                            ampersand binds the two into the one internship
+                            they were. "ML" rather than "Machine Learning"
+                            is house style — the site's own title is "ML
+                            Systems & Full-Stack Engineering". */}
                         <h2 className="heading-sm mt-3">
                             ISRO · Liquid Propulsion Systems Centre
                         </h2>
 
+                        {/* ── THE BREAK IS PLACED, NOT LEFT TO CHANCE ──
+                            At 12px with 1.68px of tracking the full line
+                            measures 346.3px against a 327.2px content box on
+                            a 375px phone, so it wraps — and left to itself
+                            the browser breaks at the last space, orphaning
+                            "2026" on its own line with the date range split
+                            across two. The shorter "Research Intern · June –
+                            July 2026" was 301.9px and never wrapped, which is
+                            why this only appeared when the second title went
+                            in.
+
+                            Below the measured 394px threshold the separator
+                            is dropped and the two facts simply stack: no
+                            `·` dangling at the end of a line and none
+                            leading one, which is the rule the footer meta
+                            list already follows. 400px is the round number
+                            above that measurement, and `whitespace-nowrap`
+                            on each half is the safety net — if font metrics
+                            ever shift, the line degrades to a trailing
+                            separator rather than to a split date or an
+                            overflow. */}
                         <p className="label-muted mt-2">
-                            Research Intern · June – July 2026
+                            <span className="whitespace-nowrap">
+                                Research &amp; ML Intern
+                            </span>
+                            <span className="hidden min-[400px]:inline"> · </span>
+                            <br className="min-[400px]:hidden" />
+                            <span className="whitespace-nowrap">
+                                June – July 2026
+                            </span>
                         </p>
 
                         {/* Short on purpose. The gait project has an entire
