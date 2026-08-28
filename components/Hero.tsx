@@ -29,7 +29,13 @@ import { onEntranceReady } from "@/lib/entrance";
    without ever learning about it. */
 const facts = [
     { label: "Education", lines: ["B.Tech Computer Science", "IIIT Pune"] },
-    { label: "Experience", lines: ["Research Intern", "ISRO · LPSC"] },
+    /* The NBSP binds "&" to "ML", so the only break in this title is after
+       "Research". The column is 124px at a 320px viewport and the title is
+       141.6px, so it has to break somewhere; left alone it breaks at the
+       later space and strands the ampersand at the end of line one. Bound,
+       it reads "Research" / "& ML Intern" — the same shape the Status fact
+       below is authored with, which already opens a line on "&". */
+    { label: "Experience", lines: ["Research & ML Intern", "ISRO · LPSC"] },
     { label: "Focus", lines: ["ML Systems", "Full-Stack", "System Design"] },
     { label: "Status", lines: ["Open to internships", "& research roles"] },
 ];

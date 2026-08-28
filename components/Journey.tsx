@@ -45,7 +45,10 @@ const timelineEntries = [
            was wrong and is corrected here. It still sits immediately before
            "What's next", so the timeline stays in ascending order. */
         year: "2026",
-        title: "Research internship at ISRO",
+        /* NBSP between "at" and "ISRO": at a 320px viewport the title is
+           265.9px against a 240px box, and the natural break widows "ISRO"
+           on a line of its own. Bound, it breaks earlier and evenly. */
+        title: "Research & ML internship at ISRO",
         description:
             "Cross-view gait recognition at the Liquid Propulsion Systems Centre — 98.00% Rank-1 on CASIA-B, with an honest account of where occlusion breaks it.",
     },
