@@ -31,7 +31,17 @@ interface RevealProps {
     className?: string;
     /** Vertical travel in px. */
     y?: number;
-    /** Horizontal travel in px (Journey's timeline uses -16). */
+    /**
+     * Horizontal travel in px.
+     *
+     * CURRENTLY UNUSED SITEWIDE. Journey's timeline was the only caller
+     * (`x={-16}`) and it is now a scrubbed spine rather than a set of
+     * one-shot reveals. Kept because the prop costs nothing and a horizontal
+     * entrance is a reasonable thing to want — but note it can only ever work
+     * in single-element mode: in stagger mode the start state comes from
+     * `[data-reveal-child]` in globals.css, which carries `translateY` only,
+     * so an `x` there animates from a position nothing ever set.
+     */
     x?: number;
     delay?: number;
     duration?: number;

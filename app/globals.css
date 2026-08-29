@@ -964,10 +964,72 @@ body {
 }
 
 /* ══════════════════════════════════════════════════════
-   Timeline
+   Journey — the path draws itself
+
+   Replaces `.timeline-line` / `.timeline-dot`, which were
+   Journey's alone. The dot carried
+   `box-shadow: 0 0 8px var(--accent-muted)` — the page's
+   last decorative glow. Nothing outside the two canvases
+   and the entrance's room emits light here; that shadow
+   survived only because no other component consumed the
+   class. It is not coming back.
+
+   ── THE CSS DEFAULT IS THE FINISHED STATE ──
+   Trace fully drawn, every waypoint lit, every row at full
+   opacity. `Journey.tsx` is purely SUBTRACTIVE: its `fromTo`
+   start states are what recess the section, applied at build
+   time by `immediateRender`. So a no-JS reader, a
+   reduced-motion reader and a reader whose GSAP never
+   attaches all get the complete diagram — and there is
+   nothing here for the `@media (scripting: none)` or
+   reduced-motion rescue blocks further down to catch,
+   because this section ships no hidden start state at all.
+
+   The mismatch that remains is one-directional and benign:
+   lit → recessed for one frame before GSAP attaches. The
+   case-study zone needed a CSS pre-state because ITS bad
+   default was three acts stacked unreadably; here the "wrong"
+   default is a section you can read.
    ══════════════════════════════════════════════════════ */
 
-.timeline-line {
+.journey-track {
+  --journey-indent: 2rem;
+  position: relative;
+  padding-left: var(--journey-indent);
+}
+
+@media (min-width: 768px) {
+  .journey-track {
+    --journey-indent: 3rem;
+  }
+}
+
+.journey-groups,
+.journey-beats {
+  list-style: none;
+}
+
+.journey-beats {
+  margin-top: 1.25rem;
+}
+
+.journey-group + .journey-group {
+  margin-top: clamp(2.5rem, 5vw, 4rem);
+}
+
+.journey-beat + .journey-beat {
+  margin-top: clamp(1.75rem, 3vw, 2.5rem);
+}
+
+/* The whole route — always present, barely there.
+
+   THE GRADIENT LIVES HERE AND NEVER ON THE TRACE. A scaled
+   element's background is compressed, not clipped, so the
+   same five stops on `.journey-trace` would look correct at
+   scaleY(1) and wrong at every other value: at 0.2 the tail
+   fade meant for the bottom of the list is painted at the
+   head. This element never scales. */
+.journey-rail {
   position: absolute;
   left: 0;
   top: 0;
@@ -976,22 +1038,102 @@ body {
   background: linear-gradient(
     to bottom,
     transparent 0%,
-    var(--border-subtle) 10%,
-    var(--accent-muted) 50%,
-    var(--border-subtle) 90%,
+    var(--border-subtle) 8%,
+    var(--border-default) 50%,
+    var(--border-subtle) 92%,
     transparent 100%
   );
 }
 
-.timeline-dot {
-  width: 7px;
-  height: 7px;
+/* The travelled part. Solid, and grown from its top edge.
+   `transform-origin` is declared here AND passed in the tween
+   vars — GSAP writes its own and defaults to `50% 50%`, which
+   draws the trace as a short segment floating in the middle of
+   the list rather than a line growing downward. */
+.journey-trace {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 1px;
+  background: var(--accent-border);
+  transform-origin: 50% 0%;
+}
+
+/* A waypoint. Ring and core are two elements so the ignition
+   is pure opacity + scale — a background-colour tween would
+   repaint every frame of the scrub, and only opacity/x/y/scale
+   may be animated in scroll-linked work here.
+
+   BOTH OFFSETS ARE DERIVED, and that is the point.
+   `.timeline-dot` hard-coded `left: -3px; top: 0.5rem`, two
+   numbers matched by eye to a 12px mono year — and both were
+   wrong the moment anything above them changed size.
+
+   • left — centres the marker on the rail's centre (0.5px)
+     exactly, at either indent.
+   • top  — `0.5lh` is the optical centre of the element's
+     FIRST line box, whatever the type clamp resolves to and
+     however many lines the title wraps to. This is why the
+     marker span must stay a CHILD OF THE HEADING: moved out
+     to the `<li>`, `lh` resolves against the body
+     line-height instead and it sits ~4px high. */
+.journey-mark {
+  --mark-size: 9px;
+  position: absolute;
+  width: var(--mark-size);
+  height: var(--mark-size);
+  left: calc(0.5px - var(--journey-indent) - var(--mark-size) / 2);
+  top: calc(0.5lh - var(--mark-size) / 2);
+  border-radius: 50%;
+  border: 1px solid var(--border-default);
+  /* Opaque, so the rail does not show through a waypoint. */
+  background: var(--surface-0);
+  display: grid;
+  place-items: center;
+}
+
+/* The station. A year is a waypoint the route is named after,
+   not a second kind of object, so only the size differs. */
+.journey-mark--year {
+  --mark-size: 13px;
+}
+
+/* NO box-shadow. See the block comment. */
+.journey-mark-core {
+  width: calc(var(--mark-size) - 4px);
+  height: calc(var(--mark-size) - 4px);
   border-radius: 50%;
   background: var(--accent);
-  box-shadow: 0 0 8px var(--accent-muted);
-  position: absolute;
-  left: -3px;
-  top: 0.5rem;
+}
+
+/* The year numeral. Wears `.metric-card` for the ladder — mono,
+   tabular, 30 → 42, weight 500, the site's only number style,
+   and large numerals are its stated purpose.
+
+   THE COLOUR IS SET HERE AND NOWHERE ELSE. This rule sits after
+   Tailwind's utilities, so a `text-*` on the same element loses
+   to it at equal specificity — and `--color-accent` maps to
+   `--accent-text` anyway, so the utility could never reach the
+   saturated half regardless. Same trap as `.section-container`
+   killing `mt-*`.
+
+   `--accent-text`, NOT `--accent`, and that is a measurement
+   rather than a preference. Against `--surface-0` the saturated
+   accent is 3.69:1 with a 3:1 floor for type this size — 0.69
+   of headroom, which the recession spends immediately: 3.05 at
+   alpha 0.85, 2.68 at the 0.75 floor Journey.tsx uses. It cannot
+   be dimmed at all. `--accent-text` is 5.29:1 and still measures
+   3.62:1 at 0.75, which is what lets ONE recession value cover
+   every token in the row. At 42px the two are not
+   distinguishable as "less accent". */
+.journey-year {
+  position: relative; /* containing block for its own station */
+  color: var(--accent-text);
+}
+
+.journey-beat-title {
+  position: relative; /* ditto, for its waypoint */
 }
 
 /* ══════════════════════════════════════════════════════
