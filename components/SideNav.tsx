@@ -177,7 +177,7 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                    transition-all also went: it makes the browser watch every
                    animatable property, and only opacity and transform are
                    ever animated here. */
-                className={`md:hidden fixed top-4 left-1/2 -translate-x-[50%] max-w-[calc(100%-2rem)] w-auto z-50
+                className={`mobile-island md:hidden fixed top-4 left-1/2 -translate-x-[50%] max-w-[calc(100%-2rem)] w-auto z-50
                            bg-surface-1/85 backdrop-blur-md rounded-full shadow-2xl
                            transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.32,0.72,0,1)]
                            ${mounted ? "opacity-100 translate-y-0" : "opacity-0 -translate-y-4"}`}
@@ -216,7 +216,18 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                             href={RESUME_URL}
                             target="_blank"
                             rel="noopener noreferrer"
+                            /* `border` is load-bearing, not decoration.
+                               This carried `hover:border-accent` with no
+                               border utility on the element, so the hover
+                               changed the colour of an edge that was not
+                               being drawn and did nothing at all.
+                               globals.css records this exact bug being fixed
+                               on the DESKTOP pill (`.resume-pill`, which
+                               borders at `--border-default` and brightens to
+                               `--accent-border`); the mobile copy kept it.
+                               Matched to that treatment rather than invented. */
                             className="px-4 py-1.5 text-xs font-medium rounded-full text-tertiary
+                                       border border-edge-default
                                        hover:border-accent hover:text-accent
                                        transition-colors duration-300"
                         >

@@ -4,6 +4,7 @@ import { useEffect, useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger, EASE } from "@/lib/motion";
 import LiveRings from "@/components/LiveRings";
+import DeviceTierFlag from "@/components/DeviceTierFlag";
 import { entranceClaimed, releaseEntrance } from "@/lib/entrance";
 
 /* ══════════════════════════════════════════════════════
@@ -142,6 +143,9 @@ export default function Template({
                 for ringed elements, and layout persists across navigations so
                 it would never see the next route's media. Renders nothing. */}
             <LiveRings />
+            {/* Writes `data-tier` on <html> so CSS can stand down on a weak
+                device the same way the canvases already do. Renders nothing. */}
+            <DeviceTierFlag />
             {children}
         </div>
     );

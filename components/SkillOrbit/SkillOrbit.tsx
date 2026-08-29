@@ -66,18 +66,57 @@ export default function SkillOrbit({ children }: { children: React.ReactNode }) 
 
         const reduced = window.matchMedia(REDUCED).matches;
 
-        /* Read the accent from CSS rather than hardcoding it — same rule the
-           atlas follows, so canvas and DOM cannot drift apart. */
-        const raw = getComputedStyle(document.documentElement)
-            .getPropertyValue("--accent-rgb")
-            .trim();
-        const parsed = raw.split(/[\s,/]+/).map(Number);
-        const accent: [number, number, number] =
-            parsed.length >= 3 && parsed.every(Number.isFinite)
-                ? [parsed[0], parsed[1], parsed[2]]
-                : [50, 130, 184];
+        /* Read every colour from CSS rather than hardcoding it — same rule
+           the atlas follows, so canvas and DOM cannot drift apart.
 
-        const engine = new SkillOrbitEngine(canvas, ctx, { accent }, reduced);
+           This used to read the accent alone, and the canvas carried four
+           hand-written colours beside it: `#e6ded2` for the starfield,
+           `rgba(242,239,234,…)` for two label styles and
+           `rgba(138,131,122,…)` for an unlit body. All four are warm greys
+           left over from the amber-on-near-black scheme this palette
+           replaced — CLAUDE.md records the same class of bug being cleared
+           out of the atlas ("thirteen hardcoded rgba(34,211,238,…)
+           literals"), and this file was simply not part of that pass.
+
+           `--accent-rgb` is authored as `50 130 184` and the text tokens as
+           hex, so the reader below takes both forms. */
+        const root = getComputedStyle(document.documentElement);
+        const readRgb = (
+            prop: string,
+            fallback: [number, number, number],
+        ): [number, number, number] => {
+            const raw = root.getPropertyValue(prop).trim();
+            const hex = /^#([0-9a-f]{6})$/i.exec(raw);
+            if (hex) {
+                const n = parseInt(hex[1], 16);
+                return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
+            }
+            const parts = raw.split(/[\s,/]+/).map(Number);
+            return parts.length >= 3 && parts.slice(0, 3).every(Number.isFinite)
+                ? [parts[0], parts[1], parts[2]]
+                : fallback;
+        };
+
+        const accent = readRgb("--accent-rgb", [50, 130, 184]);
+        const ice = readRgb("--text-primary", [187, 225, 250]);
+        const muted = readRgb("--text-tertiary", [131, 155, 170]);
+
+        /* The RESOLVED stack, never the `var()`. Canvas 2D parses `font` as a
+           CSS shorthand with no element context, so a `var()` in it is never
+           substituted — the assignment is rejected and the context silently
+           keeps its previous value. Both label styles in the engine were
+           written that way, so every label on this canvas was being drawn in
+           the default `10px sans-serif`. See the `mono` field on `Palette`. */
+        const mono =
+            root.getPropertyValue("--font-jetbrains-mono").trim() ||
+            "ui-monospace";
+
+        const engine = new SkillOrbitEngine(
+            canvas,
+            ctx,
+            { accent, ice, muted, mono },
+            reduced,
+        );
         engineRef.current = engine;
 
         /* Size it NOW, synchronously, before observing.

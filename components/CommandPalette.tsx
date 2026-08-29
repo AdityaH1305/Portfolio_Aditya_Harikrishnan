@@ -238,87 +238,95 @@ export default function CommandPalette({
                 onClick={(e) => e.stopPropagation()}
                 onKeyDown={handleKeyDown}
             >
-                        {/* Search input */}
-                        <div className="flex items-center gap-3 px-4 py-3-default">
-                            <svg
-                                className="w-4 h-4 text-accent shrink-0"
-                                fill="none"
-                                stroke="currentColor"
-                                strokeWidth="2"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle cx="11" cy="11" r="8" />
-                                <path d="m21 21-4.35-4.35" />
-                            </svg>
-                            <input
-                                ref={inputRef}
-                                data-cursor="text"
-                                type="text"
-                                value={query}
-                                onChange={(e) => {
-                                    setQuery(e.target.value);
-                                    setSelectedIndex(0);
-                                }}
-                                placeholder="Type a command…"
-                                className="flex-1 bg-transparent text-sm text-primary placeholder:text-tertiary outline-none"
-                                autoComplete="off"
-                                spellCheck={false}
-                            />
-                            <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-mono text-primary rounded bg-surface-3">
-                                ESC
-                            </kbd>
-                        </div>
+                {/* Search input.
 
-                        {/* Results */}
-                        {/* data-lenis-prevent: without it Lenis swallows wheel
-                            events here and the results list can't scroll. */}
-                        <div
-                            className="max-h-[320px] overflow-y-auto py-2"
-                            data-lenis-prevent
-                        >
-                            {filtered.length === 0 && (
-                                <p className="px-4 py-6 text-sm text-tertiary text-center">
-                                    No results found.
-                                </p>
-                            )}
+                    `py-3-default` was here — not a class, so it produced
+                    nothing, and the row lost both its vertical padding and the
+                    rule under it. With no `tailwind.config.js` a class name is
+                    only real if it is generated or declared, and nothing warns:
+                    `tsc`, ESLint and the build all pass and the element simply
+                    renders unstyled. CLAUDE.md records the same failure under
+                    "A class name that doesn't exist fails silently". */}
+                <div className="flex items-center gap-3 px-4 py-3 border-b border-edge-default">
+                    <svg
+                        className="w-4 h-4 text-accent shrink-0"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        viewBox="0 0 24 24"
+                    >
+                        <circle cx="11" cy="11" r="8" />
+                        <path d="m21 21-4.35-4.35" />
+                    </svg>
+                    <input
+                        ref={inputRef}
+                        data-cursor="text"
+                        type="text"
+                        value={query}
+                        onChange={(e) => {
+                            setQuery(e.target.value);
+                            setSelectedIndex(0);
+                        }}
+                        placeholder="Type a command…"
+                        className="flex-1 bg-transparent text-sm text-primary placeholder:text-tertiary outline-none"
+                        autoComplete="off"
+                        spellCheck={false}
+                    />
+                    <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-xs font-mono text-primary rounded bg-surface-3">
+                        ESC
+                    </kbd>
+                </div>
 
-                            {grouped.map((group) => (
-                                <div key={group.section}>
-                                    <p className="px-4 pt-2 pb-1 text-xs font-mono uppercase tracking-widest text-accent">
-                                        {group.section}
-                                    </p>
-                                    {group.items.map((cmd) => (
-                                        <button
-                                            key={cmd.id}
-                                            onClick={() => runCommand(cmd)}
-                                            onMouseEnter={() => setSelectedIndex(cmd.globalIndex)}
-                                            className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-100 ${
-                                                cmd.globalIndex === selectedIndex
-                                                    ? "bg-accent/10 text-accent font-medium border-l-2 border-accent"
-                                                    : "text-secondary hover:bg-surface-3 border-l-2 border-transparent"
-                                            }`}
-                                        >
-                                            <span className="w-5 text-center text-xs text-tertiary">
-                                                {cmd.icon}
-                                            </span>
-                                            <span className="flex-1">{cmd.label}</span>
-                                            {cmd.globalIndex === selectedIndex && (
-                                                <span className="text-xs text-accent font-mono">
-                                                    ↵
-                                                </span>
-                                            )}
-                                        </button>
-                                    ))}
-                                </div>
+                {/* Results */}
+                {/* data-lenis-prevent: without it Lenis swallows wheel
+                    events here and the results list can't scroll. */}
+                <div
+                    className="max-h-[320px] overflow-y-auto py-2"
+                    data-lenis-prevent
+                >
+                    {filtered.length === 0 && (
+                        <p className="px-4 py-6 text-sm text-tertiary text-center">
+                            No results found.
+                        </p>
+                    )}
+
+                    {grouped.map((group) => (
+                        <div key={group.section}>
+                            <p className="px-4 pt-2 pb-1 text-xs font-mono uppercase tracking-widest text-accent">
+                                {group.section}
+                            </p>
+                            {group.items.map((cmd) => (
+                                <button
+                                    key={cmd.id}
+                                    onClick={() => runCommand(cmd)}
+                                    onMouseEnter={() => setSelectedIndex(cmd.globalIndex)}
+                                    className={`w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-100 ${
+                                        cmd.globalIndex === selectedIndex
+                                            ? "bg-accent/10 text-accent font-medium border-l-2 border-accent"
+                                            : "text-secondary hover:bg-surface-3 border-l-2 border-transparent"
+                                    }`}
+                                >
+                                    <span className="w-5 text-center text-xs text-tertiary">
+                                        {cmd.icon}
+                                    </span>
+                                    <span className="flex-1">{cmd.label}</span>
+                                    {cmd.globalIndex === selectedIndex && (
+                                        <span className="text-xs text-accent font-mono">
+                                            ↵
+                                        </span>
+                                    )}
+                                </button>
                             ))}
                         </div>
+                    ))}
+                </div>
 
-                        {/* Footer hint */}
-                        <div className="flex items-center justify-between px-4 py-2 text-xs font-mono text-tertiary bg-surface-1/60">
-                            <span>↑↓ navigate</span>
-                            <span>↵ select</span>
-                            <span>esc close</span>
-                        </div>
+                {/* Footer hint */}
+                <div className="flex items-center justify-between px-4 py-2 text-xs font-mono text-tertiary bg-surface-1/60">
+                    <span>↑↓ navigate</span>
+                    <span>↵ select</span>
+                    <span>esc close</span>
+                </div>
             </div>
         </div>
     );

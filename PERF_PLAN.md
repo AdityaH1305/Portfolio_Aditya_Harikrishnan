@@ -434,3 +434,157 @@ Visual gates, since "change nothing visible" is the whole constraint:
 - Check `prefers-reduced-motion: reduce` and `scripting: none` after each phase. Several of
   these fixes touch rules inside the desktop `@media` block, and `CLAUDE.md` records that the
   stacked, always-visible layout is the default the server renders.
+
+---
+
+# 6. Second pass — what landed, and what the first pass got wrong
+
+Phase 1–3 of the plan above shipped in `32811f1` and its follow-ups. This is the
+round after it. Three findings first, because they change how the sections above
+should be read.
+
+## 6.1 Three corrections to the plan above
+
+**§2.1's cursor early-out — "the big one" — was never implemented.** The trig table
+(`Cursor.tsx:132`), the `arc()` fast path and the label-width cache all landed; the
+early-out itself did not. The frame loop still cleared and fully redrew a 200x200
+canvas, stroked the ring twice and wrote three transforms every frame, forever.
+**Now done**: the canvas is a pure function of a handful of eased scalars, so once
+they settle the frame is skipped entirely and only the transforms move — and those
+are written only when they actually change.
+
+The subtle part, which is worth keeping: the impact ring and the charge arc do not
+converge, they stop being drawn at a *deadline*. The frame that crosses the
+deadline is one where the canvas changes while every eased value is already
+settled. Gate it out and the ring stays painted for the rest of the session.
+`prevTimedLive` buys back exactly that one frame.
+
+**§1.4's `ZoneTitle` work was half done.** The `getComputedStyle` and the
+`getBoundingClientRect` were hoisted; the ~1,100 objects and 81 sorts per frame
+were not. Now done via `orderedFaces` (below).
+
+**§1.2's ring fix introduced a cost the plan never priced.** `LiveRings.tsx` gained
+a `MutationObserver` on `.zone-scroll` with `attributeFilter: ["style"]`, and the
+choreography writes inline style on every scrub frame — so it fired every frame and
+rechecked every intersecting target. The plan's framing of this as "8 forced style
+reads per frame" was **overstated**: the first `getComputedStyle` after GSAP writes
+forces one recalculation and the other seven ride the clean tree. Still fixed —
+the mutation records already say which elements moved, so only ringed targets that
+are, or sit inside, a mutated element are rechecked. A rest window now costs
+nothing.
+
+## 6.2 The actual thesis of this round
+
+**The first pass fixed each problem in the one file where it was measured, and left
+the same pattern live in every sibling file it did not open.** Most of this round is
+that carry-over, which is why it was low-risk: the fix already existed in the repo.
+
+- **`orderedFaces` (`cubes.ts`).** Four draw loops each projected 8 vertices, built
+  6 quad arrays and 6 face records and sorted them, **per cube per frame** —
+  `ZoneTitle` (80 cubes, ~1,600 objects/frame), `GlyphA` (27), `SignalGate` (6 idle,
+  27 through the burst), `NotFoundCubes`. One shared function now does the same
+  arithmetic into buffers it reuses. `cubes.test.ts` asserts it is **vertex-for-vertex
+  identical** to `renderCube`, so this is an allocation removal, not a
+  re-implementation.
+
+  `renderCube` stays, and its role changed: nothing draws with it any more, it is the
+  reference implementation the fast path is checked against. That is a real job — a
+  buffer-reusing projection with no independent statement of what it should produce
+  is one nobody can check.
+
+  The one thing the shared buffer cannot serve is a caller that wants every face of
+  every cube at once. The entrance did exactly that in three places; each now sorts
+  the **poses** and projects one cube at a time, which is the same order and the same
+  pixels.
+
+- **`GlyphA`'s per-frame `getComputedStyle(canvas).color`** — the identical read
+  `ZoneTitle` had already been fixed for. Hoisted to `readAccent()`, refreshed where
+  geometry already is.
+
+## 6.3 `SkillOrbit` was never in scope, and had three live defects
+
+Not mentioned anywhere in the plan above. It is also the section where a reader is
+actively dragging things, so frame time is felt directly.
+
+1. **`createRadialGradient` inside the draw loop** — once per anchor and once per
+   focused body, so up to **33 gradient objects and 66 `addColorStop` calls a frame**.
+   This is precisely what `engine.ts:242` in the atlas records having fixed. Now one
+   unit-radius gradient, positioned with `translate`/`scale` and modulated with
+   `globalAlpha`. Not an approximation: a stop of `accent@1` at `globalAlpha 0.28`
+   *is* `accent@0.28`.
+
+2. **THE LABELS WERE IN THE WRONG FONT, AND HAD BEEN ALL ALONG.**
+
+   ```js
+   c.font = `600 11px var(--font-jetbrains-mono), ui-monospace, monospace`;
+   ```
+
+   Canvas 2D parses `font` as a CSS shorthand with no element context, so `var()` is
+   never substituted: **the assignment fails to parse and is discarded silently**,
+   leaving the context on `10px sans-serif`. Both label styles were written this way,
+   so every star label and every skill label on that canvas was rendering in the
+   browser's default sans at the wrong size — in the one section whose whole visual
+   language is instrument-like.
+
+   Verified in Chrome rather than argued: after assigning that string, `ctx.font`
+   still reads back `10px sans-serif`. The palette now carries the **resolved**
+   stack (`"JetBrains Mono", "JetBrains Mono Fallback"`), which also picks up
+   next/font's metric-matched fallback.
+
+3. **Four off-palette colour literals** — `#e6ded2` in the starfield,
+   `rgba(242,239,234,…)` on two label styles, `rgba(138,131,122,…)` on an unlit body.
+   All warm greys left from the amber-on-near-black scheme this palette replaced.
+   `CLAUDE.md` records the same class of bug being cleared out of the atlas
+   ("thirteen hardcoded `rgba(34,211,238,…)` literals"); this file was simply not part
+   of that pass. Every colour now reads from CSS.
+
+## 6.4 Device tiering — `lib/deviceTier.ts`
+
+There was **no device gating of any kind** anywhere in the tree. Every canvas ran at
+full quality on a phone, and the only thing that ever stood down was the atlas's own
+governor — which is reactive, so it costs a second of dropped frames to learn what a
+cheap sniff of `navigator` says at mount.
+
+The decision is pure (`tierFor`) and unit-tested, the same split `gate.ts`,
+`blend.ts` and `flight.ts` use. **The trap the tests exist for**: Safari reports
+neither `hardwareConcurrency` nor `deviceMemory`, and read naively that is a machine
+with no cores — every Safari visitor demoted to the lowest tier on the site's best
+hardware. Only a value that is *both present and low* counts as evidence.
+
+`?tier=low` opens the low path on a desktop, because otherwise the mobile branch is
+reachable only on a phone, which in practice means only once it is already broken.
+
+**`dprCap` is an extra ceiling, never a replacement.** Every consumer reads
+`Math.min(devicePixelRatio, <its own cap>, dprCap(tier))`, and `high` is deliberately
+2 — the largest cap already in use — so on capable hardware this term can never bind
+and nothing got softer than it was. Verified live: `data-tier="high"` leaves the ring
+sweep running and the mobile island blurred, exactly as before.
+
+CSS consumers get the verdict as `data-tier` on `<html>` (`DeviceTierFlag.tsx`), which
+gates two things on `low`: the mobile nav island's permanent `backdrop-filter` (fixed
+over a scrolling page, so re-sampled every frame it moves), and the ring sweep
+(fourteen uncompositable full-box repaints a frame).
+
+**One CSS trap worth keeping.** `backdrop-filter: none` in the override rule does
+**not** work and fails silently: the element carries Tailwind's `backdrop-blur-md`,
+which composes the property out of ten variables and emits both prefixed and
+unprefixed forms, and a plain `backdrop-filter: none` written in `globals.css` came
+out of the build as `-webkit-backdrop-filter: none` **alone** — the unprefixed
+declaration dropped — so Chromium kept blurring. Only visible by reading the built
+stylesheet; the source looked right. The fix is `--tw-backdrop-blur: ;`, which is how
+Tailwind's own `backdrop-blur-none` does it.
+
+## 6.5 Still open
+
+Unchanged from the plan above, and worth not rediscovering:
+
+- **§2.4's font `preconnect` is moot.** `next/font/google` self-hosts, so there is no
+  third-party host to preconnect to. Not a task.
+- §2.3 `GaitPipeline`, §2.2 theme trim, and `fetchPriority` on the first zone poster.
+- `SideNav.tsx:73` still creates seven `IntersectionObserver`s where `LiveRings.tsx:97`
+  shows the one-observer pattern.
+- **No frame-rate measurement has been taken for any of this.** Every claim above is
+  either a unit test, a live DOM/CSS check, or a structural argument from the code.
+  The browser available while this was written does not composite, so rAF is paused
+  and no frame timing is possible in it — the trap documented in `CLAUDE.md` under
+  *Verifying in a browser*. §5's protocol still needs running in real Chrome.

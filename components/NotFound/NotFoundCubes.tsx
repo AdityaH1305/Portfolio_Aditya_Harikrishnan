@@ -33,12 +33,10 @@
 
 import { useEffect, useRef } from "react";
 import { gsap, registerGsap } from "@/lib/motion";
+import { deviceTier, dprCap } from "@/lib/deviceTier";
 import {
-    CUBE_FACES,
-    CUBE_VERTS,
-    faceDepth,
     nearness,
-    project,
+    orderedFaces,
     type Pose,
 } from "../SignalGate/cubes";
 import {
@@ -94,7 +92,11 @@ export default function NotFoundCubes() {
             "(prefers-reduced-motion: reduce)",
         ).matches;
 
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(
+            window.devicePixelRatio || 1,
+            2,
+            dprCap(deviceTier()),
+        );
         let w = 0;
         let h = 0;
         let bounce: Bounce | null = null;
@@ -165,16 +167,21 @@ export default function NotFoundCubes() {
             for (const d of drawn) {
                 if (d.alpha <= 0.004) continue;
 
-                const pts = CUBE_VERTS.map((v) => project(v, d.pose, w, h));
-                const faces = CUBE_FACES.map((idx) => {
-                    const quad = idx.map((k) => pts[k]);
-                    return { pts: quad, depth: faceDepth(quad) };
-                }).sort((a, b) => b.depth - a.depth);
+        /* `orderedFaces` is the same projection and the same far-to-near
+           sort this did inline, into buffers it reuses across calls. Per cube
+           that was 8 points, 6 quad arrays, 6 face records and a six-element
+           sort, all discarded before the next frame. `cubes.test.ts` asserts
+           the two paths agree exactly, so this is an allocation removal and
+           not a re-implementation.
+
+           The result is SCRATCH SPACE and the next call overwrites it, which
+           is why it is drawn from immediately and never stored. */
+                const faces = orderedFaces(d.pose, w, h);
 
                 const near = nearness(d.pose.z);
                 const a = d.alpha * scale;
 
-                const trace = (q: { x: number; y: number }[]) => {
+                const trace = (q: readonly { x: number; y: number }[]) => {
                     ctx.beginPath();
                     ctx.moveTo(q[0].x, q[0].y);
                     for (let k = 1; k < q.length; k++) {
@@ -184,7 +191,7 @@ export default function NotFoundCubes() {
                 };
 
                 // ONE fill — the nearest face, which sorts last.
-                trace(faces[faces.length - 1].pts);
+                trace(faces[faces.length - 1]);
                 ctx.fillStyle = `rgba(${edge},${(FILL_BASE + near * FILL_NEAR) * a})`;
                 ctx.fill();
 
@@ -195,7 +202,7 @@ export default function NotFoundCubes() {
                         ? faces.length - 1
                         : 0;
                 for (let f = from; f < faces.length; f++) {
-                    trace(faces[f].pts);
+                    trace(faces[f]);
                     ctx.stroke();
                 }
             }

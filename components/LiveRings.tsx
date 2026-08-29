@@ -116,18 +116,48 @@ export default function LiveRings() {
            every single frame, and a document-wide observer would fire for
            every one of those and cost more than the rings it is meant to
            save. The zone is the only place geometry can't already tell two
-           ringed elements apart, so it is the only place that needs this. */
+           ringed elements apart, so it is the only place that needs this.
+
+           ── Only the targets a mutation could actually have changed ──
+           The first version rechecked EVERY intersecting target on every
+           frame the observer fired, and inside the zone the choreography
+           writes inline style on every scrub frame, so that was all eight
+           stacked slide frames, continuously, for the whole 11,700px of zone
+           travel. The first `getComputedStyle` after GSAP has written style
+           forces a recalculation; the other seven then ride the clean tree,
+           so the cost was one flush plus seven reads rather than eight
+           flushes — but it was still being paid for elements that could not
+           have changed.
+
+           The mutation records already say which elements moved. A ringed
+           target's paintedness can only have changed if it IS one of those,
+           or sits inside one (the bezels inherit `visibility` from the
+           `.zone-act-slide` and `.zone-act` that `autoAlpha` writes). So a
+           rest window where only the head drifts touches no bezel and costs
+           nothing at all, and a slide hop costs two or three rather than
+           eight. `contains` walks the tree without reading layout. */
         const zoneRoot = document.querySelector(".zone-scroll");
         let mo: MutationObserver | null = null;
         if (zoneRoot) {
             let pending = false;
+            const touched = new Set<Node>();
+
             const recheck = () => {
                 pending = false;
                 for (const t of targets) {
-                    if (intersecting.has(t)) apply(t);
+                    if (!intersecting.has(t)) continue;
+                    for (const m of touched) {
+                        if (m === t || m.contains(t)) {
+                            apply(t);
+                            break;
+                        }
+                    }
                 }
+                touched.clear();
             };
-            mo = new MutationObserver(() => {
+
+            mo = new MutationObserver((records) => {
+                for (const r of records) touched.add(r.target);
                 if (pending) return;
                 pending = true;
                 requestAnimationFrame(recheck);
