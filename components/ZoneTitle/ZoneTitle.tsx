@@ -30,14 +30,12 @@
 import { useEffect, useRef } from "react";
 import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
 import {
-    CUBE_FACES,
-    CUBE_VERTS,
-    faceDepth,
     nearness,
-    project,
+    orderedFaces,
     type Pose,
 } from "../SignalGate/cubes";
 import { getBreakpointMode } from "../LivingArchitecture/config";
+import { deviceTier, dprCap } from "@/lib/deviceTier";
 import {
     WORD_CELLS,
     WORD_Z,
@@ -93,7 +91,11 @@ export default function ZoneTitle() {
 
         registerGsap();
 
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(
+            window.devicePixelRatio || 1,
+            2,
+            dprCap(deviceTier()),
+        );
         let w = 0;
         let h = 0;
         let sources: Vec2[] = [];
@@ -203,6 +205,14 @@ export default function ZoneTitle() {
         let blank = false;
         let last = 0;
 
+        /* Refilled, never rebuilt. 80 cells means 80 pushes a frame either
+           way, but reusing the array keeps its backing store instead of
+           handing the collector a fresh 80-slot allocation sixty times a
+           second. The poses inside it are still allocated by `slotPose` and
+           friends — those live in the pure, unit-tested `word.ts` and are not
+           worth reshaping for the ~320 small objects they cost. */
+        const drawn: { pose: Pose; alpha: number }[] = [];
+
         const draw = () => {
             if (w < 1) size();
             if (w < 1 || !slotEl) return;
@@ -281,7 +291,7 @@ export default function ZoneTitle() {
                     : 0;
             const inU = Math.min(1, progress / EMERGE_END);
 
-            const drawn: { pose: Pose; alpha: number }[] = [];
+            drawn.length = 0;
             for (let i = 0; i < WORD_CELLS.length; i++) {
                 const slot = slotPose(i, anchor, w, h);
                 const seed = seedPose(
@@ -303,11 +313,16 @@ export default function ZoneTitle() {
 
             for (const d of drawn) {
                 if (d.alpha <= 0.004) continue;
-                const pts = CUBE_VERTS.map((v) => project(v, d.pose, w, h));
-                const faces = CUBE_FACES.map((idx) => {
-                    const quad = idx.map((k) => pts[k]);
-                    return { pts: quad, depth: faceDepth(quad) };
-                }).sort((a, b) => b.depth - a.depth);
+                /* `orderedFaces` is the same projection and the same
+                   far-to-near sort `renderCube` does, into buffers it reuses
+                   — 80 cubes a frame was ~1,600 objects and 80 six-element
+                   sorts, all of it discarded before the next frame.
+                   `cubes.test.ts` asserts the two agree exactly, so this is a
+                   pure allocation removal rather than a re-implementation.
+
+                   The result is scratch space: draw from it before the next
+                   call, which the loop below does. */
+                const faces = orderedFaces(d.pose, w, h);
 
                 // The nearest face last; below the threshold it is the only one.
                 const from =
@@ -315,7 +330,7 @@ export default function ZoneTitle() {
                 const near = nearness(d.pose.z);
 
                 for (let f = from; f < faces.length; f++) {
-                    const q = faces[f].pts;
+                    const q = faces[f];
                     ctx.beginPath();
                     ctx.moveTo(q[0].x, q[0].y);
                     for (let k = 1; k < q.length; k++) ctx.lineTo(q[k].x, q[k].y);

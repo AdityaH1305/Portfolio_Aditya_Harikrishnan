@@ -1,3 +1,4 @@
+import { deviceTier, dprCap } from "@/lib/deviceTier";
 import { SKILLS } from "./data";
 import {
     solve,
@@ -37,6 +38,28 @@ import {
 export interface Palette {
     /** `r g b` channels, read from --accent-rgb so canvas and DOM can't drift. */
     accent: [number, number, number];
+    /** `--text-primary`. The ice: labels, and the nearest stars. */
+    ice: [number, number, number];
+    /** `--text-tertiary`. An unlit body is quiet, not accent-coloured. */
+    muted: [number, number, number];
+    /**
+     * The RESOLVED `--font-jetbrains-mono` stack, e.g.
+     * `"JetBrains Mono", "JetBrains Mono Fallback"`.
+     *
+     * IT CANNOT BE THE `var()` ITSELF. Canvas 2D parses `font` as a CSS
+     * shorthand with no element context, so `var()` is never substituted:
+     * the assignment fails to parse and is DISCARDED SILENTLY, leaving the
+     * context on whatever it held before — `10px sans-serif` by default.
+     * That is what this canvas was drawing every label in. Verified in
+     * Chrome: after assigning
+     * `600 11px var(--font-jetbrains-mono), monospace`, `ctx.font` still
+     * reads back `10px sans-serif`.
+     *
+     * The literal `"JetBrains Mono"` does parse, but the resolved variable
+     * also carries next/font's metric-matched fallback, so it is the better
+     * of the two and keeps the single-source rule the accent already follows.
+     */
+    mono: string;
 }
 
 /** How fast a body closes on its target. Frame-rate compensated below. */
@@ -110,6 +133,20 @@ export class SkillOrbitEngine {
     private reduced: boolean;
     private seeded = false;
 
+    private accentCache = new Map<number, string>();
+    private iceCache = new Map<number, string>();
+    private mutedCache = new Map<number, string>();
+    private unitGlow: CanvasGradient | null = null;
+
+    /* Built once from `palette.mono`. Assigning `font` re-parses a CSS
+       shorthand, and the loops below were doing it per anchor and per focused
+       body; the string never changes, so neither does the parse need to. */
+    private readonly fontAnchor: string;
+    private readonly fontBody: string;
+
+    /** Reused across frames — one Set allocation instead of sixty a second. */
+    private seenOrbits = new Set<string>();
+
     constructor(
         canvas: HTMLCanvasElement,
         ctx: CanvasRenderingContext2D,
@@ -120,11 +157,73 @@ export class SkillOrbitEngine {
         this.ctx = ctx;
         this.palette = palette;
         this.reduced = reducedMotion;
+        this.fontAnchor = `600 11px ${palette.mono}, ui-monospace, monospace`;
+        this.fontBody = `500 11px ${palette.mono}, ui-monospace, monospace`;
+    }
+
+    /* One string per (colour, quantised alpha) instead of one per call.
+       The atlas already does this — `accent()` in LivingArchitecture/config.ts
+       — and the reasoning carries over exactly: three decimal places is far
+       below what an 8-bit channel can show, and this draw loop was building
+       around forty short-lived strings a frame. */
+    private static tint(
+        rgb: readonly [number, number, number],
+        cache: Map<number, string>,
+        a: number,
+    ): string {
+        const o = Math.round(Math.max(0, Math.min(1, a)) * 1000) / 1000;
+        const hit = cache.get(o);
+        if (hit !== undefined) return hit;
+        const str = `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${o})`;
+        cache.set(o, str);
+        return str;
     }
 
     private rgba(a: number): string {
-        const [r, g, b] = this.palette.accent;
-        return `rgba(${r},${g},${b},${a})`;
+        return SkillOrbitEngine.tint(this.palette.accent, this.accentCache, a);
+    }
+
+    private ice(a: number): string {
+        return SkillOrbitEngine.tint(this.palette.ice, this.iceCache, a);
+    }
+
+    private muted(a: number): string {
+        return SkillOrbitEngine.tint(this.palette.muted, this.mutedCache, a);
+    }
+
+    /* ── One glow, drawn many times ──
+       `createRadialGradient` was called once per star anchor and once per
+       focused body, EVERY FRAME — up to 33 gradient objects and 66
+       `addColorStop` calls a frame. The atlas hit this same wall and its fix
+       is the one used here (see `ensureCoreGradients`): build the gradient
+       once at unit radius with a full-strength inner stop, then translate,
+       scale and modulate it with `globalAlpha`.
+
+       That is not an approximation. A stop of `accent@1` composited at
+       `globalAlpha = 0.28` is `accent@0.28`, and the outer stop is fully
+       transparent either way, so the two paths produce identical pixels. */
+    private ensureGlow(): CanvasGradient {
+        if (!this.unitGlow) {
+            const g = this.ctx.createRadialGradient(0, 0, 0, 0, 0, 1);
+            g.addColorStop(0, this.rgba(1));
+            g.addColorStop(1, this.rgba(0));
+            this.unitGlow = g;
+        }
+        return this.unitGlow;
+    }
+
+    private paintGlow(x: number, y: number, r: number, alpha: number): void {
+        if (alpha <= 0.002 || r <= 0) return;
+        const c = this.ctx;
+        c.save();
+        c.globalAlpha = alpha;
+        c.translate(x, y);
+        c.scale(r, r);
+        c.fillStyle = this.ensureGlow();
+        c.beginPath();
+        c.arc(0, 0, 1, 0, Math.PI * 2);
+        c.fill();
+        c.restore();
     }
 
     resize(w: number, h: number): void {
@@ -134,10 +233,17 @@ export class SkillOrbitEngine {
         if (Math.abs(w - this.w) < 0.5 && Math.abs(h - this.h) < 0.5) return;
         this.w = w;
         this.h = h;
-        this.dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+        this.dpr = Math.min(
+            window.devicePixelRatio || 1,
+            DPR_CAP,
+            dprCap(deviceTier()),
+        );
         this.canvas.width = Math.round(w * this.dpr);
         this.canvas.height = Math.round(h * this.dpr);
         this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
+        // Gradients are bound to the context state they were made in — the
+        // same reason the atlas nulls `gradMode` when it rescales.
+        this.unitGlow = null;
 
         this.resolve();
         this.buildStars();
@@ -371,7 +477,11 @@ export class SkillOrbitEngine {
             const depth = h(i, 3);
             const r = 0.4 + depth * 1.0;
             g.globalAlpha = 0.12 + depth * 0.4;
-            g.fillStyle = depth > 0.85 ? this.rgba(0.9) : "#e6ded2";
+            /* `#e6ded2` — a warm off-white — survived here from the
+               amber-on-near-black scheme the site replaced. Every other
+               surface is on the blue ramp, so one warm starfield read as a
+               rendering fault rather than as a choice. */
+            g.fillStyle = depth > 0.85 ? this.rgba(0.9) : this.ice(1);
             g.beginPath();
             g.arc(x, y, r, 0, Math.PI * 2);
             g.fill();
@@ -404,7 +514,8 @@ export class SkillOrbitEngine {
 
         // Orbit rings — faint, so the structure reads even where no body is.
         c.lineWidth = 1;
-        const seen = new Set<string>();
+        const seen = this.seenOrbits;
+        seen.clear();
         for (const o of this.orbits) {
             const a = this.anchorById.get(o.anchorId);
             if (!a) continue;
@@ -424,30 +535,23 @@ export class SkillOrbitEngine {
 
     private drawAnchors(): void {
         const c = this.ctx;
+        c.font = this.fontAnchor;
+        c.textAlign = "center";
+        c.textBaseline = "top";
         for (const a of this.anchors) {
             /* Sized from the system, not a constant. A fixed 46px glow was
                drawn while radii varied from 67 to 112: it swamped the small
                systems, and on a narrow panel the biggest system's inner ring
                fell inside its own star's halo — which is what read as mud
                around Machine Learning. */
-            const gr = glowRadius(a.radius);
-            const glow = c.createRadialGradient(a.x, a.y, 0, a.x, a.y, gr);
-            glow.addColorStop(0, this.rgba(0.28));
-            glow.addColorStop(1, this.rgba(0));
-            c.fillStyle = glow;
-            c.beginPath();
-            c.arc(a.x, a.y, gr, 0, Math.PI * 2);
-            c.fill();
+            this.paintGlow(a.x, a.y, glowRadius(a.radius), 0.28);
 
             c.fillStyle = this.rgba(0.95);
             c.beginPath();
             c.arc(a.x, a.y, a.kind === "project" ? 5.5 : 4, 0, Math.PI * 2);
             c.fill();
 
-            c.font = `600 11px var(--font-jetbrains-mono), ui-monospace, monospace`;
-            c.textAlign = "center";
-            c.textBaseline = "top";
-            c.fillStyle = "rgba(242,239,234,0.82)";
+            c.fillStyle = this.ice(0.82);
             c.fillText(a.label.toUpperCase(), a.x, a.y + 14);
         }
     }
@@ -461,27 +565,19 @@ export class SkillOrbitEngine {
             const b = this.bodies[i];
             const r = 2.6 + b.focus * 2.2;
 
-            if (b.focus > 0.02) {
-                const g = c.createRadialGradient(b.x, b.y, 0, b.x, b.y, 18);
-                g.addColorStop(0, this.rgba(0.3 * b.focus * b.lit));
-                g.addColorStop(1, this.rgba(0));
-                c.fillStyle = g;
-                c.beginPath();
-                c.arc(b.x, b.y, 18, 0, Math.PI * 2);
-                c.fill();
-            }
+            this.paintGlow(b.x, b.y, 18, 0.3 * b.focus * b.lit);
 
             c.fillStyle =
                 b.lit > 0.5
                     ? this.rgba(0.55 + b.focus * 0.45)
-                    : `rgba(138,131,122,${0.35 + b.focus * 0.3})`;
+                    : this.muted(0.35 + b.focus * 0.3);
             c.beginPath();
             c.arc(b.x, b.y, r, 0, Math.PI * 2);
             c.fill();
 
             if (b.focus > 0.04) {
-                c.font = `500 11px var(--font-jetbrains-mono), ui-monospace, monospace`;
-                c.fillStyle = `rgba(242,239,234,${b.focus * b.lit})`;
+                c.font = this.fontBody;
+                c.fillStyle = this.ice(b.focus * b.lit);
                 c.fillText(SKILLS[i].name, b.x, b.y - r - 6);
             }
         }

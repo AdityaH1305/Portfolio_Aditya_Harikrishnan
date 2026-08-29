@@ -365,6 +365,18 @@ export function faceDepth(pts: readonly Pt2[]): number {
  * Assembled here rather than in the component so the draw loop is a `fill()`
  * and a `stroke()` per face and nothing else — and so the sort order, which
  * is the part that goes wrong, is testable.
+ *
+ * NO DRAW LOOP CALLS THIS ANY MORE; `orderedFaces` below does, allocating
+ * nothing. This is now the REFERENCE IMPLEMENTATION — the obvious, boring,
+ * allocate-everything version that `cubes.test.ts` checks the fast path
+ * against, vertex by vertex. That is a real job and it is why this stays:
+ * a buffer-reusing projection with no independent statement of what it should
+ * produce is a projection nobody can check. Keep the two in step; if this one
+ * changes, the test will say so.
+ *
+ * It is also still the right call anywhere the caller needs every face of
+ * every cube materialised at once — sorting a whole field by depth before
+ * painting any of it, which is what the entrance used to do here.
  */
 export function renderCube(cube: Cube, t: number, w: number, h: number): Rendered {
     const pose = poseAt(cube, t, w, h);
@@ -380,4 +392,112 @@ export function renderCube(cube: Cube, t: number, w: number, h: number): Rendere
         .sort((a, b) => b.depth - a.depth);
 
     return { faces, near: nearness(pose.z) };
+}
+
+/* ══════════════════════════════════════════════════════
+   ORDERED FACES, WITHOUT THE GARBAGE
+
+   `renderCube` above allocates 8 points, 6 quad arrays and 6 face records per
+   call, then sorts them. That is correct and it is what the tests pin, but it
+   is also what four separate draw loops were each doing per cube per frame:
+
+     ZoneTitle   80 cubes    ~1,600 objects/frame
+     GlyphA      27 cubes      ~540 objects/frame
+     SignalGate  27 in burst   ~540 objects/frame
+     NotFound    (its own)
+
+   None of them keeps a face past the `fill()`/`stroke()` that draws it, so
+   none of them needs a fresh one. `orderedFaces` does the same arithmetic
+   into buffers that live for the life of the module and hands back the same
+   far-to-near ordering.
+
+   The one thing it cannot serve is a caller that wants every face of every
+   cube at once — sorting a whole field by depth and only then painting it.
+   The entrance did exactly that in three places; each now sorts the POSES and
+   projects one cube at a time, which is the same order and the same pixels.
+
+   THE RETURN VALUE IS SCRATCH SPACE AND THE NEXT CALL OVERWRITES IT. Draw
+   from it before calling again; never store it, spread it, or hand it to
+   anything that outlives the loop body. That constraint is the whole reason
+   the allocating `renderCube` stays — it is the one to reach for anywhere
+   this rule would be hard to honour.
+
+   Insertion sort rather than `Array.prototype.sort`: six elements, already
+   nearly ordered most frames, and no comparator closure allocated per call.
+   ══════════════════════════════════════════════════════ */
+
+/** `Pt2` is readonly by design — these buffers are the one place that writes
+    them, so the mutable view is local and never escapes: `orderedFaces`
+    returns them typed as `readonly Pt2[]`. */
+type MutPt2 = { x: number; y: number; z: number };
+
+const FACE_PTS: MutPt2[] = CUBE_VERTS.map(() => ({ x: 0, y: 0, z: 0 }));
+const FACE_QUADS: MutPt2[][] = CUBE_FACES.map((idx) => new Array(idx.length));
+const FACE_DEPTH = new Float64Array(CUBE_FACES.length);
+const FACE_ORDER = new Uint8Array(CUBE_FACES.length);
+const FACE_OUT: MutPt2[][] = new Array(CUBE_FACES.length);
+
+/** `project`, writing into an existing point instead of returning a new one. */
+function projectInto(v: Vec3, pose: Pose, w: number, h: number, out: MutPt2): void {
+    const { rx, ry, size } = pose;
+
+    const cy = Math.cos(ry);
+    const sy = Math.sin(ry);
+    const x1 = v.x * cy + v.z * sy;
+    const z1 = -v.x * sy + v.z * cy;
+
+    const cx = Math.cos(rx);
+    const sx = Math.sin(rx);
+    const y2 = v.y * cx - z1 * sx;
+    const z2 = v.y * sx + z1 * cx;
+
+    const wx = pose.x + x1 * size;
+    const wy = pose.y + y2 * size;
+    const wz = Math.max(NEAR * 0.5, pose.z + z2 * size);
+
+    const scale = (Math.min(w, h) * FOV) / wz;
+
+    out.x = w / 2 + wx * scale;
+    out.y = h / 2 - wy * scale;
+    out.z = wz;
+}
+
+/**
+ * One cube's six faces, deepest first, in reused buffers.
+ *
+ * Identical output to `renderCube(...).faces.map(f => f.pts)` — `cubes.test.ts`
+ * asserts that against the allocating path so the two can never drift.
+ */
+export function orderedFaces(
+    pose: Pose,
+    w: number,
+    h: number,
+): readonly (readonly Pt2[])[] {
+    for (let i = 0; i < CUBE_VERTS.length; i++) {
+        projectInto(CUBE_VERTS[i], pose, w, h, FACE_PTS[i]);
+    }
+
+    for (let f = 0; f < CUBE_FACES.length; f++) {
+        const idx = CUBE_FACES[f];
+        const quad = FACE_QUADS[f];
+        for (let k = 0; k < idx.length; k++) quad[k] = FACE_PTS[idx[k]];
+        FACE_DEPTH[f] = faceDepth(quad);
+        FACE_ORDER[f] = f;
+    }
+
+    for (let i = 1; i < FACE_ORDER.length; i++) {
+        const v = FACE_ORDER[i];
+        const d = FACE_DEPTH[v];
+        let j = i - 1;
+        while (j >= 0 && FACE_DEPTH[FACE_ORDER[j]] < d) {
+            FACE_ORDER[j + 1] = FACE_ORDER[j];
+            j--;
+        }
+        FACE_ORDER[j + 1] = v;
+    }
+
+    for (let f = 0; f < FACE_ORDER.length; f++) {
+        FACE_OUT[f] = FACE_QUADS[FACE_ORDER[f]];
+    }
+    return FACE_OUT;
 }

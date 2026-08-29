@@ -12,6 +12,7 @@ import { getLenis, lockScroll, unlockScroll } from "@/lib/lenis";
 import { claimEntrance, releaseEntrance } from "@/lib/entrance";
 import { publishBurst } from "@/lib/handoff";
 import { ATLAS_QUIET_EVENT, CURSOR_TINT_EVENT } from "@/lib/zone";
+import { deviceTier, dprCap } from "@/lib/deviceTier";
 import {
     GATE_KEY,
     TTL_MS,
@@ -25,15 +26,12 @@ import {
 } from "./gate";
 import { ecgAt, sweepAt, ECG_SAMPLES } from "./ecg";
 import {
-    CUBE_FACES,
-    CUBE_VERTS,
     collisionRadius,
     depthAt,
     envFor,
-    faceDepth,
     nearness,
-    project,
-    renderCube,
+    orderedFaces,
+    poseAt,
     spawnField,
     type Cube,
     type Pose,
@@ -467,7 +465,11 @@ export default function SignalGate() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(
+            window.devicePixelRatio || 1,
+            2,
+            dprCap(deviceTier()),
+        );
         let w = 0;
         let h = 0;
 
@@ -607,7 +609,11 @@ export default function SignalGate() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        const dpr = Math.min(
+            window.devicePixelRatio || 1,
+            2,
+            dprCap(deviceTier()),
+        );
         let w = 0;
         let h = 0;
         const field = fieldRef.current;
@@ -630,7 +636,16 @@ export default function SignalGate() {
                ring of blocks while believing it was protecting against exactly
                that. */
             if (field.length === 0) {
-                field.push(...spawnField(w < 768 ? 4 : 6, Math.random, w, h));
+                /* Six on a roomy desktop, four on a phone, and four on
+                   anything the device tier calls weak regardless of how wide
+                   its window is. Width alone was the ONLY concession the
+                   entrance made to the machine it was running on, and width
+                   is not the thing that struggles: a 1366px netbook got the
+                   full six, and every block is a translucent solid drawn over
+                   an aura and a scrim. */
+                const tier = deviceTier();
+                const blocks = w < 768 || tier === "low" ? 4 : 6;
+                field.push(...spawnField(blocks, Math.random, w, h));
             }
         };
         size();
@@ -668,7 +683,7 @@ export default function SignalGate() {
            so the ceiling one can add is 1-(1-0.3)² ≈ 0.51 — which is what the
            contrast maths is checked against, with headroom for three. */
         const paint = (
-            faces: readonly { pts: readonly { x: number; y: number }[] }[],
+            faces: readonly (readonly { x: number; y: number }[])[],
             near: number,
             edge: string,
             alpha: number,
@@ -676,9 +691,9 @@ export default function SignalGate() {
             if (alpha <= 0.004) return;
             for (const f of faces) {
                 ctx.beginPath();
-                ctx.moveTo(f.pts[0].x, f.pts[0].y);
-                for (let i = 1; i < f.pts.length; i++) {
-                    ctx.lineTo(f.pts[i].x, f.pts[i].y);
+                ctx.moveTo(f[0].x, f[0].y);
+                for (let i = 1; i < f.length; i++) {
+                    ctx.lineTo(f[i].x, f[i].y);
                 }
                 ctx.closePath();
                 ctx.fillStyle = `rgba(${edge},${(0.12 + near * 0.26) * alpha})`;
@@ -688,16 +703,16 @@ export default function SignalGate() {
             }
         };
 
-        /** Project a pose into sorted faces, the way `renderCube` does. */
-        const facesOf = (pose: Pose) => {
-            const pts = CUBE_VERTS.map((v) => project(v, pose, w, h));
-            return CUBE_FACES
-                .map((idx) => {
-                    const quad = idx.map((i) => pts[i]);
-                    return { pts: quad, depth: faceDepth(quad) };
-                })
-                .sort((a, b) => b.depth - a.depth);
-        };
+        /* `orderedFaces` is the same projection and the same far-to-near
+           sort this did inline, into buffers it reuses across calls. Per cube
+           that was 8 points, 6 quad arrays, 6 face records and a six-element
+           sort, all discarded before the next frame. `cubes.test.ts` asserts
+           the two paths agree exactly, so this is an allocation removal and
+           not a re-implementation.
+
+           The result is SCRATCH SPACE and the next call overwrites it, which
+           is why it is drawn from immediately and never stored. */
+        const facesOf = (pose: Pose) => orderedFaces(pose, w, h);
 
         const draw = (seconds: number) => {
             if (w < 1) size();
@@ -762,13 +777,23 @@ export default function SignalGate() {
                     return { cube: c, alpha: d.alpha };
                 });
 
+                /* SORTED AS POSES, PAINTED ONE AT A TIME. This used to call
+                   `renderCube` for every block up front, which materialised
+                   every face of every block before a single one was drawn —
+                   and that is the one thing `orderedFaces`' shared buffer
+                   cannot do. Ordering the poses and projecting each as it is
+                   painted keeps the far-to-near stacking exactly (`nearness`
+                   is a function of `z` alone) with nothing held at once. */
                 const solids = drifting
                     .map(({ cube, alpha }) => ({
-                        ...renderCube(cube, seconds, w, h),
+                        pose: poseAt(cube, seconds, w, h),
                         alpha,
                     }))
-                    .sort((a, z) => a.near - z.near);
-                for (const s of solids) paint(s.faces, s.near, edge, s.alpha);
+                    .sort((a, z) => nearness(a.pose.z) - nearness(z.pose.z));
+                for (const s of solids) {
+                    const near = nearness(s.pose.z);
+                    paint(orderedFaces(s.pose, w, h), near, edge, s.alpha);
+                }
                 return;
             }
 
@@ -837,9 +862,11 @@ export default function SignalGate() {
                         pointer: pointerRef.current,
                     });
                     const solids = field
-                        .map((c) => renderCube(c, seconds, w, h))
-                        .sort((a, z) => a.near - z.near);
-                    for (const s of solids) paint(s.faces, s.near, edge, 1);
+                        .map((c) => poseAt(c, seconds, w, h))
+                        .sort((a, z) => nearness(a.z) - nearness(z.z));
+                    for (const pose of solids) {
+                        paint(orderedFaces(pose, w, h), nearness(pose.z), edge, 1);
+                    }
                     return;
                 }
 
@@ -880,9 +907,11 @@ export default function SignalGate() {
                    and with translucent fills that reads as the depth being
                    wrong rather than as a bug. */
                 const solids = field
-                    .map((c) => renderCube(c, seconds, w, h))
-                    .sort((a, z) => a.near - z.near);
-                for (const s of solids) paint(s.faces, s.near, edge, 1);
+                    .map((c) => poseAt(c, seconds, w, h))
+                    .sort((a, z) => nearness(a.z) - nearness(z.z));
+                for (const pose of solids) {
+                    paint(orderedFaces(pose, w, h), nearness(pose.z), edge, 1);
+                }
                 return;
             }
 

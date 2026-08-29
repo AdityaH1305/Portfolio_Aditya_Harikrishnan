@@ -15,6 +15,7 @@ import {
     envFor,
     faceDepth,
     nearness,
+    orderedFaces,
     poseAt,
     project,
     renderCube,
@@ -335,4 +336,56 @@ test("A LIVE FIELD STAYS OFF THE COPY AND ON THE SCREEN", () => {
             }
         }
     }
+});
+
+/* ── The reused-buffer path is the allocating path ──
+   `orderedFaces` exists purely so four draw loops stop allocating ~20 objects
+   per cube per frame. It is only worth having if it is EXACTLY what
+   `renderCube` would have drawn — a projection that is merely close would show
+   as the silhouette shifting by a fraction of a pixel between the two code
+   paths, which is invisible in review and invisible in a screenshot.
+
+   Checked over the same field, times and viewports the sort-order test above
+   uses, so any pose those reach this reaches too. */
+test("ORDERED FACES MATCH THE ALLOCATING RENDERER EXACTLY", () => {
+    for (const [w, h] of VIEWPORTS) {
+        const field = spawnField(6, seeded(7), w, h);
+        for (const cube of field) {
+            for (const t of [0, 3.5, 61.25, 900.5]) {
+                const pose = poseAt(cube, t, w, h);
+                const want = renderCube(cube, t, w, h).faces;
+                const got = orderedFaces(pose, w, h);
+
+                assert.equal(got.length, want.length);
+                for (let f = 0; f < want.length; f++) {
+                    const a = want[f].pts;
+                    const b = got[f];
+                    assert.equal(b.length, a.length, `face ${f} vertex count`);
+                    for (let k = 0; k < a.length; k++) {
+                        assert.equal(b[k].x, a[k].x, `face ${f} pt ${k} x`);
+                        assert.equal(b[k].y, a[k].y, `face ${f} pt ${k} y`);
+                        assert.equal(b[k].z, a[k].z, `face ${f} pt ${k} z`);
+                    }
+                }
+            }
+        }
+    }
+});
+
+/* The buffers are shared, so a second call must not corrupt a first result
+   that is still being read — it MUST, which is the contract, and this pins the
+   contract rather than pretending otherwise. A caller that stores the return
+   value gets the next cube's faces; the comment on `orderedFaces` says so and
+   this is the executable form of that warning. */
+test("orderedFaces returns scratch space, and the next call overwrites it", () => {
+    const [w, h] = VIEWPORTS[0];
+    const field = spawnField(6, seeded(11), w, h);
+    const first = orderedFaces(poseAt(field[0], 0, w, h), w, h);
+    const snapshot = first[0][0].x;
+    orderedFaces(poseAt(field[1], 0, w, h), w, h);
+    assert.notEqual(
+        first[0][0].x,
+        snapshot,
+        "two different cubes should not project identically — if they do, pick another pair",
+    );
 });

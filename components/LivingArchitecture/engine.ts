@@ -27,6 +27,7 @@
      8. Signals   (glow halo, then bright dot)
    ══════════════════════════════════════════════════════ */
 
+import { deviceTier, dprCap, startPerfLevel } from "@/lib/deviceTier";
 import {
   accent,
   DPR_CAP,
@@ -230,7 +231,12 @@ export class LivingArchitectureEngine {
 
      Thresholds sit either side of a 60Hz frame (16.7ms) with a wide gap, and
      each change holds for a couple of seconds, so the level cannot oscillate. */
-  private perfLevel = 0;
+  /* Seeded from the device rather than starting at 0 everywhere. The
+     governor below only learns by dropping frames first — 60 samples above
+     24ms before it reacts — so on hardware that was never going to hold
+     60fps that is a second of visible stutter to reach a conclusion that was
+     available at mount. */
+  private perfLevel = startPerfLevel(deviceTier());
   private signalBudget = 1;
   private dprScale = 1;
   private frameAccumMs = 0;
@@ -343,7 +349,11 @@ export class LivingArchitectureEngine {
     this.viewportHeight = cssHeight;
     this.mode = mode;
 
-    const dpr = Math.min(window.devicePixelRatio || 1, DPR_CAP);
+    const dpr = Math.min(
+      window.devicePixelRatio || 1,
+      DPR_CAP,
+      dprCap(deviceTier()),
+    );
     this.dpr = dpr;
     this.canvas.width = Math.round(cssWidth * dpr);
     this.canvas.height = Math.round(cssHeight * dpr);
@@ -892,7 +902,11 @@ export class LivingArchitectureEngine {
   private applyBackingScale(): void {
     if (this.viewportWidth < 1 || this.viewportHeight < 1) return;
     const dpr =
-      Math.min(window.devicePixelRatio || 1, DPR_CAP) * this.dprScale;
+      Math.min(
+        window.devicePixelRatio || 1,
+        DPR_CAP,
+        dprCap(deviceTier()),
+      ) * this.dprScale;
     if (Math.abs(dpr - this.dpr) < 0.01) return;
     this.dpr = dpr;
     this.canvas.width = Math.round(this.viewportWidth * dpr);

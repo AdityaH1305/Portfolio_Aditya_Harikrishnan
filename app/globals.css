@@ -410,7 +410,18 @@ html {
 body {
   background: var(--surface-0);
   color: var(--text-primary);
-  font-family: var(--font-space-grotesk), system-ui, -apple-system, sans-serif;
+  /* `--font-space-grotesk` was named here and defined NOWHERE — a leftover
+     from a font this site does not load (app/layout.tsx loads Inter and
+     JetBrains Mono, and only those). So the whole declaration fell through to
+     `system-ui`.
+
+     Most text survived it by accident: Tailwind maps `--font-sans` to Inter
+     and the type-ladder classes carry their own family, so anything wearing a
+     utility or a rung looked right. What did not was everything inheriting
+     from `body` alone — which is the case a design system is least likely to
+     notice and least likely to catch in review, because the page is still
+     "in a sans-serif". */
+  font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
@@ -796,6 +807,24 @@ body {
    needs nothing to know about it. */
 :is(.live-ring, .shell-bezel).ring-live::before {
   animation-play-state: running;
+}
+
+/* ── Not on a weak device ──
+   A conic gradient under a two-layer `mask-composite` cannot be composited:
+   the element repaints in full on every frame the angle moves, and the home
+   page has FOURTEEN of these. On a phone that is fourteen full-box repaints a
+   frame, competing with three canvases for the same budget.
+
+   Switching the sweep off is not switching the ring off. The ring, its hover
+   brightening and the accent are all untouched — and the reduced-motion rule
+   below is the proof that a static ring still reads, since the hover there is
+   a colour change rather than motion.
+
+   `data-tier` is written by components/DeviceTierFlag.tsx, one frame after
+   hydration. A frame of sweep before it lands is not worth a pre-paint script
+   and the hydration mismatch that would come with it. */
+:root[data-tier="low"] :is(.live-ring, .shell-bezel)::before {
+  animation: none;
 }
 
 /* Hover: the same ring, turned up. The alphas roughly triple, so the card
@@ -3897,6 +3926,43 @@ html.cursor-custom [data-cursor="text"] {
 
 .core-bezel {
   border-radius: calc(var(--panel-radius) - 0.5rem);
+}
+
+/* ── The mobile island, on a device that cannot afford it ──
+   The pill is `fixed` over a scrolling page with `backdrop-blur-md`, so its
+   backdrop is re-sampled on every frame the page moves — for the whole
+   session, on precisely the devices least able to pay for it. The comment on
+   the element already names mobile GPUs as what feels it, and chose blur-md
+   over blur-xl for that reason; this finishes the thought.
+
+   An opaque fill is not a downgrade in legibility, it is the same legibility
+   by a cheaper route: the translucency exists so the page reads through the
+   pill, and 85% over a moving background was never doing much of that anyway.
+   What is lost is the depth cue, and only where the frame rate was the thing
+   actually at stake.
+
+   `data-tier` is written by components/DeviceTierFlag.tsx. */
+:root[data-tier="low"] .mobile-island {
+  background-color: var(--surface-1);
+
+  /* ── Emptied, not overridden ──
+     `backdrop-filter: none` here does NOT work, and it fails silently. The
+     element carries Tailwind's `backdrop-blur-md`, which does not set the
+     property to a value — it sets `--tw-backdrop-blur` and composes
+     `backdrop-filter: var(--tw-backdrop-blur, ) var(--tw-backdrop-brightness, ) …`
+     across ten variables, emitting BOTH the prefixed and unprefixed forms.
+     A plain `backdrop-filter: none` written here came out of the build as
+     `-webkit-backdrop-filter: none` ALONE — the unprefixed declaration was
+     dropped — so Chromium, which reads the unprefixed property, kept
+     blurring. Confirmed by reading the built stylesheet, which is the only
+     place it is visible; the source looked correct.
+
+     Emptying the variable is how Tailwind's own `backdrop-blur-none` does
+     it: every term in the composition resolves to nothing, the whole value
+     becomes invalid at computed-value time, and the property falls back to
+     its initial `none`. It is the utility's contract rather than a trick,
+     and it cannot be undone by a prefixing pass. */
+  --tw-backdrop-blur: ;
 }
 
 /* ══════════════════════════════════════════════════════

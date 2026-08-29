@@ -42,12 +42,10 @@ import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
 import { onEntranceReady } from "@/lib/entrance";
 import { takeBurst } from "@/lib/handoff";
 import { ATLAS_QUIET_EVENT } from "@/lib/zone";
+import { deviceTier, dprCap } from "@/lib/deviceTier";
 import {
-    CUBE_FACES,
-    CUBE_VERTS,
-    faceDepth,
     nearness,
-    project,
+    orderedFaces,
     type Pose,
 } from "../SignalGate/cubes";
 import { shatter, type Fragment } from "../SignalGate/finale";
@@ -144,11 +142,30 @@ export default function GlyphA() {
            the stylesheet has not applied the box is degenerate, `size()`
            rejects it, and with both the observer and rAF stopped nothing ever
            asks again. */
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        /* Full-viewport, and the backing store scales with the SQUARE of
+           the ratio — 2x on a 3x phone is four times the pixels a 1x screen
+           needs, for a letter of flat translucent quads with no fine detail
+           to resolve. `dprCap` is `2` on a desktop, so nothing changes there. */
+        const dpr = Math.min(window.devicePixelRatio || 1, 2, dprCap(deviceTier()));
         let w = 0;
         let h = 0;
         let anchor: Vec2 = { x: 0, y: 0 };
         let targets: Pose[] = [];
+
+        /* `.glyph-a-canvas`'s `color` is `var(--accent)`, and nothing on the
+           page transitions the accent — the case-study room deliberately
+           leaves it alone. So this string cannot change while the draw loop
+           is running, and reading it in there was a forced style resolution
+           plus a regex plus two allocations EVERY FRAME, for what is a
+           constant for the session. Read where geometry already is, exactly
+           the way `ZoneTitle` does. */
+        let edge = "50,130,184";
+        const readAccent = () => {
+            const key = getComputedStyle(canvas).color;
+            const rgb = key.match(/[\d.]+/g)?.slice(0, 3).map(Number);
+            if (rgb?.length === 3) edge = `${rgb[0]},${rgb[1]},${rgb[2]}`;
+        };
+        readAccent();
 
         const size = () => {
             const r = canvas.getBoundingClientRect();
@@ -261,16 +278,19 @@ export default function GlyphA() {
            the same material as the blocks it came from. The key colour is
            read from the element's computed `color` every frame rather than
            held as a literal, so the canvas and the stylesheet cannot drift. */
-        const facesOf = (pose: Pose) => {
-            const pts = CUBE_VERTS.map((v) => project(v, pose, w, h));
-            return CUBE_FACES.map((idx) => {
-                const quad = idx.map((i) => pts[i]);
-                return { pts: quad, depth: faceDepth(quad) };
-            }).sort((a, b) => b.depth - a.depth);
-        };
+        /* `orderedFaces` is the same projection and the same far-to-near
+           sort this did inline, into buffers it reuses across calls. Per cube
+           that was 8 points, 6 quad arrays, 6 face records and a six-element
+           sort, all discarded before the next frame. `cubes.test.ts` asserts
+           the two paths agree exactly, so this is an allocation removal and
+           not a re-implementation.
+
+           The result is SCRATCH SPACE and the next call overwrites it, which
+           is why it is drawn from immediately and never stored. */
+        const facesOf = (pose: Pose) => orderedFaces(pose, w, h);
 
         const paint = (
-            faces: readonly { pts: readonly { x: number; y: number }[] }[],
+            faces: readonly (readonly { x: number; y: number }[])[],
             near: number,
             edge: string,
             alpha: number,
@@ -278,9 +298,9 @@ export default function GlyphA() {
             if (alpha <= 0.004) return;
             for (const f of faces) {
                 ctx.beginPath();
-                ctx.moveTo(f.pts[0].x, f.pts[0].y);
-                for (let i = 1; i < f.pts.length; i++) {
-                    ctx.lineTo(f.pts[i].x, f.pts[i].y);
+                ctx.moveTo(f[0].x, f[0].y);
+                for (let i = 1; i < f.length; i++) {
+                    ctx.lineTo(f[i].x, f[i].y);
                 }
                 ctx.closePath();
                 ctx.fillStyle = `rgba(${edge},${(0.12 + near * 0.26) * alpha})`;
@@ -332,11 +352,6 @@ export default function GlyphA() {
                 return;
             }
             blank = false;
-
-            const key = getComputedStyle(canvas).color;
-            const rgb = key.match(/[\d.]+/g)?.slice(0, 3).map(Number);
-            if (rgb?.length !== 3) return;
-            const edge = `${rgb[0]},${rgb[1]},${rgb[2]}`;
 
             clear();
             ctx.lineJoin = "round";
@@ -422,11 +437,6 @@ export default function GlyphA() {
         const drawStatic = () => {
             if (w < 1) size();
             if (w < 1) return;
-            const key = getComputedStyle(canvas).color;
-            const rgb = key.match(/[\d.]+/g)?.slice(0, 3).map(Number);
-            if (rgb?.length !== 3) return;
-            const edge = `${rgb[0]},${rgb[1]},${rgb[2]}`;
-
             clear();
             ctx.lineJoin = "round";
             ctx.lineWidth = 1;
@@ -545,6 +555,7 @@ export default function GlyphA() {
             onRefresh: () => {
                 measure();
                 size();
+                readAccent();
                 if (reduced && running) drawStatic();
             },
             onUpdate: () => {

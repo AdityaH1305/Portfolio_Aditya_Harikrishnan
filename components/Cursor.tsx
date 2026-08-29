@@ -256,6 +256,25 @@ export default function Cursor() {
         let rectAt = -99;
 
         let visible = false;
+        /* ── Redraw bookkeeping ──
+           The canvas state as it was last ACTUALLY drawn, not as it was last
+           frame. The gate below compares against these so that skipping a
+           draw cannot let a slow drift accumulate past the thresholds one
+           sub-threshold step at a time. NaN so the first frame always draws. */
+        let drewOx = NaN;
+        let drewOy = NaN;
+        let drewR = NaN;
+        let drewIdle = NaN;
+        let drewProbe: number | null = -1;
+        let drewState: State | null = null;
+        let drewAccent: [number, number, number] | null = null;
+        let prevTimedLive = true;
+
+        // Last written transforms, so a still pointer stops touching the DOM.
+        let txPtrX = NaN;
+        let txPtrY = NaN;
+        let txGlowX = NaN;
+        let txGlowY = NaN;
 
         // ── Input ───────────────────────────────────────
         const onMove = (e: PointerEvent) => {
@@ -455,207 +474,272 @@ export default function Cursor() {
             const ox = Math.max(-lagCap, Math.min(lagCap, eased.x - pointer.x));
             const oy = Math.max(-lagCap, Math.min(lagCap, eased.y - pointer.y));
 
-            canvas.style.transform = `translate3d(${pointer.x - HALF}px, ${
-                pointer.y - HALF
-            }px, 0)`;
-            glow.style.transform = `translate3d(${eased.x - 160}px, ${eased.y - 160}px, 0)`;
-
-            // ── Canvas ──
-            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-            ctx.clearRect(0, 0, BOX, BOX);
-            ctx.translate(HALF, HALF);
+            /* Written only when they actually moved. A style write with an
+               identical value still dirties the element, and once the redraw
+               gate below engages these two are the only thing left running. */
+            if (pointer.x !== txPtrX || pointer.y !== txPtrY) {
+                canvas.style.transform = `translate3d(${pointer.x - HALF}px, ${
+                    pointer.y - HALF
+                }px, 0)`;
+                txPtrX = pointer.x;
+                txPtrY = pointer.y;
+            }
+            if (
+                Math.abs(eased.x - txGlowX) > 0.01 ||
+                Math.abs(eased.y - txGlowY) > 0.01
+            ) {
+                glow.style.transform = `translate3d(${eased.x - 160}px, ${eased.y - 160}px, 0)`;
+                txGlowX = eased.x;
+                txGlowY = eased.y;
+            }
 
             const R = radius * press;
 
-            if (R > 0.5) {
-                // Circular waveform. Radius modulated by a harmonic series,
-                // so the ring reads as a waveform rather than a dashed circle.
-                // `1 - idle` is the flatline: the trace collapses onto a
-                // true circle when the pointer has been still.
-                const amp =
-                    ampEase * (WAVE_BASE + speed * WAVE_PER_SPEED) * (1 - idle);
+            /* Hoisted out of the ring block below because the redraw gate
+               needs it: `amp` is what says whether the waveform is still
+               moving. */
+            const amp =
+                ampEase * (WAVE_BASE + speed * WAVE_PER_SPEED) * (1 - idle);
 
-                ctx.beginPath();
-                if (amp < 0.05) {
-                    /* At this amplitude the harmonic term is sub-pixel and
-                       the loop below draws a 96-gon so close to a true
-                       circle the difference cannot be seen. `arc()` is the
-                       same circle, exactly, for two fill/stroke calls
-                       instead of 97 point computations — this is the
-                       resting state of a cursor that has been still for
-                       IDLE_AFTER_MS, i.e. most of the time a reader spends
-                       actually reading. */
-                    ctx.arc(ox, oy, R, 0, Math.PI * 2);
-                } else {
-                    for (let i = 0; i <= RING_STEPS; i++) {
-                        const t = RING_T[i];
-                        const w =
-                            Math.sin(t * spec.harm + phase) * amp +
-                            Math.sin(t * spec.harm * 2 + phase * 1.6) * amp * 0.25;
-                        const rr = R + w;
-                        const x = ox + RING_COS[i] * rr;
-                        const y = oy + RING_SIN[i] * rr;
-                        if (i === 0) ctx.moveTo(x, y);
-                        else ctx.lineTo(x, y);
+            /* ── Redraw gate ──
+               The canvas is a pure function of the values compared here, so
+               once all of them have settled the pixels this frame would be
+               identical to the pixels last frame. On a page being READ rather
+               than waved at that is almost every frame, and clearing and
+               restroking a 200x200 canvas sixty times a second to produce the
+               same image was the largest always-on cost on the site.
+
+               `amp < 0.05` does double duty. Below it the ring is drawn with
+               `arc()` (the branch below), which never reads `phase` — so a
+               settled ring is genuinely static rather than a 96-gon rippling
+               sub-pixel while the gate believes it is still.
+
+               THE TWO TIMED EFFECTS NEED ONE FRAME OF GRACE. Neither the
+               impact ring nor the charge arc converges; each simply stops
+               being drawn at a deadline. The frame that crosses that deadline
+               is therefore one where the canvas CHANGES while every eased
+               value is already settled — gate it out and the ring stays
+               painted on screen for the rest of the session. `prevTimedLive`
+               buys exactly that one frame back. */
+            const timedLive =
+                now - impactAt < IMPACT_MS ||
+                (charge > 0 && now - chargeAt < 1100);
+            const settled =
+                amp < 0.05 &&
+                !timedLive &&
+                !prevTimedLive &&
+                !pressed &&
+                state === drewState &&
+                accent === drewAccent &&
+                probeVal === drewProbe &&
+                Math.abs(ox - drewOx) < 0.05 &&
+                Math.abs(oy - drewOy) < 0.05 &&
+                Math.abs(R - drewR) < 0.05 &&
+                Math.abs(idle - drewIdle) < 0.002;
+            prevTimedLive = timedLive;
+
+            if (!settled) {
+                // ── Canvas ──
+                ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+                ctx.clearRect(0, 0, BOX, BOX);
+                ctx.translate(HALF, HALF);
+
+                if (R > 0.5) {
+                    // Circular waveform. Radius modulated by a harmonic
+                    // series, so the ring reads as a waveform rather than a
+                    // dashed circle. `1 - idle` is the flatline: the trace
+                    // collapses onto a true circle when the pointer has been
+                    // still.
+                    ctx.beginPath();
+                    if (amp < 0.05) {
+                        /* At this amplitude the harmonic term is sub-pixel and
+                           the loop below draws a 96-gon so close to a true
+                           circle the difference cannot be seen. `arc()` is the
+                           same circle, exactly, for two fill/stroke calls
+                           instead of 97 point computations — this is the
+                           resting state of a cursor that has been still for
+                           IDLE_AFTER_MS, i.e. most of the time a reader spends
+                           actually reading. */
+                        ctx.arc(ox, oy, R, 0, Math.PI * 2);
+                    } else {
+                        for (let i = 0; i <= RING_STEPS; i++) {
+                            const t = RING_T[i];
+                            const w =
+                                Math.sin(t * spec.harm + phase) * amp +
+                                Math.sin(t * spec.harm * 2 + phase * 1.6) * amp * 0.25;
+                            const rr = R + w;
+                            const x = ox + RING_COS[i] * rr;
+                            const y = oy + RING_SIN[i] * rr;
+                            if (i === 0) ctx.moveTo(x, y);
+                            else ctx.lineTo(x, y);
+                        }
+                        ctx.closePath();
                     }
-                    ctx.closePath();
+
+                    /* Stroked twice from the same path: a dark carrier first,
+                       then the accent on top. A single accent hairline vanishes
+                       over the pale gait silhouettes and light video frames — a
+                       cursor has to stay legible on every background, and this
+                       costs one extra stroke() with no extra geometry. */
+                    ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+
+                    /* Ring brightness carries two readings: it dims as the trace
+                       flatlines, and over the gait canvas it tracks the sampled
+                       mask value — so the ring visibly lifts as the crosshair
+                       crosses a silhouette edge. */
+                    const probeLift =
+                        probeVal !== null ? 0.3 * (probeVal / 255) : 0;
+                    ctx.strokeStyle = A((0.62 + probeLift) * (1 - idle * 0.45));
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    /* Quadrant ticks — the instrument reading. Faded in by
+                       radius: on the small states they sat almost on top of the
+                       ring and just read as noise. */
+                    const tick = Math.min(1, Math.max(0, (R - 18) / 8));
+                    if (tick > 0.01) {
+                        ctx.strokeStyle = A(0.3 * tick);
+                        ctx.lineWidth = 1;
+                        ctx.beginPath();
+                        for (let q = 0; q < 4; q++) {
+                            const t = (q / 4) * Math.PI * 2 + Math.PI / 4;
+                            const c = Math.cos(t);
+                            const s = Math.sin(t);
+                            ctx.moveTo(ox + c * (R + 4), oy + s * (R + 4));
+                            ctx.lineTo(ox + c * (R + 7), oy + s * (R + 7));
+                        }
+                        ctx.stroke();
+                    }
                 }
 
-                /* Stroked twice from the same path: a dark carrier first,
-                   then the accent on top. A single accent hairline vanishes
-                   over the pale gait silhouettes and light video frames — a
-                   cursor has to stay legible on every background, and this
-                   costs one extra stroke() with no extra geometry. */
-                ctx.strokeStyle = "rgba(0, 0, 0, 0.45)";
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-
-                /* Ring brightness carries two readings: it dims as the trace
-                   flatlines, and over the gait canvas it tracks the sampled
-                   mask value — so the ring visibly lifts as the crosshair
-                   crosses a silhouette edge. */
-                const probeLift =
-                    probeVal !== null ? 0.3 * (probeVal / 255) : 0;
-                ctx.strokeStyle = A((0.62 + probeLift) * (1 - idle * 0.45));
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                /* Quadrant ticks — the instrument reading. Faded in by
-                   radius: on the small states they sat almost on top of the
-                   ring and just read as noise. */
-                const tick = Math.min(1, Math.max(0, (R - 18) / 8));
-                if (tick > 0.01) {
-                    ctx.strokeStyle = A(0.3 * tick);
-                    ctx.lineWidth = 1;
+                /* ── Click impact ──
+                   The press spring gives the click a down-feel but no release;
+                   this is the note actually sounding. Ease-out so it leaves
+                   quickly rather than lingering. Max reach is R + 22, which with
+                   the largest ring and the snap lag stays inside the 100px
+                   canvas half. */
+                const impactAge = now - impactAt;
+                if (impactAge < IMPACT_MS) {
+                    const t = impactAge / IMPACT_MS;
+                    const e = 1 - Math.pow(1 - t, 3);
                     ctx.beginPath();
-                    for (let q = 0; q < 4; q++) {
-                        const t = (q / 4) * Math.PI * 2 + Math.PI / 4;
-                        const c = Math.cos(t);
-                        const s = Math.sin(t);
-                        ctx.moveTo(ox + c * (R + 4), oy + s * (R + 4));
-                        ctx.lineTo(ox + c * (R + 7), oy + s * (R + 7));
-                    }
+                    ctx.arc(ox, oy, R + 4 + e * 22, 0, Math.PI * 2);
+                    ctx.strokeStyle = A(0.5 * (1 - t));
+                    ctx.lineWidth = 0.5 + 1.5 * (1 - t);
                     ctx.stroke();
                 }
+
+                /* Charge arc for the SideNav easter egg.
+
+                   The arc used to be the ONLY tell, which meant it appeared for
+                   the first time on the second or third click — long after a
+                   visitor had any reason to keep clicking a nav item they had
+                   already used. The hint arrived only for people who were
+                   already doing the thing the hint was meant to suggest.
+
+                   So the first click now draws a full faint ring as well: a
+                   single click reads as "that registered as something", which is
+                   enough to make a curious person try again. It stays under the
+                   arc, so as the charge builds the ring is what the arc fills. */
+                const age = now - chargeAt;
+                if (charge > 0 && age < 1100) {
+                    const fade = 1 - age / 1100;
+
+                    ctx.beginPath();
+                    ctx.arc(ox, oy, R + 14, 0, Math.PI * 2);
+                    ctx.strokeStyle = A(0.16 * fade);
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    ctx.beginPath();
+                    ctx.arc(
+                        ox,
+                        oy,
+                        R + 14,
+                        -Math.PI / 2,
+                        -Math.PI / 2 + charge * Math.PI * 2,
+                    );
+                    ctx.strokeStyle = A(0.85 * fade);
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+                }
+
+                /* Crosshair core, at the true pointer (0,0 after translate).
+                   12px across rather than 17 — at the old size it crowded the
+                   ring on the smaller states and read heavy instead of precise.
+                   Round caps because a 1px butt cap looks unfinished at this
+                   scale. */
+                ctx.lineCap = "round";
+
+                if (state === "caret") {
+                    /* Over plain text the crosshair would be the wrong tool, and
+                       a crosshair mid-drag through a paragraph reads as a bug.
+                       The ring is already collapsed (r: 0), so this bar IS the
+                       cursor here. */
+                    ctx.beginPath();
+                    ctx.moveTo(0, -7);
+                    ctx.lineTo(0, 7);
+                    ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+                    ctx.lineWidth = 3;
+                    ctx.stroke();
+                    ctx.strokeStyle = A(0.95);
+                    ctx.lineWidth = 1.25;
+                    ctx.stroke();
+                } else {
+                    const arm = state === "game" ? CROSS_ARM * 2 : CROSS_ARM;
+                    const gap = arm / 2;
+                    ctx.beginPath();
+                    ctx.moveTo(-gap - arm, 0);
+                    ctx.lineTo(-gap, 0);
+                    ctx.moveTo(gap, 0);
+                    ctx.lineTo(gap + arm, 0);
+                    ctx.moveTo(0, -gap - arm);
+                    ctx.lineTo(0, -gap);
+                    ctx.moveTo(0, gap);
+                    ctx.lineTo(0, gap + arm);
+                    ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    ctx.strokeStyle = A(0.95);
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+
+                    ctx.fillStyle = A(1);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 1.4 * press, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Scrub gets explicit direction, since the seek bar is a drag.
+                if (state === "scrub") {
+                    ctx.beginPath();
+                    ctx.moveTo(-22, 0);
+                    ctx.lineTo(-17, -4);
+                    ctx.moveTo(-22, 0);
+                    ctx.lineTo(-17, 4);
+                    ctx.moveTo(22, 0);
+                    ctx.lineTo(17, -4);
+                    ctx.moveTo(22, 0);
+                    ctx.lineTo(17, 4);
+                    ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
+                    ctx.lineWidth = 2.5;
+                    ctx.stroke();
+                    ctx.strokeStyle = A(0.9);
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+                ctx.lineCap = "butt";
+
+                drewOx = ox;
+                drewOy = oy;
+                drewR = R;
+                drewIdle = idle;
+                drewProbe = probeVal;
+                drewState = state;
+                drewAccent = accent;
             }
-
-            /* ── Click impact ──
-               The press spring gives the click a down-feel but no release;
-               this is the note actually sounding. Ease-out so it leaves
-               quickly rather than lingering. Max reach is R + 22, which with
-               the largest ring and the snap lag stays inside the 100px
-               canvas half. */
-            const impactAge = now - impactAt;
-            if (impactAge < IMPACT_MS) {
-                const t = impactAge / IMPACT_MS;
-                const e = 1 - Math.pow(1 - t, 3);
-                ctx.beginPath();
-                ctx.arc(ox, oy, R + 4 + e * 22, 0, Math.PI * 2);
-                ctx.strokeStyle = A(0.5 * (1 - t));
-                ctx.lineWidth = 0.5 + 1.5 * (1 - t);
-                ctx.stroke();
-            }
-
-            /* Charge arc for the SideNav easter egg.
-
-               The arc used to be the ONLY tell, which meant it appeared for
-               the first time on the second or third click — long after a
-               visitor had any reason to keep clicking a nav item they had
-               already used. The hint arrived only for people who were
-               already doing the thing the hint was meant to suggest.
-
-               So the first click now draws a full faint ring as well: a
-               single click reads as "that registered as something", which is
-               enough to make a curious person try again. It stays under the
-               arc, so as the charge builds the ring is what the arc fills. */
-            const age = now - chargeAt;
-            if (charge > 0 && age < 1100) {
-                const fade = 1 - age / 1100;
-
-                ctx.beginPath();
-                ctx.arc(ox, oy, R + 14, 0, Math.PI * 2);
-                ctx.strokeStyle = A(0.16 * fade);
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                ctx.beginPath();
-                ctx.arc(
-                    ox,
-                    oy,
-                    R + 14,
-                    -Math.PI / 2,
-                    -Math.PI / 2 + charge * Math.PI * 2,
-                );
-                ctx.strokeStyle = A(0.85 * fade);
-                ctx.lineWidth = 2;
-                ctx.stroke();
-            }
-
-            /* Crosshair core, at the true pointer (0,0 after translate).
-               12px across rather than 17 — at the old size it crowded the
-               ring on the smaller states and read heavy instead of precise.
-               Round caps because a 1px butt cap looks unfinished at this
-               scale. */
-            ctx.lineCap = "round";
-
-            if (state === "caret") {
-                /* Over plain text the crosshair would be the wrong tool, and
-                   a crosshair mid-drag through a paragraph reads as a bug.
-                   The ring is already collapsed (r: 0), so this bar IS the
-                   cursor here. */
-                ctx.beginPath();
-                ctx.moveTo(0, -7);
-                ctx.lineTo(0, 7);
-                ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-                ctx.lineWidth = 3;
-                ctx.stroke();
-                ctx.strokeStyle = A(0.95);
-                ctx.lineWidth = 1.25;
-                ctx.stroke();
-            } else {
-                const arm = state === "game" ? CROSS_ARM * 2 : CROSS_ARM;
-                const gap = arm / 2;
-                ctx.beginPath();
-                ctx.moveTo(-gap - arm, 0);
-                ctx.lineTo(-gap, 0);
-                ctx.moveTo(gap, 0);
-                ctx.lineTo(gap + arm, 0);
-                ctx.moveTo(0, -gap - arm);
-                ctx.lineTo(0, -gap);
-                ctx.moveTo(0, gap);
-                ctx.lineTo(0, gap + arm);
-                ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-                ctx.strokeStyle = A(0.95);
-                ctx.lineWidth = 1;
-                ctx.stroke();
-
-                ctx.fillStyle = A(1);
-                ctx.beginPath();
-                ctx.arc(0, 0, 1.4 * press, 0, Math.PI * 2);
-                ctx.fill();
-            }
-
-            // Scrub gets explicit direction, since the seek bar is a drag.
-            if (state === "scrub") {
-                ctx.beginPath();
-                ctx.moveTo(-22, 0);
-                ctx.lineTo(-17, -4);
-                ctx.moveTo(-22, 0);
-                ctx.lineTo(-17, 4);
-                ctx.moveTo(22, 0);
-                ctx.lineTo(17, -4);
-                ctx.moveTo(22, 0);
-                ctx.lineTo(17, 4);
-                ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-                ctx.lineWidth = 2.5;
-                ctx.stroke();
-                ctx.strokeStyle = A(0.9);
-                ctx.lineWidth = 1;
-                ctx.stroke();
-            }
-            ctx.lineCap = "butt";
 
             /* ── Target lock ──
                Reuses the rect measured once at the top of the frame; the
