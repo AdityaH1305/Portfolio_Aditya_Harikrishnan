@@ -104,6 +104,23 @@ const projects: ProjectData[] = [
    The stagger index controls entrance animation delay
    so the two cards reveal in sequence left-to-right.
    ═══════════════════════════════════════════════════════ */
+/* The card's paging arrows.
+
+   Deliberately NOT the lightbox's `arrowBase`. That one carries
+   `border-edge-strong` and sits inside a `bg-surface-0/95` pill because it
+   floats over a dimmed backdrop and needs an edge to be found against it —
+   which is the exact case globals.css still allows a hairline for. These sit
+   on the page ground, where this design removed outlines from everything, so
+   the emphasis is colour and a surface that appears on hover instead.
+
+   36px is the tap target, not the glyph. A `‹` is a few pixels wide and the
+   padding is what makes it hittable on a phone. */
+const navArrow =
+    "w-9 h-9 rounded-full flex items-center justify-center " +
+    "text-xl leading-none pb-0.5 text-tertiary " +
+    "hover:text-accent hover:bg-surface-1 " +
+    "transition-colors duration-200";
+
 function ProjectCard({
     project,
     staggerIndex,
@@ -111,16 +128,34 @@ function ProjectCard({
     project: ProjectData;
     staggerIndex: number;
 }) {
-    /* null = closed. Tracking the index alone avoids keeping src and index
-       in sync as two pieces of state. */
-    const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+    /* ONE index for both the card and the lightbox, plus a boolean for
+       whether the lightbox is up.
+
+       This replaced a lone `lightboxIndex: number | null` whose comment said
+       tracking the index alone "avoids keeping src and index in sync as two
+       pieces of state" — right when the card was a fixed hero, wrong now that
+       the card pages too. Two INDICES would be the thing that comment warns
+       about; an index and an open flag cannot disagree about which image is
+       showing. It also means the lightbox opens on whatever the card is
+       displaying rather than always on the first shot, and closing it leaves
+       the card where the reader navigated to. */
+    const [current, setCurrent] = useState(0);
+    const [lightboxOpen, setLightboxOpen] = useState(false);
+
+    const count = project.images.length;
+    const canPage = count > 1;
+
+    /* Wraps, like the lightbox's own arrows. Wrapping is what lets both
+       controls stay permanently enabled — a disabled button at each end is
+       two more states to style and reason about for no gain in a five-shot
+       gallery. */
+    const goPrev = () => setCurrent((i) => (i - 1 + count) % count);
+    const goNext = () => setCurrent((i) => (i + 1) % count);
 
     const lightboxImages = project.images.map((src, i) => ({
         src,
-        alt: `${project.title} screenshot ${i + 1} of ${project.images.length}`,
+        alt: `${project.title} screenshot ${i + 1} of ${count}`,
     }));
-
-    const openLightbox = (idx: number) => setLightboxIndex(idx);
 
     const baseDelay = staggerIndex * 0.1;
 
@@ -133,27 +168,76 @@ function ProjectCard({
                         <div
                             data-cursor="zoom"
                             className="relative w-full aspect-[16/10] cursor-pointer group/card-img"
-                            onClick={() => openLightbox(0)}
+                            onClick={() => setLightboxOpen(true)}
                         >
+                            {/* ONE <Image> whose `src` swaps, NOT every shot
+                                stacked and cross-faded.
+
+                                Stacking is the tidier-looking option and it
+                                costs this section 5x its image weight:
+                                PlayNexus is 388 KB across five shots against
+                                the 27.5 KB of the one on screen, and every
+                                byte of that would be fetched for a reader who
+                                never touches an arrow. Swapping the src on a
+                                single element does not flash either — a
+                                browser keeps painting the current frame until
+                                the replacement has decoded, so the transition
+                                is a hold, not a blank. */}
                             <Image
-                                src={project.images[0]}
-                                alt={`${project.title} preview`}
+                                src={project.images[current]}
+                                alt={`${project.title} screenshot ${current + 1} of ${count}`}
                                 fill
                                 className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/card-img:scale-[1.02]"
                                 sizes="(max-width: 768px) 100vw, 50vw"
                                 /* `priority` is deprecated as of Next 16 in
                                    favour of `preload`, which says what it
-                                   actually does. */
-                                preload={staggerIndex === 0}
+                                   actually does.
+
+                                   Tied to the FIRST shot as well as the first
+                                   card: preloading is an LCP measure, and once
+                                   the reader has paged away this is no longer
+                                   the image that paints on arrival. */
+                                preload={staggerIndex === 0 && current === 0}
                             />
-                            {project.images.length > 1 && (
-                                <div className="absolute bottom-3 right-3 px-2.5 py-1 bg-surface-0/85 text-xs mono text-tertiary">
-                                    +{project.images.length - 1} more
-                                </div>
-                            )}
                         </div>
                     </div>
                 </div>
+
+                {/* ── Paging, BELOW the frame rather than over it ──
+                    The lightbox puts its own arrows under the image for the
+                    same reason: a control laid over a screenshot covers the
+                    thing it exists to let you look at. This also replaces the
+                    "+N more" badge that used to sit at bottom-right INSIDE the
+                    frame — a counter that states the position says everything
+                    the badge said, and says it without standing on the shot.
+
+                    Outside the clickable image div on purpose, so pressing an
+                    arrow can never also open the lightbox. That is structural
+                    rather than a stopPropagation call, which is the kind of
+                    guard that silently stops working when the markup moves. */}
+                {canPage && (
+                    <div className="gallery-nav mt-3 flex items-center gap-1">
+                        <button
+                            type="button"
+                            onClick={goPrev}
+                            className={navArrow}
+                            aria-label={`Previous ${project.title} screenshot`}
+                        >
+                            ‹
+                        </button>
+                        <button
+                            type="button"
+                            onClick={goNext}
+                            className={navArrow}
+                            aria-label={`Next ${project.title} screenshot`}
+                        >
+                            ›
+                        </button>
+                        <span className="mono text-xs text-tertiary tabular-nums ml-1.5">
+                            {current + 1} / {count}
+                        </span>
+                    </div>
+                )}
             </Reveal>
 
             {/* Content */}
@@ -221,12 +305,15 @@ function ProjectCard({
                 </div>
             </Reveal>
 
-            {lightboxIndex !== null && (
+            {/* `onNavigate` writes the SAME index the card reads, so paging
+                inside the lightbox and paging on the card are one motion and
+                closing leaves the card on whatever the reader stopped at. */}
+            {lightboxOpen && (
                 <Lightbox
                     images={lightboxImages}
-                    index={lightboxIndex}
-                    onNavigate={setLightboxIndex}
-                    onClose={() => setLightboxIndex(null)}
+                    index={current}
+                    onNavigate={setCurrent}
+                    onClose={() => setLightboxOpen(false)}
                 />
             )}
         </div>

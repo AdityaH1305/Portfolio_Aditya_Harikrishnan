@@ -3614,6 +3614,21 @@ html.signal-connected .signal-gate {
   }
 }
 
+/* The Experiments cards' paging arrows (components/ProjectsEnhanced.tsx).
+
+   They page a gallery by swapping React state, so with no JS they are two
+   controls that visibly do nothing. Offering a dead control is worse than
+   offering none: the card still shows its first screenshot and still reads
+   as complete, which is exactly what a no-JS visitor should get.
+
+   The lightbox is unreachable there for the same reason, so nothing is lost
+   that was otherwise available — this hides the affordance, not the content. */
+@media (scripting: none) {
+  .gallery-nav {
+    display: none;
+  }
+}
+
 /* ══════════════════════════════════════════════════════
    Custom cursor
 
