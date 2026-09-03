@@ -1,22 +1,40 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ScrollProvider from "@/components/ScrollProvider";
 import { OG_IMAGE } from "@/lib/socialCard";
 import RouteScrollReset from "@/components/RouteScrollReset";
 import Cursor from "@/components/Cursor";
 
-/* Inter, and the weight range matters more than the family here. The design
-   sets 18px lead copy at weight 200 and 60px+ headlines at 400 — the same
-   weight doing both, with scale carrying the hierarchy instead. Space Grotesk
-   could not do that: its lightest cut is 300, and its letterforms assert
-   personality at display sizes where this wants a neutral surface. */
-/* Three weights, and the list is exhaustive: 200 for lead copy, 400 for
-   everything else, 500 for labels and emphasis. 600 was in here and is no
-   longer used anywhere — it was a fourth weight that only appeared through
-   scattered `font-semibold` utilities, and dropping it stops the browser
-   fetching a face nothing renders. Add a weight here only after adding it to
-   the ladder in globals.css. */
+/* ── TWO FAMILIES DO THE TEXT NOW, AND THAT REVERSES A DECISION ──
+   This comment used to argue for Inter alone, and it named Space Grotesk as
+   the face it was rejecting: "its lightest cut is 300, and its letterforms
+   assert personality at display sizes where this wants a neutral surface."
+
+   Both halves of that have stopped being true, for different reasons.
+
+   The 300 problem was never about Space Grotesk. It existed because ONE
+   family had to serve both 18px lead copy at weight 200 and 76px headlines at
+   400, and no display face reaches 200. Inter still owns the body, so the
+   constraint still holds — and it now holds against the only family it was
+   ever really about.
+
+   The second half was a design judgement that has been overturned on
+   purpose: a neutral surface at display sizes is exactly what made the
+   headings read as basic. Titles are supposed to assert something. See
+   `.display` and the `.heading-*` rungs in globals.css, which are the only
+   things that use the display face.
+
+   (Space Grotesk has been here before. `globals.css` carried a
+   `--font-space-grotesk` variable that was never defined, so `body` fell
+   through to `system-ui` for who knows how long; that was found and fixed
+   separately. This time the variable exists.) */
+
+/* Inter: three weights, and the list is exhaustive — 200 for lead copy, 400
+   for everything else, 500 for labels and emphasis. 600 was in here and is no
+   longer used anywhere; dropping it stops the browser fetching a face nothing
+   renders. Add a weight here only after adding it to the ladder in
+   globals.css. */
 const inter = Inter({
   variable: "--font-inter",
   subsets: ["latin"],
@@ -28,6 +46,25 @@ const jetbrainsMono = JetBrains_Mono({
   variable: "--font-jetbrains-mono",
   subsets: ["latin"],
   display: "swap",
+});
+
+/* The display face: titles only, `.display` down to `.heading-md`.
+
+   ONE WEIGHT, AND IT IS NOT A COMPROMISE. Every rung it serves is already
+   `font-weight: 400` — `.display`, `.heading-xl`, `.heading-lg`,
+   `.heading-md`, plus `.signal-gate-title` and `.ludex-hero-metric`, which
+   copy those clamps. Pinning 400 also means the site CANNOT render this face
+   bold: "500 is as bold as this site goes" stops being a rule someone has to
+   remember and becomes a fact about what is loaded.
+
+   `.heading-sm` (21px) deliberately stays on Inter. Below about 24px a
+   display face stops adding character and starts costing legibility, and that
+   rung is card titles and list items — interface, not titles. */
+const spaceGrotesk = Space_Grotesk({
+  variable: "--font-space-grotesk",
+  subsets: ["latin"],
+  display: "swap",
+  weight: ["400"],
 });
 
 const SITE_URL = "https://adityaharikrishnan.vercel.app";
@@ -91,7 +128,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${inter.variable} ${jetbrainsMono.variable} ${spaceGrotesk.variable} h-full antialiased`}
       /* ── THE FIRST PAINT IS THE SITE'S OWN COLOUR ──
          Inline, and it has to be. `colorScheme: "dark"` above tells the
          browser to paint a dark canvas before any stylesheet arrives, and
