@@ -410,17 +410,21 @@ html {
 body {
   background: var(--surface-0);
   color: var(--text-primary);
-  /* `--font-space-grotesk` was named here and defined NOWHERE — a leftover
-     from a font this site does not load (app/layout.tsx loads Inter and
-     JetBrains Mono, and only those). So the whole declaration fell through to
-     `system-ui`.
+  /* INTER, AND THIS LINE IS NOW MORE DANGEROUS THAN IT LOOKS.
 
-     Most text survived it by accident: Tailwind maps `--font-sans` to Inter
-     and the type-ladder classes carry their own family, so anything wearing a
-     utility or a rung looked right. What did not was everything inheriting
-     from `body` alone — which is the case a design system is least likely to
-     notice and least likely to catch in review, because the page is still
-     "in a sans-serif". */
+     It used to name `--font-space-grotesk`, which was defined nowhere, so the
+     whole declaration fell through to `system-ui`. Most text survived that by
+     accident — Tailwind maps `--font-sans` to Inter and the mono rungs carry
+     their own family — but everything inheriting from `body` alone was in the
+     wrong face, which is the failure a design system is least likely to catch
+     because the page is still "in a sans-serif".
+
+     THAT VARIABLE EXISTS AGAIN. Space Grotesk is loaded now as the TITLE face
+     (see `.display` and the `.heading-*` rungs). So the old broken line would
+     no longer fail loudly-but-harmlessly — it would silently put every
+     paragraph, label and list item on the site into a display face. Body copy
+     is Inter, and the weight-200 lead paragraphs are the reason: no display
+     face on the site reaches 200. */
   font-family: var(--font-inter), system-ui, -apple-system, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -485,10 +489,46 @@ body {
    ══════════════════════════════════════════════════════ */
 
 /* 44 → 76 */
+/* ── THE TITLE RUNGS RUN ON A SECOND FAMILY ──
+   `.display` down to `.heading-md` are Space Grotesk; `.heading-sm` and
+   everything below it stay Inter. The split is at 24px for a reason: below
+   that a display face stops contributing character and starts costing
+   legibility, and `.heading-sm` is card titles and list rows — interface
+   rather than titles.
+
+   THE TRACKING IS RETUNED, AND IT IS NOT COSMETIC. The old values were solved
+   for Inter, which sets loose and takes tightening well. Space Grotesk sets
+   tight already, so the whole scale moves one step looser: -0.025em / -0.02em
+   / -0.015em down the three title-case rungs, against Inter's -0.03 / -0.025 /
+   -0.02. Per character that is still LOOSER than Inter was at every rung.
+
+   `.display` IS THE EXCEPTION AND IT BREAKS THE MONOTONIC RULE ON PURPOSE.
+   At -0.005em it is looser than the smaller rungs below it, which looks wrong
+   in a table and is right on screen: it is the site's only ALL-CAPS rung, and
+   caps need the air that lowercase does not. Tightening it is the standard
+   way to make a headline look broken. Measured: "HARIKRISHNAN" at 76px is
+   539px in Inter at -0.035em against 518px here — the new face is NARROWER
+   even after loosening this much, inside a 672px column.
+
+   -0.025em ON `.heading-xl` IS A FLOOR, AND IT WAS MEASURED THE HARD WAY.
+   "Gait Recognition via Multi-Modal Fusion" is the longest title on the site,
+   and the binding case is 1024px wide — NOT 1440, where it has 143px to
+   spare. At 1024 the container is 806px and the title runs 781px: 25px clear.
+   At -0.015em, which is where this rung started, it was 798px — EIGHT pixels,
+   against the 51px Inter had. Loosen this and that title wraps to two lines
+   and the `/work/gait-*` hero relayouts. Re-measure at 1024, not 1440.
+
+   The font-size clamps are deliberately UNCHANGED. Space Grotesk's x-height
+   is 0.891x Inter's at the same px, so headings do read slightly smaller —
+   but the rendered ladder above is a contract, and bumping rungs to chase a
+   perceptual difference is how a ladder stops being one. Tracking is the
+   right lever; if the sizes are genuinely wrong, that is a separate and
+   deliberate change to the ladder itself. */
 .display {
   font-size: clamp(2.75rem, 2.05rem + 3vw, 4.75rem);
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
   font-weight: 400;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.005em;
   line-height: 1;
   color: var(--text-primary);
 }
@@ -496,8 +536,12 @@ body {
 /* 32 → 50 */
 .heading-xl {
   font-size: clamp(2rem, 1.6rem + 1.69vw, 3.125rem);
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
   font-weight: 400;
-  letter-spacing: -0.03em;
+  /* A FLOOR. See the note on `.display`: at 1024px wide — the binding case,
+     not 1440 — the Gait case-study title clears its container by 25px here
+     and by only 8px at -0.015em. */
+  letter-spacing: -0.025em;
   line-height: 1.06;
   color: var(--text-primary);
 }
@@ -505,8 +549,9 @@ body {
 /* 28 → 38 */
 .heading-lg {
   font-size: clamp(1.75rem, 1.53rem + 0.94vw, 2.375rem);
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
   font-weight: 400;
-  letter-spacing: -0.025em;
+  letter-spacing: -0.02em;
   line-height: 1.12;
   color: var(--text-primary);
 }
@@ -514,13 +559,16 @@ body {
 /* 22 → 29 */
 .heading-md {
   font-size: clamp(1.375rem, 1.22rem + 0.66vw, 1.8125rem);
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
   font-weight: 400;
-  letter-spacing: -0.02em;
+  letter-spacing: -0.015em;
   line-height: 1.2;
   color: var(--text-primary);
 }
 
 /* 17 → 21 */
+/* INTER, deliberately — the rung where the display face stops. See the note
+   on `.display`. */
 .heading-sm {
   font-size: clamp(1.0625rem, 0.97rem + 0.38vw, 1.3125rem);
   font-weight: 500;
@@ -3119,11 +3167,25 @@ a:focus-visible .logo-mark {
    `heading-xl`'s clamp, so it lands on the 50px rung at 1440. It was
    `clamp(2.25rem, …, 3.75rem)` — 60px, which is on no rung of the ladder, and
    oversized type with no air around it is itself a signature of amateur
-   work. */
+   work.
+
+   IT COPIES THE RUNG RATHER THAN WEARING IT, so it does not follow
+   `.heading-xl` automatically and has to be kept in step by hand. The display
+   face is set here for that reason: this is the first screen anyone sees, and
+   an entrance in the old face would advertise an identity the rest of the
+   site has stopped having.
+
+   That does put three families on this screen — display title, Inter body
+   couplet, mono masthead and button — which the note on
+   `.signal-gate-action` below argues against. That argument was about adding
+   MONO for the button: a family that appeared nowhere else here. This is the
+   site's own title face doing the job it does everywhere else, which is the
+   opposite case. */
 .signal-gate-title {
   animation-delay: 140ms;
   margin-top: 1.75rem;
   font-size: clamp(2rem, 1.6rem + 1.69vw, 3.125rem);
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
   font-weight: 400;
   letter-spacing: -0.014em;
   line-height: 1.05;
@@ -3707,8 +3769,15 @@ html.cursor-custom [data-cursor="text"] {
   opacity: 0.32;
 }
 
+/* Copies `.display`'s clamp, and sits directly beneath a `.heading-xl` h1
+   on the case-study heroes — so it takes the display face too. Left on Inter
+   it would put two different sans faces at display scale inside one lockup,
+   which is the kind of thing that reads as an accident rather than a choice.
+   Its own tracking stays: this is a NUMERAL, and the reasoning about caps
+   jamming that retuned the rungs does not apply to digits. */
 .ludex-hero-metric {
   font-size: clamp(2.75rem, 2.05rem + 3vw, 4.75rem);
+  font-family: var(--font-space-grotesk), var(--font-inter), system-ui, sans-serif;
   font-weight: 400;
   color: var(--accent-text);
   letter-spacing: 0.002em;

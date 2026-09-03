@@ -57,8 +57,13 @@ export function useTabUnderline<T extends HTMLElement = HTMLButtonElement>(
             move(false);
 
             /* Re-measure after the webfont swaps in: next/font uses
-               display:swap, so button widths change once Space Grotesk
-               replaces the fallback and the underline would be stale. */
+               display:swap, so button widths change once the real face
+               replaces the fallback and the underline would be stale.
+
+               These tabs are `text-sm` body copy, so the face is INTER. (This
+               comment said "Space Grotesk" for a long time while the site did
+               not load it at all; Space Grotesk is loaded now, but as the
+               title face only, and it never reaches this row.) */
             const row = rowRef.current;
             const ro = new ResizeObserver(() => move(false));
             if (row) ro.observe(row);

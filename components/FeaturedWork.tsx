@@ -66,10 +66,19 @@ export default function FeaturedWork() {
                     {/* ── THE CUBE WORD'S BOX IS ALL INK, AND TYPE'S IS NOT ──
                         `ZoneTitle` gives this element the drawn word's exact height,
                         so the margins here are honest — but honest is not the same
-                        as matching. A `heading-lg` renders 38px caps inside a 42.6px
-                        line box, so roughly 7.6px of optical air sits above and below
-                        the letterforms for free. The cube word fills its box edge to
-                        edge: zero air, hard silhouettes.
+                        as matching. A `heading-lg` line box is 42.55px (38px x the
+                        rung's 1.12 line-height) and its caps are ~26.6px, so roughly
+                        8px of optical air sits above and below the letterforms for
+                        free. The cube word fills its box edge to edge: zero air,
+                        hard silhouettes.
+
+                        RE-MEASURED AFTER THE TITLE FACE CHANGED, and it held. The
+                        line box is set by a unitless `line-height`, so it is a
+                        function of font-size alone and did not move at all when the
+                        rungs went from Inter to Space Grotesk. Only the air changed,
+                        7.4px to 8.0px, because Space Grotesk's caps are slightly
+                        shorter — well under the 1px that would justify retuning
+                        anything below.
 
                         So the site's usual `mt-3` between an eyebrow and a headline
                         reads as ~20px of optical gap for text and exactly 12px here.
