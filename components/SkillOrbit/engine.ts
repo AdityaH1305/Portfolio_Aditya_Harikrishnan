@@ -1,4 +1,5 @@
-import { deviceTier, dprCap } from "@/lib/deviceTier";
+import { deviceTier, dprCap, startPerfLevel } from "@/lib/deviceTier";
+import { advance, createBudget, type FrameBudget } from "@/lib/frameBudget";
 import { SKILLS } from "./data";
 import {
     solve,
@@ -74,6 +75,19 @@ export const HIT_RADIUS = 22;
 const DPR_CAP = 1.5;
 const STAR_COUNT = 140;
 
+/* ── What this canvas knows how to give up ──────────────
+   Level 1 halves the DRAW rate; level 2 also softens the backing store.
+   `update()` still receives the whole elapsed time either way, so the field
+   moves at exactly the same speed — it is drawn less often, not slowed down,
+   which is the distinction that keeps a degraded frame from reading as lag.
+
+   Two levels, not the atlas's four. That engine has a signal budget and a
+   cluster count to trade away; this one has a fill rate and nothing else, so
+   inventing a third rung would mean inventing something for it to cut. */
+const MAX_PERF_LEVEL = 2;
+/** Backing-store multiplier per level. ~44% fewer pixels at level 2. */
+const LEVEL_SCALE = [1, 1, 0.75];
+
 type BodyState = "orbit" | "drag" | "free" | "return";
 
 interface Body {
@@ -108,6 +122,15 @@ export class SkillOrbitEngine {
     private w = 0;
     private h = 0;
     private dpr = 1;
+    /* Seeded from the device rather than starting at 0 everywhere: the budget
+       below only learns by dropping frames first, and on hardware that was
+       never going to hold 60fps that is a second of visible stutter to reach
+       a conclusion `deviceTier()` already had at mount. */
+    private budget: FrameBudget = createBudget(startPerfLevel(deviceTier()));
+    private appliedLevel = -1;
+    private dprScale = 1;
+    /** Elapsed time not yet drawn, so a skipped frame is not lost motion. */
+    private renderAccum = 0;
 
     private bodies: Body[] = SKILLS.map(() => ({
         x: 0, y: 0, vx: 0, vy: 0, state: "orbit", focus: 0, lit: 1,
@@ -226,6 +249,47 @@ export class SkillOrbitEngine {
         c.restore();
     }
 
+    /**
+     * Re-scale the backing store only. All geometry is in CSS px and the
+     * context transform absorbs the ratio, so nothing else has to move.
+     *
+     * `force` is for `resize`, where width and height have already changed
+     * and the early-out would be reading a stale box.
+     */
+    private applyBackingScale(force = false): void {
+        const dpr =
+            Math.min(
+                window.devicePixelRatio || 1,
+                DPR_CAP,
+                dprCap(deviceTier()),
+            ) * this.dprScale;
+        if (!force && Math.abs(dpr - this.dpr) < 0.01) return;
+        if (this.w < 1 || this.h < 1) return;
+        this.dpr = dpr;
+        this.canvas.width = Math.round(this.w * dpr);
+        this.canvas.height = Math.round(this.h * dpr);
+        this.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        // Gradients are bound to the context state they were made in — the
+        // same reason the atlas nulls `gradMode` when it rescales.
+        this.unitGlow = null;
+    }
+
+    /** Apply a level the budget has just moved to. Rare — held for seconds. */
+    private applyLevel(): void {
+        const level = this.budget.level;
+        if (level === this.appliedLevel) return;
+        this.appliedLevel = level;
+
+        const scale = LEVEL_SCALE[Math.min(level, LEVEL_SCALE.length - 1)];
+        if (scale === this.dprScale) return;
+        this.dprScale = scale;
+        this.applyBackingScale();
+        /* The starfield is rasterised AT this.dpr into its own canvas, so a
+           scale change that skipped it would blit a mismatched bitmap and the
+           stars would go soft or crunchy against a field that had not. */
+        this.buildStars();
+    }
+
     resize(w: number, h: number): void {
         if (w < 1 || h < 1) return;
         // Idempotent, so callers can offer a size as often as they like —
@@ -233,17 +297,11 @@ export class SkillOrbitEngine {
         if (Math.abs(w - this.w) < 0.5 && Math.abs(h - this.h) < 0.5) return;
         this.w = w;
         this.h = h;
-        this.dpr = Math.min(
-            window.devicePixelRatio || 1,
-            DPR_CAP,
-            dprCap(deviceTier()),
-        );
-        this.canvas.width = Math.round(w * this.dpr);
-        this.canvas.height = Math.round(h * this.dpr);
-        this.ctx.setTransform(this.dpr, 0, 0, this.dpr, 0, 0);
-        // Gradients are bound to the context state they were made in — the
-        // same reason the atlas nulls `gradMode` when it rescales.
-        this.unitGlow = null;
+        /* Through the shared helper, NOT a fresh `Math.min` — this used to
+           recompute the ratio from scratch, so any resize while degraded
+           silently threw the backing-store reduction away and handed a
+           struggling machine full-resolution pixels again. */
+        this.applyBackingScale(true);
 
         this.resolve();
         this.buildStars();
@@ -372,10 +430,36 @@ export class SkillOrbitEngine {
     step(nowMs: number): void {
         if (this.reduced) return;
         const now = nowMs / 1000;
-        if (!this.last) this.last = now;
-        // Clamped so a stalled tab cannot teleport everything on resume.
-        const dt = Math.min(now - this.last, 0.05);
+        /* Return rather than fall through with dt = 0. The first frame after
+           a `resetClock()` has no previous timestamp to measure against, and
+           feeding that non-measurement to the budget below would be a free
+           0ms sample every time this section comes back on screen. */
+        if (!this.last) {
+            this.last = now;
+            return;
+        }
+
+        const rawMs = (now - this.last) * 1000;
         this.last = now;
+
+        /* ── The reactive half of the device tier ──────────
+           `#stack` is the one region where the atlas stands down and this is
+           the sole animating canvas, so before this existed it was also the
+           one region with nothing watching the frame rate. See
+           lib/frameBudget.ts. */
+        this.budget = advance(this.budget, rawMs, nowMs, MAX_PERF_LEVEL);
+        if (this.budget.level !== this.appliedLevel) this.applyLevel();
+
+        // Clamped so a stalled tab cannot teleport everything on resume.
+        this.renderAccum += Math.min(rawMs / 1000, 0.05);
+
+        /* Level 1+: draw at ~30fps. The accumulator is what makes this a
+           lower frame rate rather than slow motion — `update` below still
+           receives every millisecond that has passed, just in bigger steps. */
+        if (this.budget.level >= 1 && this.renderAccum < 1 / 32) return;
+
+        const dt = Math.min(this.renderAccum, 0.05);
+        this.renderAccum = 0;
 
         this.t += dt;
         if (this.wormhole > 0) this.wormhole = Math.max(0, this.wormhole - dt);
@@ -624,5 +708,8 @@ export class SkillOrbitEngine {
     /** Reset the clock so the first frame back does not see the whole pause. */
     resetClock(): void {
         this.last = 0;
+        /* Cleared with it, or the first frame back draws with whatever was
+           banked when the section left the screen. */
+        this.renderAccum = 0;
     }
 }
