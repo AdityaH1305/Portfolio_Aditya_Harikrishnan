@@ -54,7 +54,7 @@ const capabilities = [
         title: "Data-Driven Platforms",
         description:
             "Live APIs, analytics pipelines and custom scoring, with vision in the loop.",
-        evidence: "PlayNexus · multi-region pipeline  ·  SynthRescue · YOLO triage",
+        evidence: "Verdict · calibrated recovery agent  ·  SynthRescue · YOLO triage",
     },
 ];
 

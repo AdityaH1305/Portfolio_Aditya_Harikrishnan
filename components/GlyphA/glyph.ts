@@ -144,8 +144,76 @@ export const LETTER_CELLS: readonly Cell[] = (() => {
    projection scales by `min(w, h)` and so does the target size, so they
    cancel. One number covers every viewport. */
 
-/** Letter height as a fraction of the short edge. */
-export const LETTER_FRAC = 0.42;
+/**
+ * Letter height as a fraction of the short edge, per breakpoint.
+ *
+ * THIS USED TO BE ONE NUMBER FOR EVERY DEVICE, and on a phone that put a
+ * 90x157 letter across a hero column running x 24-351 at 375px — squarely on
+ * the lead paragraph and the whole right-hand facts column. The comment above
+ * is still true (`pitchFor` needs neither width nor height, because the
+ * projection and the target size both scale by `min(w, h)` and cancel), but
+ * "one number covers every viewport" confused *scale-invariant* with
+ * *appropriate*: the letter kept its proportion of the screen while the text
+ * column went from a right-hand half to the full width.
+ *
+ * Every other visual constant on the canvases is already a
+ * `Record<BreakpointMode, T>` — `CORE_POSITIONS`, `DRAW_ZONES`,
+ * `LENGTH_SCALE`, `CLUSTER_CONFIGS`. This is that shape, and the desktop
+ * value is untouched.
+ */
+/**
+ * A GLYPH-ONLY nudge off the atlas core, in viewport fractions.
+ *
+ * `CORE_POSITIONS` is shared: it places the atlas core AND the letter, so
+ * that the morph is a collapse into the exact point the core will occupy
+ * rather than a handover between two places. That is worth keeping on a
+ * desktop, where the copy stops at ~52vw and the core sits clear of it.
+ *
+ * On a phone it cannot be kept. The column is the full width, and the core's
+ * y = 0.50 puts the letter across the facts grid whatever size it is drawn
+ * at. Measured at 375x812 with the tightened hero, the right-hand side below
+ * y 592 is empty — the CTAs are left-aligned and end at x 172 — so 0.30 of a
+ * viewport lower lands the letter in that pocket and touches nothing.
+ *
+ * The cost is honest and worth stating: on mobile the letter no longer
+ * collapses in place, it drifts up into the core as it dissolves. That is a
+ * deviation from the desktop intent, taken deliberately, because a mark
+ * sitting on the copy is worse than a mark that travels.
+ */
+export const LETTER_CORE_OFFSET: Record<BreakpointMode, Vec2> = {
+    desktop: { x: 0, y: 0 },
+    tablet: { x: 0, y: 0 },
+    mobile: { x: 0, y: 0.4 },
+};
+
+/**
+ * Keep the letter's own edge this far inside the viewport, in px.
+ *
+ * The mobile offset above is a FRACTION of viewport height, but the hero it
+ * has to dodge is laid out by its content, not by the screen. At 0.30 the
+ * letter cleared everything on a 375x812 handset and still landed on the
+ * STATUS column of a 360x740 one, because the shorter screen moved the
+ * fraction up while the facts grid stayed where the copy put it. Pushing the
+ * offset down far enough for the short case then risks running the letter off
+ * the bottom of a shorter one still, so the fraction is clamped rather than
+ * trusted.
+ */
+export const LETTER_EDGE_MARGIN = 16;
+
+export const LETTER_FRAC_BY_MODE: Record<BreakpointMode, number> = {
+    desktop: 0.42,
+    tablet: 0.34,
+    mobile: 0.26,
+};
+
+/**
+ * The desktop fraction, and the default everywhere a mode is not in hand.
+ *
+ * Kept as its own export so `pitchFor()` and `cellSizeFor()` called bare still
+ * describe the letter they always described — which is what the twenty-four
+ * existing tests assert, and what `NotFound` and `ZoneTitle` copied.
+ */
+export const LETTER_FRAC = LETTER_FRAC_BY_MODE.desktop;
 
 /** Depth the letter stands at. Behind the merge plane, so it settles away
     from the camera rather than looming into it. */
@@ -162,13 +230,68 @@ export const LETTER_Z = 4.0;
 const FILL = 0.52;
 
 /** Spacing between cell centres, in world units. */
-export function pitchFor(z: number = LETTER_Z): number {
-    return (LETTER_FRAC * z) / ((LETTER_ROWS - 1) * FOV);
+export function pitchFor(
+    z: number = LETTER_Z,
+    frac: number = LETTER_FRAC,
+): number {
+    return (frac * z) / ((LETTER_ROWS - 1) * FOV);
 }
 
 /** Half-extent of one letter cube, in world units. */
-export function cellSizeFor(z: number = LETTER_Z): number {
-    return pitchFor(z) * FILL;
+export function cellSizeFor(
+    z: number = LETTER_Z,
+    frac: number = LETTER_FRAC,
+): number {
+    return pitchFor(z, frac) * FILL;
+}
+
+/**
+ * The letter's height in screen pixels, cube extents included.
+ *
+ * `frac * short` is the span between the outermost cube CENTRES; a cube
+ * reaches its own half-extent past that at the top and the bottom. Reporting
+ * centres only is the same mistake `ZoneTitle`'s metrics had to unlearn, and
+ * it is why the width helper below has always added them.
+ */
+export function letterScreenHeight(w: number, h: number, frac: number): number {
+    const short = Math.min(w, h);
+    const pitchPx = (frac * short) / (LETTER_ROWS - 1);
+    return frac * short + 2 * pitchPx * FILL;
+}
+
+/**
+ * How much further the RESTING letter reaches than its flat letterform.
+ *
+ * The rest pose is tilted (`SPIN_REST.rx`) and it sways, so the silhouette of
+ * every cube grows and the outermost ones swing wider than their upright
+ * extent. Measured against the live hit box, which the draw loop fits to the
+ * real poses every frame: 145px drawn against a 112px upright letterform at
+ * 375px wide, hence 1.3.
+ */
+const TILT_ALLOWANCE = 1.3;
+
+/**
+ * Half the letter's real drawn height — what a viewport clamp has to use.
+ *
+ * Clamping on the upright height instead let the letter's bottom edge sit at
+ * y 811 of an 812px screen: correct arithmetic against the wrong silhouette.
+ */
+export function letterDrawnHalfHeight(
+    w: number,
+    h: number,
+    frac: number,
+): number {
+    return (letterScreenHeight(w, h, frac) * TILT_ALLOWANCE) / 2;
+}
+
+/** The letter's drawn width in screen pixels, cube extents included. */
+export function letterScreenWidth(w: number, h: number, frac: number): number {
+    const short = Math.min(w, h);
+    const pitchPx = (frac * short) / (LETTER_ROWS - 1);
+    /* Centres span (COLS - 1) pitches; a cube reaches its own half-extent
+       past the outermost centre on each side, the same correction
+       `ZoneTitle`'s metrics had to learn. */
+    return (LETTER_COLS - 1) * pitchPx + 2 * pitchPx * FILL;
 }
 
 export interface Vec2 {
@@ -214,9 +337,10 @@ export function slotPose(
     rx: number,
     ry: number,
     z: number = LETTER_Z,
+    frac: number = LETTER_FRAC,
 ): Pose {
     const c = LETTER_CELLS[i];
-    const pitch = pitchFor(z);
+    const pitch = pitchFor(z, frac);
 
     const ox = (c.cx - (LETTER_COLS - 1) / 2) * pitch;
     // Art rows run top-down; world Y runs up.
@@ -239,7 +363,7 @@ export function slotPose(
         z: Math.max(NEAR * 0.9, z + z2),
         rx,
         ry,
-        size: cellSizeFor(z),
+        size: cellSizeFor(z, frac),
     };
 }
 

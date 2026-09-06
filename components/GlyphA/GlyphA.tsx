@@ -43,6 +43,7 @@ import { onEntranceReady } from "@/lib/entrance";
 import { takeBurst } from "@/lib/handoff";
 import { ATLAS_QUIET_EVENT } from "@/lib/zone";
 import { deviceTier, dprCap } from "@/lib/deviceTier";
+import { renderScale } from "@/lib/renderScale";
 import {
     nearness,
     orderedFaces,
@@ -60,6 +61,11 @@ import {
     anchorWorld,
     atlasTargets,
     cellSizeFor,
+    LETTER_CORE_OFFSET,
+    LETTER_EDGE_MARGIN,
+    LETTER_FRAC,
+    LETTER_FRAC_BY_MODE,
+    letterDrawnHalfHeight,
     flyAt,
     letterBounds,
     morphAt,
@@ -146,10 +152,19 @@ export default function GlyphA() {
            the ratio — 2x on a 3x phone is four times the pixels a 1x screen
            needs, for a letter of flat translucent quads with no fine detail
            to resolve. `dprCap` is `2` on a desktop, so nothing changes there. */
-        const dpr = Math.min(window.devicePixelRatio || 1, 2, dprCap(deviceTier()));
+        const baseDpr = Math.min(window.devicePixelRatio || 1, 2, dprCap(deviceTier()));
+        /* Folded in, not replaced. `renderScale()` is 1 until the gate has
+           measured this machine and found it short of the budget, so on
+           anything that can hold the frame this is exactly `baseDpr` and
+           nothing about the letter changes. */
+        let dpr = baseDpr * renderScale();
         let w = 0;
         let h = 0;
         let anchor: Vec2 = { x: 0, y: 0 };
+        /* The letter's height as a fraction of the short edge, for THIS
+           viewport. Resolved in `size` alongside the anchor, because both are
+           functions of the breakpoint and both have to move together. */
+        let frac = LETTER_FRAC;
         let targets: Pose[] = [];
 
         /* `.glyph-a-canvas`'s `color` is `var(--accent)`, and nothing on the
@@ -167,23 +182,68 @@ export default function GlyphA() {
         };
         readAccent();
 
+        /* Declared HERE, above `size`, and that is not stylistic: `size()` is
+           called during setup and invalidates these bounds, so leaving them
+           down beside `paint` put them in the temporal dead zone and the
+           canvas threw before it drew a single frame. */
+        let dirty = { x0: 0, y0: 0, x1: 0, y1: 0, valid: false };
+        let fx0 = Infinity, fy0 = Infinity, fx1 = -Infinity, fy1 = -Infinity;
+
         const size = () => {
             const r = canvas.getBoundingClientRect();
             if (r.width < 1 || r.height < 1) return;
-            if (Math.abs(r.width - w) < 0.5 && Math.abs(r.height - h) < 0.5) return;
+            /* The RATIO is part of the identity of the backing store, not
+               just the box. The gate publishes its measurement at the press,
+               which is after this canvas has already sized itself once — so
+               without this the letter would fly at whatever scale it happened
+               to mount with and the measurement would do nothing. */
+            const want = baseDpr * renderScale();
+            const sameBox =
+                Math.abs(r.width - w) < 0.5 && Math.abs(r.height - h) < 0.5;
+            if (sameBox && Math.abs(want - dpr) < 0.001) return;
+            dpr = want;
 
             w = r.width;
             h = r.height;
             canvas.width = Math.round(w * dpr);
             canvas.height = Math.round(h * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            /* A new backing store is already blank, and last frame's bounds
+               were measured against the old one. Both say the same thing:
+               the next clear must be a full one. */
+            dirty.valid = false;
 
             /* The letter stands where the atlas core will be, so the morph is
                a collapse into that exact point rather than a handover between
                two places. */
             const mode = getBreakpointMode(window.innerWidth);
             const core = CORE_POSITIONS[mode];
-            anchor = anchorWorld(core.x * w, core.y * h, LETTER_Z, w, h);
+            /* Off the shared core by a glyph-only offset — zero everywhere but
+               mobile, where the copy runs the full width and the core sits on
+               the facts grid. See LETTER_CORE_OFFSET. */
+            const off = LETTER_CORE_OFFSET[mode];
+            /* Clamped so the offset can be generous enough for the shortest
+               phone without running the letter off the bottom of it. Zero
+               offset means zero clamping in practice — the desktop letter
+               sits at 0.36h and never comes near the edge. */
+            const halfH = letterDrawnHalfHeight(w, h, frac);
+            const wantY = (core.y + off.y) * h;
+            const maxY = h - halfH - LETTER_EDGE_MARGIN;
+            anchor = anchorWorld(
+                (core.x + off.x) * w,
+                Math.min(wantY, maxY),
+                LETTER_Z,
+                w,
+                h,
+            );
+
+            /* ── Smaller where the copy is wider ──────
+               `CORE_POSITIONS` is NOT touched here, deliberately: it is the
+               atlas core's position too, so moving it on mobile would drag
+               the atlas with it and break the "letter collapses into the core
+               in place" property the morph depends on. Size is a glyph-only
+               knob, so size is what changes. */
+            frac = LETTER_FRAC_BY_MODE[mode];
 
             targets = atlasTargets(w, h, mode).map((t) => {
                 const world = anchorWorld(t.x, t.y, LETTER_Z, w, h);
@@ -192,7 +252,7 @@ export default function GlyphA() {
                     z: LETTER_Z,
                     rx: 0,
                     ry: 0,
-                    size: cellSizeFor() * 0.2,
+                    size: cellSizeFor(LETTER_Z, frac) * 0.2,
                 };
             });
         };
@@ -289,6 +349,19 @@ export default function GlyphA() {
            is why it is drawn from immediately and never stored. */
         const facesOf = (pose: Pose) => orderedFaces(pose, w, h);
 
+        /* ── The painted bounds of the last frame ──────
+           The canvas is the whole viewport, and at devicePixelRatio 2 on a
+           1920x1080 screen `clearRect(0, 0, w, h)` alone measured 6.2ms —
+           a quarter of the frame, spent wiping pixels that were never
+           touched. Clearing only what was actually painted measured 0.66ms
+           over a typical burst footprint. It is pixel-identical: the region
+           outside the bounds is, by construction, already transparent.
+
+           Accumulated by `paint` as it walks the points it is about to
+           stroke, so it costs a handful of comparisons rather than a second
+           pass. `valid` is false whenever the last frame's bounds cannot be
+           trusted — first frame, after a resize, after a full clear — and
+           the fallback is always the whole canvas. */
         const paint = (
             faces: readonly (readonly { x: number; y: number }[])[],
             near: number,
@@ -296,6 +369,16 @@ export default function GlyphA() {
             alpha: number,
         ) => {
             if (alpha <= 0.004) return;
+
+            /* Set ONCE per fragment, not once per face. `near` and `alpha`
+               are properties of the cube, not of its sides, so the six faces
+               always resolved to the same two colours — and every assignment
+               is a fresh template string plus a CSS colour parse inside the
+               2D context. Six cubes' worth of that is invisible; twenty-seven
+               fragments at six faces each is 324 parses a frame. */
+            ctx.fillStyle = `rgba(${edge},${(0.12 + near * 0.26) * alpha})`;
+            ctx.strokeStyle = `rgba(${ICE},${(0.16 + near * 0.3) * alpha})`;
+
             for (const f of faces) {
                 ctx.beginPath();
                 ctx.moveTo(f[0].x, f[0].y);
@@ -303,14 +386,44 @@ export default function GlyphA() {
                     ctx.lineTo(f[i].x, f[i].y);
                 }
                 ctx.closePath();
-                ctx.fillStyle = `rgba(${edge},${(0.12 + near * 0.26) * alpha})`;
                 ctx.fill();
-                ctx.strokeStyle = `rgba(${ICE},${(0.16 + near * 0.3) * alpha})`;
                 ctx.stroke();
+
+                for (let i = 0; i < f.length; i++) {
+                    const { x, y } = f[i];
+                    if (x < fx0) fx0 = x;
+                    if (x > fx1) fx1 = x;
+                    if (y < fy0) fy0 = y;
+                    if (y > fy1) fy1 = y;
+                }
             }
         };
 
-        const clear = () => ctx.clearRect(0, 0, w, h);
+        /* Wipe last frame's ink and open a fresh bounds accumulation. */
+        const clear = () => {
+            if (dirty.valid) {
+                /* One for the stroke's own width, one for its antialiasing. */
+                const pad = 2;
+                ctx.clearRect(
+                    dirty.x0 - pad,
+                    dirty.y0 - pad,
+                    dirty.x1 - dirty.x0 + pad * 2,
+                    dirty.y1 - dirty.y0 + pad * 2,
+                );
+            } else {
+                ctx.clearRect(0, 0, w, h);
+            }
+            dirty.valid = false;
+            fx0 = Infinity;
+            fy0 = Infinity;
+            fx1 = -Infinity;
+            fy1 = -Infinity;
+        };
+
+        /** Close the frame: this frame's ink is next frame's clear region. */
+        const commit = () => {
+            if (fx1 > fx0) dirty = { x0: fx0, y0: fy0, x1: fx1, y1: fy1, valid: true };
+        };
 
         /* ── One frame ─────────────────────────────────
            Three regimes, chosen by the clock and the scroll rather than by
@@ -363,14 +476,21 @@ export default function GlyphA() {
             setFront(u < 1);
             if (u < 1) {
                 const pieces = frags.map((f, i) => {
-                    const slot = slotPose(i, anchor, spin.rx, swayAt(seconds));
+                    const slot = slotPose(i, anchor, spin.rx, swayAt(seconds), LETTER_Z, frac);
                     return flyAt(f, slot, u);
                 });
-                for (const d of [...pieces].sort((a, z) => z.pose.z - a.pose.z)) {
+                /* Sorted IN PLACE. `pieces` was built by the `map` directly
+                    above and is read nowhere else, so the spread was copying a
+                    27-element array every frame purely to hand `sort` a
+                    throwaway. Allocation per frame is what a low-end machine
+                    feels as a stutter rather than as a lower frame rate. */
+                pieces.sort((a, z) => z.pose.z - a.pose.z);
+                for (const d of pieces) {
                     paint(facesOf(d.pose), nearness(d.pose.z), edge, d.alpha);
                 }
                 hit.style.width = "0px";
                 hit.style.height = "0px";
+                commit();
                 return;
             }
 
@@ -384,7 +504,7 @@ export default function GlyphA() {
             const rest: Pose[] = [];
 
             for (let i = 0; i < LETTER_CELLS.length; i++) {
-                const slot = slotPose(i, anchor, spin.rx, ry);
+                const slot = slotPose(i, anchor, spin.rx, ry, LETTER_Z, frac);
 
                 /* The shove is measured in screen pixels — "near the cursor"
                    is a screen fact — and converted back to world units at the
@@ -407,7 +527,10 @@ export default function GlyphA() {
                 );
             }
 
-            for (const d of [...drawn].sort((a, z) => z.pose.z - a.pose.z)) {
+            /* In place, for the reason `pieces` is: `drawn` is filled by the
+               loop above and read nowhere else. */
+            drawn.sort((a, z) => z.pose.z - a.pose.z);
+            for (const d of drawn) {
                 paint(facesOf(d.pose), nearness(d.pose.z), edge, d.alpha);
             }
 
@@ -428,6 +551,7 @@ export default function GlyphA() {
                 hit.style.width = "0px";
                 hit.style.height = "0px";
             }
+            commit();
         };
 
         /* ── Static frame, for a reader who asked for less motion ──
@@ -442,11 +566,13 @@ export default function GlyphA() {
             ctx.lineWidth = 1;
 
             const poses = LETTER_CELLS.map((_, i) =>
-                slotPose(i, anchor, SPIN_REST.rx, 0),
+                slotPose(i, anchor, SPIN_REST.rx, 0, LETTER_Z, frac),
             );
-            for (const p of [...poses].sort((a, z) => z.z - a.z)) {
+            poses.sort((a, z) => z.z - a.z);
+            for (const p of poses) {
                 paint(facesOf(p), nearness(p.z), edge, 1);
             }
+            commit();
         };
 
         /* ── Pointer ───────────────────────────────────
@@ -509,6 +635,14 @@ export default function GlyphA() {
 
             const burst = takeBurst();
             frags = burst ? [...burst.fragments] : shatter(Math.random);
+
+            /* Pick up whatever the gate measured while it idled. It publishes
+               at the press, which is after this canvas first sized itself, so
+               without asking again here the flight would run at the mount-time
+               scale and the measurement would have bought nothing. `size` is a
+               no-op when the ratio is unchanged, which is every machine that
+               kept up. */
+            size();
 
             /* ONE CODE PATH, TWO ENTRANCES. A gated visitor's clock starts at
                the burst, so the flight opens on the intact merged cube the

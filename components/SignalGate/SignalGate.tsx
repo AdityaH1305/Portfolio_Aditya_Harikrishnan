@@ -11,6 +11,7 @@ import { gsap } from "@/lib/motion";
 import { getLenis, lockScroll, unlockScroll } from "@/lib/lenis";
 import { claimEntrance, releaseEntrance } from "@/lib/entrance";
 import { publishBurst } from "@/lib/handoff";
+import { FrameEstimate, renderScale, setRenderScale } from "@/lib/renderScale";
 import { ATLAS_QUIET_EVENT, CURSOR_TINT_EVENT } from "@/lib/zone";
 import { deviceTier, dprCap } from "@/lib/deviceTier";
 import {
@@ -609,23 +610,53 @@ export default function SignalGate() {
         const ctx = canvas.getContext("2d");
         if (!ctx) return;
 
-        const dpr = Math.min(
+        const baseDpr = Math.min(
             window.devicePixelRatio || 1,
             2,
             dprCap(deviceTier()),
         );
+        /* 1 until this machine has been measured and found short, so nothing
+           moves on hardware that keeps up. See lib/renderScale.ts. */
+        let dpr = baseDpr * renderScale();
         let w = 0;
         let h = 0;
         const field = fieldRef.current;
 
+        /* Frame-cost evidence, gathered while the station waits to be let in.
+           See lib/renderScale.ts for why this is measured rather than
+           inferred from `deviceTier`. */
+        const estimate = new FrameEstimate();
+        let measuring = true;
+
+        /* Declared above `size`, deliberately: `size()` runs during setup
+           and invalidates these bounds, so leaving them beside `paint` put
+           them in the temporal dead zone and the canvas threw before it drew
+           a frame. */
+        /* ── Only wipe what was actually painted ──────
+           This canvas is the whole viewport. At devicePixelRatio 2 on a
+           1920x1080 screen a full `clearRect` measured 6.2ms on its own —
+           and for most of the entrance there are six cubes on screen, so
+           nearly the entire frame was going on erasing empty space. Clearing
+           the painted bounds instead measured 0.66ms at a typical footprint,
+           and is pixel-identical: everything outside those bounds is already
+           transparent. */
+        let dirty = { x0: 0, y0: 0, x1: 0, y1: 0, valid: false };
+        let fx0 = Infinity, fy0 = Infinity, fx1 = -Infinity, fy1 = -Infinity;
+
         const size = () => {
             const r = canvas.getBoundingClientRect();
             if (r.width < 1 || r.height < 1) return;
+            /* The RATIO is part of the backing store's identity, not just
+               the box: the scale is published at the press, long after this
+               canvas first sized itself, so re-reading it here is what lets
+               the measurement take effect at all. */
+            dpr = baseDpr * renderScale();
             w = r.width;
             h = r.height;
             canvas.width = Math.round(w * dpr);
             canvas.height = Math.round(h * dpr);
             ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            dirty.valid = false;
             /* Spawned once, from the first real box. A resize must NOT respawn
                — the blocks would jump to new places mid-read — so the physics
                simply carries on against the new bounds, which is what the soft
@@ -689,6 +720,15 @@ export default function SignalGate() {
             alpha: number,
         ) => {
             if (alpha <= 0.004) return;
+
+            /* Once per cube, not once per face — `near` and `alpha` describe
+               the solid, not its sides, so all six always resolved to the
+               same pair. Each assignment is a template string and a CSS
+               colour parse inside the context; the gather draws twenty-seven
+               fragments, which made that 324 parses a frame. */
+            ctx.fillStyle = `rgba(${edge},${(0.12 + near * 0.26) * alpha})`;
+            ctx.strokeStyle = `rgba(${ICE},${(0.16 + near * 0.3) * alpha})`;
+
             for (const f of faces) {
                 ctx.beginPath();
                 ctx.moveTo(f[0].x, f[0].y);
@@ -696,10 +736,16 @@ export default function SignalGate() {
                     ctx.lineTo(f[i].x, f[i].y);
                 }
                 ctx.closePath();
-                ctx.fillStyle = `rgba(${edge},${(0.12 + near * 0.26) * alpha})`;
                 ctx.fill();
-                ctx.strokeStyle = `rgba(${ICE},${(0.16 + near * 0.3) * alpha})`;
                 ctx.stroke();
+
+                for (let i = 0; i < f.length; i++) {
+                    const { x, y } = f[i];
+                    if (x < fx0) fx0 = x;
+                    if (x > fx1) fx1 = x;
+                    if (y < fy0) fy0 = y;
+                    if (y > fy1) fy1 = y;
+                }
             }
         };
 
@@ -714,7 +760,7 @@ export default function SignalGate() {
            is why it is drawn from immediately and never stored. */
         const facesOf = (pose: Pose) => orderedFaces(pose, w, h);
 
-        const draw = (seconds: number) => {
+        const paintFrame = (seconds: number) => {
             if (w < 1) size();
             if (w < 1) return;
 
@@ -737,11 +783,45 @@ export default function SignalGate() {
             const now = performance.now();
             if (bornRef.current === 0) bornRef.current = now;
 
-            ctx.clearRect(0, 0, w, h);
+            if (dirty.valid) {
+                /* One for the stroke width, one for its antialiasing. */
+                const pad = 2;
+                ctx.clearRect(
+                    dirty.x0 - pad,
+                    dirty.y0 - pad,
+                    dirty.x1 - dirty.x0 + pad * 2,
+                    dirty.y1 - dirty.y0 + pad * 2,
+                );
+            } else {
+                ctx.clearRect(0, 0, w, h);
+            }
+            dirty.valid = false;
+            fx0 = Infinity;
+            fy0 = Infinity;
+            fx1 = -Infinity;
+            fy1 = -Infinity;
             ctx.lineJoin = "round";
             ctx.lineWidth = 1;
 
             const ms = finaleRef.current === 0 ? -1 : now - finaleRef.current;
+
+            /* ── Decide once, at the press ─────────────
+               Applied HERE and not while idling, because this is the frame
+               the whole screen turns over anyway — the copy leaving, the
+               blocks gathering. A backing store that changes size during the
+               quiet drift is a visible pop in sharpness with nothing to cover
+               it; the same change under the gather is invisible.
+
+               It still lands well before the burst 1400ms later, which is
+               what GlyphA reads when it takes the fragments. */
+            if (measuring && ms >= 0) {
+                measuring = false;
+                const scale = estimate.scale();
+                if (scale < 1) {
+                    setRenderScale(scale);
+                    size();
+                }
+            }
 
             /* ── The arrival: the blocks flying in ──
                Before anything else, and only ever once. `arrival.ts` owns the
@@ -982,6 +1062,39 @@ export default function SignalGate() {
                 .map((pose) => ({ pose, near: nearness(pose.z) }))
                 .sort((a, z) => a.near - z.near);
             for (const o of order) paint(facesOf(o.pose), o.near, edge, 1);
+        };
+
+        /* ── One place to close the frame ──────────────
+           `paintFrame` has four early returns — no box yet, an unreadable
+           colour, the reduced-motion still, and the burst handover — and
+           each has to leave this frame's painted bounds behind for the next
+           clear to use. Wrapping is what keeps that true whichever path was
+           taken; threading a call through every return is the version that
+           quietly stops working when a fifth one is added.
+
+           Safe on the paths that return BEFORE clearing: the bounds are then
+           still last frame's, that frame's ink is still on screen, and
+           re-committing the same region is exactly what the next clear
+           needs. */
+        const draw = (seconds: number) => {
+            /* ── Timing the DRAW, not the frame ────────
+               The gap between ticker calls is ~16.7ms on every healthy
+               machine, because that is rAF's cadence and not the work done
+               inside it — a machine with 90% of its budget spare and one with
+               5% are indistinguishable that way. What separates them is how
+               long this call takes, so that is what is measured, and only
+               while the gate is idling, which is the one stretch where the
+               field is drawing steadily and nothing else is competing.
+
+               `performance.now()` twice a frame is cheap enough to ignore,
+               and the sampling stops the moment the press lands. */
+            const t0 = measuring ? performance.now() : 0;
+            paintFrame(seconds);
+            if (measuring) estimate.add(performance.now() - t0);
+
+            if (fx1 > fx0) {
+                dirty = { x0: fx0, y0: fy0, x1: fx1, y1: fy1, valid: true };
+            }
         };
 
         if (reducedRef.current) {

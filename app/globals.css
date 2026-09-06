@@ -3677,7 +3677,16 @@ html.signal-connected .signal-gate {
 @media (max-width: 767px) {
   .uplink-timer {
     top: 5.25rem;
-    left: 1rem;
+    /* RIGHT, not left. At left: 1rem the chip measured x 16-108 while the
+       hero's eyebrow starts at x 24 — the two occupied the same 32px band and
+       the chip, at z-index 60 against the hero's z-index 1, won. It reads as
+       the word INTRO having been painted over.
+
+       The right edge is clear at this height: the mobile island stops at
+       x 297 and the eyebrow's ink ends near x 64, so a ~92px chip against the
+       right gutter touches neither. */
+    left: auto;
+    right: 1rem;
   }
 }
 
@@ -4046,6 +4055,30 @@ html.cursor-custom [data-cursor="text"] {
   .section-container {
     padding-left: 1.5rem;
     padding-right: 1.5rem;
+  }
+
+  /* ── The letter goes faint on a phone ──────────────
+     The comment on `.glyph-a-canvas` has always said this is what should
+     happen — "there is nowhere for a letter to stand that is not over type.
+     At rest it goes under, faint, like the atlas" — but nothing implemented
+     the faint half. The atlas dims to MOBILE_GLOBAL_OPACITY (0.55) in
+     `engine.ts`; this is that same number, and the letter is now sized for
+     the phone as well (`LETTER_FRAC_BY_MODE` in GlyphA/glyph.ts).
+
+     `:not(.is-front)` is the whole trick. `.is-front` is on for the FLIGHT
+     only — `setFront(u < 1)` in GlyphA.tsx — so the burst and the fly-in
+     still arrive at full strength and only the letter standing behind the
+     copy recedes. Dimming the flight too would be dimming the one moment
+     the effect exists for.
+
+     Done here rather than by scaling the per-face alpha: opacity on the
+     element composites on the GPU for nothing, while a per-face multiply is
+     work inside the draw loop on exactly the devices that have none spare. */
+  .glyph-a-canvas:not(.is-front) {
+    opacity: 0.55;
+    /* Or the landing is a step. Long enough to read as settling, short
+       enough that it is over before the reader starts scrolling. */
+    transition: opacity 420ms var(--ease);
   }
 }
 

@@ -40,6 +40,14 @@ import {
     atlasTargets,
     cellSizeFor,
     flyAt,
+    LETTER_CORE_OFFSET,
+    LETTER_EDGE_MARGIN,
+    LETTER_FRAC,
+    LETTER_FRAC_BY_MODE,
+    letterDrawnHalfHeight,
+    letterScreenHeight,
+    letterScreenWidth,
+    pitchFor,
     letterBounds,
     morphAt,
     repelOffset,
@@ -544,4 +552,126 @@ test("the shove pushes away from the pointer, not toward it", () => {
     }
     assert.ok(off.x > 0, "a cube right of the pointer must move right");
     assert.ok(Math.abs(off.y) < 1e-6);
+});
+
+
+/* ══════════════════════════════════════════════════════
+   The letter's footprint on a phone
+
+   The letter used to be one size on every device. That is scale-invariant,
+   which is not the same as appropriate: it keeps its share of the screen
+   while the text column goes from a right-hand half to the full width. On a
+   375px phone it measured 90x157 across a hero column running x 24-351 —
+   over the lead paragraph and the whole right-hand facts column.
+
+   These are the assertions that would have caught it.
+   ══════════════════════════════════════════════════════ */
+
+test("the desktop letter is byte-for-byte what it always was", () => {
+    // The bare calls are what NotFound and ZoneTitle copied, and what every
+    // other test in this file measures. Changing them would move the letter
+    // on the machines that never had a problem.
+    assert.equal(LETTER_FRAC, 0.42);
+    assert.equal(LETTER_FRAC_BY_MODE.desktop, LETTER_FRAC);
+    assert.equal(pitchFor(), pitchFor(4.0, LETTER_FRAC));
+    assert.equal(cellSizeFor(), cellSizeFor(4.0, LETTER_FRAC));
+});
+
+test("the letter steps down as the text column widens", () => {
+    const { desktop, tablet, mobile } = LETTER_FRAC_BY_MODE;
+    assert.ok(desktop > tablet, `desktop ${desktop} must exceed tablet ${tablet}`);
+    assert.ok(tablet > mobile, `tablet ${tablet} must exceed mobile ${mobile}`);
+    // A floor: below this the mark stops being legible as an A.
+    assert.ok(mobile >= 0.2, `mobile ${mobile} is too small to read as a letter`);
+});
+
+test("on a 375px phone the letter clears the hero text column", () => {
+    /* The measured geometry this fix exists for. `.section-container` is
+       padded 1.5rem each side under 768px, so the column runs 24 -> 351, and
+       CORE_POSITIONS.mobile.x = 0.80 centres the letter at x = 300. */
+    const w = 375;
+    const h = 812;
+    const centre = 0.8 * w;
+    const width = letterScreenWidth(w, h, LETTER_FRAC_BY_MODE.mobile);
+    const left = centre - width / 2;
+
+    const before = letterScreenWidth(w, h, LETTER_FRAC_BY_MODE.desktop);
+    assert.ok(
+        width < before * 0.7,
+        `mobile letter ${width.toFixed(0)}px should be well under the ` +
+            `${before.toFixed(0)}px it was drawn at before`,
+    );
+
+    /* It cannot clear the column outright — the column is the whole screen —
+       so what is asserted is that it stays in the right-hand third, out of
+       the measure where the copy actually starts. */
+    assert.ok(
+        left > w * 0.6,
+        `letter starts at x ${left.toFixed(0)}, which reaches into the copy`,
+    );
+    assert.ok(centre + width / 2 <= w, "and it must not run off the edge");
+});
+
+test("letter height and width stay in the letterform's own proportion", () => {
+    // 5 columns by 8 rows, so width is 4/7 of height plus the cube extents.
+    for (const frac of Object.values(LETTER_FRAC_BY_MODE)) {
+        const hgt = letterScreenHeight(375, 812, frac);
+        const wid = letterScreenWidth(375, 812, frac);
+        assert.ok(wid < hgt, `an A is taller than it is wide (${wid} vs ${hgt})`);
+        assert.ok(wid / hgt > 0.5 && wid / hgt < 0.8, `ratio ${wid / hgt}`);
+    }
+});
+
+test("only mobile is nudged off the shared atlas core", () => {
+    // Desktop and tablet must stay exactly on CORE_POSITIONS, or the morph
+    // stops being a collapse into the point the core will occupy.
+    for (const mode of ["desktop", "tablet"] as const) {
+        assert.equal(LETTER_CORE_OFFSET[mode].x, 0, `${mode} x must not move`);
+        assert.equal(LETTER_CORE_OFFSET[mode].y, 0, `${mode} y must not move`);
+    }
+    assert.ok(LETTER_CORE_OFFSET.mobile.y > 0, "mobile drops below the core");
+});
+
+test("the nudged mobile letter clears the hero's right-hand column", () => {
+    /* Measured against the tightened hero at 375x812: the right side is
+       empty below y 592 — the facts grid ends there and both CTAs are
+       left-aligned, ending at x 172. */
+    const w = 375;
+    const h = 812;
+    const cx = (0.8 + LETTER_CORE_OFFSET.mobile.x) * w;
+    const cy = (0.5 + LETTER_CORE_OFFSET.mobile.y) * h;
+    const wid = letterScreenWidth(w, h, LETTER_FRAC_BY_MODE.mobile);
+    const hgt = letterScreenHeight(w, h, LETTER_FRAC_BY_MODE.mobile);
+
+    assert.ok(cy - hgt / 2 > 592, `letter top ${cy - hgt / 2} must clear y 592`);
+    assert.ok(cx - wid / 2 > 172, `letter left ${cx - wid / 2} must clear the CTAs at x 172`);
+    assert.ok(cy + hgt / 2 < h, "and stay on screen");
+    assert.ok(cx + wid / 2 < w, "and inside the right edge");
+});
+
+test("the clamp keeps the letter fully on screen at every phone size", () => {
+    /* The offset is a fraction of viewport height but the hero is laid out by
+       its content, so the fraction alone put the letter on the STATUS column
+       of a 360x740 handset and, once pushed down far enough to clear it, ran
+       the bottom edge off a 375x812 one. Both ends have to hold. */
+    const frac = LETTER_FRAC_BY_MODE.mobile;
+    for (const [w, h] of [[360, 640], [360, 740], [375, 812], [414, 896], [430, 932]]) {
+        const halfH = letterDrawnHalfHeight(w, h, frac);
+        const wantY = (0.5 + LETTER_CORE_OFFSET.mobile.y) * h;
+        const y = Math.min(wantY, h - halfH - LETTER_EDGE_MARGIN);
+        assert.ok(
+            y + halfH <= h - LETTER_EDGE_MARGIN + 0.001,
+            `${w}x${h}: bottom ${y + halfH} escapes a ${h}px screen`,
+        );
+        assert.ok(y - halfH > 0, `${w}x${h}: top ${y - halfH} escapes upward`);
+    }
+});
+
+test("the drawn height allows for the extents and the tilt", () => {
+    // Clamping on the upright letterform put the bottom edge at y 811 of 812.
+    const w = 375, h = 812, frac = LETTER_FRAC_BY_MODE.mobile;
+    assert.ok(
+        letterDrawnHalfHeight(w, h, frac) > letterScreenHeight(w, h, frac) / 2,
+        "the drawn silhouette must exceed the upright letterform",
+    );
 });

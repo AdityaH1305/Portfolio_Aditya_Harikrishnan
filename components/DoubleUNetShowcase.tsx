@@ -216,7 +216,7 @@ export default function DoubleUNetShowcase() {
 
             {/* ═══════════ MEDIA — full measure ═══════════ */}
             <div className="section-container">
-                <div className="mt-20 md:mt-28">
+                <div className="mt-12 md:mt-28">
                     <FigureGallery
                         figures={figures}
                         idPrefix="dun"
@@ -227,7 +227,7 @@ export default function DoubleUNetShowcase() {
 
             {/* ═══════════ TERNARY EXTENSION + LIMITS ═══════════ */}
             <div className="section-container">
-                <div className="mt-20 md:mt-28 grid lg:grid-cols-2 gap-14 lg:gap-16 items-start">
+                <div className="mt-12 md:mt-28 grid lg:grid-cols-2 gap-14 lg:gap-16 items-start">
                         <Reveal y={20}>
                             <h3 className="heading-sm">
                                 Extending it to three classes
@@ -287,7 +287,7 @@ export default function DoubleUNetShowcase() {
             <div className="section-container">
                 <Reveal
                     stagger={0.08}
-                    className="mt-20 md:mt-24 flex flex-col items-start gap-8"
+                    className="mt-12 md:mt-24 flex flex-col items-start gap-8"
                 >
                     <p
                         data-reveal-child

@@ -7,8 +7,8 @@
    `projects: string[]`.
 
    That is not tidying. The old field already encoded more
-   than one project as a display string — "Ludex · PlayNexus",
-   "PlayNexus · SynthRescue" — and the wormhole regroup needs
+   than one project as a display string — "Ludex · Verdict",
+   "SynthRescue · This portfolio" — and the wormhole regroup needs
    a real many-to-many to cluster by. Re-splitting a label on
    " · " at 60fps to recover data we could have stored
    properly is how a separator inside a skill NAME (there are
@@ -94,7 +94,7 @@ export const PROJECTS: { id: string; label: string }[] = [
     { id: "gait", label: "Gait Fusion" },
     { id: "dun", label: "Modified Double U-Net" },
     { id: "ludex", label: "Ludex" },
-    { id: "playnexus", label: "PlayNexus" },
+    { id: "verdict", label: "Verdict" },
     { id: "synth", label: "SynthRescue" },
     { id: "site", label: "This portfolio" },
 ];
@@ -108,7 +108,7 @@ export const SKILLS: Skill[] = [
     { name: "Collaborative Filtering", category: "ml", projects: ["ludex"], where: "Ludex" },
     { name: "Content-Based Filtering", category: "ml", projects: ["ludex"], where: "Ludex" },
     { name: "Implicit ALS · TF-IDF", category: "ml", projects: ["ludex"], where: "Ludex" },
-    { name: "Scikit-learn", category: "ml", projects: ["ludex"], where: "Ludex" },
+    { name: "XGBoost · Scikit-learn", category: "ml", projects: ["ludex", "verdict"], where: "Ludex · Verdict" },
 
     // ── Computer Vision ──
     { name: "OpenCV", category: "cv", projects: ["gait"], where: "Gait Fusion" },
@@ -118,18 +118,18 @@ export const SKILLS: Skill[] = [
 
     // ── Systems & Backend ──
     { name: "Python", category: "sys", projects: [EVERY_PROJECT], where: "Every project" },
-    { name: "Flask · Node.js", category: "sys", projects: ["ludex", "playnexus"], where: "Ludex · PlayNexus" },
-    { name: "Real-time APIs", category: "sys", projects: ["playnexus"], where: "PlayNexus" },
+    { name: "Flask · FastAPI", category: "sys", projects: ["ludex", "verdict"], where: "Ludex · Verdict" },
+    { name: "Real-time APIs", category: "sys", projects: ["verdict"], where: "Verdict" },
     { name: "Java · C · C++", category: "sys", projects: [], where: "Coursework" },
 
     // ── Frontend ──
     { name: "TypeScript", category: "fe", projects: ["site"], where: "This portfolio" },
-    { name: "React · Next.js", category: "fe", projects: ["playnexus", "synth"], where: "PlayNexus · SynthRescue" },
+    { name: "React · Next.js", category: "fe", projects: ["synth", "site"], where: "SynthRescue · This portfolio" },
     { name: "GSAP · Lenis", category: "fe", projects: ["site"], where: "This portfolio" },
     { name: "Tailwind CSS", category: "fe", projects: ["site"], where: "This portfolio" },
 
     // ── Data ──
-    { name: "MySQL · MongoDB", category: "data", projects: ["playnexus", "ludex"], where: "PlayNexus · Ludex" },
+    { name: "MySQL · MongoDB", category: "data", projects: ["ludex"], where: "Ludex" },
     { name: "CASIA-B", category: "data", projects: ["gait"], where: "Gait Fusion" },
     { name: "BUSI", category: "data", projects: ["dun"], where: "Modified Double U-Net" },
 

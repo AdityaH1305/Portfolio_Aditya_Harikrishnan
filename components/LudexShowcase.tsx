@@ -157,7 +157,7 @@ export default function LudexShowcase() {
                 {/* 5fr/7fr weights the split toward the media: these are 1280px
                     UI screen recordings whose whole value is legibility, so the
                     video column gets the larger share. */}
-                <div className="mt-20 md:mt-28 grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-14 lg:gap-16 items-start">
+                <div className="mt-12 md:mt-28 grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] gap-14 lg:gap-16 items-start">
                     {/* Left: narrative. stagger mode puts the start state on the
                         children, so all three share one ScrollTrigger instead of
                         three independent ones that only looked staggered when
@@ -341,7 +341,7 @@ export default function LudexShowcase() {
                 stagger={0.08}
                 delay={0.06}
                 duration={0.6}
-                className="mt-24 md:mt-32 grid grid-cols-2 md:grid-cols-4 gap-y-10"
+                className="mt-14 md:mt-32 grid grid-cols-2 md:grid-cols-4 gap-y-10"
             >
                 {stages.map((s) => (
                     <div
@@ -387,7 +387,7 @@ export default function LudexShowcase() {
             <div className="section-container">
                 <Reveal
                     stagger={0.08}
-                    className="mt-20 md:mt-24 flex flex-col items-start gap-8"
+                    className="mt-12 md:mt-24 flex flex-col items-start gap-8"
                 >
                     {/* One line instead of six bordered pills */}
                     <p

@@ -109,7 +109,13 @@ const JOURNEY: YearGroup[] = [
                 title: "First platform shipped",
                 description:
                     "PlayNexus took me from coursework to production: real APIs, real pipelines, real usage.",
-                link: { href: "#projects", label: "PlayNexus in Experiments" },
+                /* No link. The beat is history and stays, but PlayNexus is no
+                   longer one of the Experiments, so `#projects` would land a
+                   reader on a section that does not mention it. */
+                link: {
+                    href: "https://github.com/AdityaH1305/PlayNexus",
+                    label: "PlayNexus on GitHub",
+                },
             },
         ],
     },
@@ -175,7 +181,8 @@ function Waypoint({ station = false }: { station?: boolean }) {
 }
 
 /* A hash link is a plain <a> so Lenis (`anchors: true`) intercepts it; a route
-   link is next/link. No `data-cursor`: Experience.tsx's link to a case study
+   link is next/link; an absolute http(s) one is a plain <a> with the same
+   `rel` every other external link on the site carries. No `data-cursor`: Experience.tsx's link to a case study
    carries none, and "READ CASE STUDY" over a `#projects` link would promise a
    destination that does not exist.
 
@@ -190,11 +197,30 @@ function BeatLink({ href, label }: { href: string; label: string }) {
             <span aria-hidden="true">→</span>
         </>
     );
-    return href.startsWith("#") ? (
-        <a href={href} className="compact-link mt-4">
-            {inner}
-        </a>
-    ) : (
+    if (href.startsWith("#")) {
+        return (
+            <a href={href} className="compact-link mt-4">
+                {inner}
+            </a>
+        );
+    }
+    /* An off-site beat needs the same rel as every other external link here.
+       It arrived with PlayNexus: the project left the Experiments section, so
+       its beat — which is history and stays — points at the repo instead of at
+       a section that no longer mentions it. */
+    if (/^https?:/.test(href)) {
+        return (
+            <a
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="compact-link mt-4"
+            >
+                {inner}
+            </a>
+        );
+    }
+    return (
         <Link href={href} className="compact-link mt-4">
             {inner}
         </Link>

@@ -172,7 +172,18 @@ export default function Hero() {
         <section
             ref={root}
             id="intro"
-            className="relative min-h-[100dvh] flex items-center overflow-hidden pt-24 pb-20 md:pt-0 md:pb-0"
+            /* pt-20/pb-14 on a phone, down from pt-24/pb-20. Every `mt-*`
+               below gained an `md:` partner in the same pass; together they
+               take the hero from 921px to 812px at 375x812, which is what
+               puts both CTAs above the fold instead of the Resume link
+               hanging below it.
+
+               pt-20 rather than pt-16, and that 16px is measured: the mobile
+               island ends at y 70, and at pt-16 the eyebrow's ink started at
+               y 67 — clear only because the island is centred and the
+               eyebrow is left-aligned, an 11px horizontal miss. pt-20 puts
+               the eyebrow below the island outright. */
+            className="relative min-h-[100dvh] flex items-center overflow-hidden pt-20 pb-14 md:pt-0 md:pb-0"
         >
             <div className="section-container w-full relative z-[1]">
                 <div className="max-w-2xl">
@@ -187,7 +198,7 @@ export default function Hero() {
                         reader. */}
                     <h1
                         ref={headingRef}
-                        className="display mt-6"
+                        className="display mt-4 md:mt-6"
                         data-hero="heading"
                         aria-label="Aditya Harikrishnan"
                         style={{ opacity: 0 }}
@@ -210,7 +221,7 @@ export default function Hero() {
                     <p
                         data-hero="tagline"
                         style={hidden(24)}
-                        className="mt-8 heading-md"
+                        className="mt-6 md:mt-8 heading-md"
                     >
                         <span className="text-secondary">Building systems,</span>
                         <br />
@@ -220,7 +231,7 @@ export default function Hero() {
                     <p
                         data-hero="support"
                         style={hidden(16)}
-                        className="mt-6 body-lg max-w-md"
+                        className="mt-5 md:mt-6 body-lg max-w-md"
                     >
                         From recommendation engines to large-scale discovery
                         platforms.
@@ -255,7 +266,7 @@ export default function Hero() {
                     <div
                         data-hero="facts"
                         style={hidden(16)}
-                        className="mt-12 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4"
+                        className="mt-8 md:mt-12 grid grid-cols-2 gap-x-6 gap-y-8 sm:grid-cols-4"
                     >
                         {facts.map((fact) => (
                             <div key={fact.label}>
@@ -280,7 +291,7 @@ export default function Hero() {
                     <div
                         data-hero="ctas"
                         style={hidden(16)}
-                        className="mt-14 flex flex-wrap items-center gap-4"
+                        className="mt-9 md:mt-14 flex flex-wrap items-center gap-4"
                     >
                         <a href="#work" className="btn-primary group/btn pr-2">
                             <span className="pl-2">View My Work</span>

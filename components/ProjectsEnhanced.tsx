@@ -6,39 +6,51 @@ import Reveal from "@/components/Reveal";
 import Lightbox from "@/components/Lightbox";
 
 /* ══════════════════════════════════════════════════════
-   Projects Section — Balanced Two-Column Composition
+   Experiments — two companion projects, matched
 
-   Visual hierarchy (non-negotiable):
-   Tier 1: Ludex — full immersive case study (LudexShowcase)
-   Tier 2: PlayNexus + SynthRescue — balanced companion
-           projects in a matched 2-column grid
+   Verdict + SynthRescue in a 2-column grid, both given the
+   same weight: same bezel scale, heading size (heading-sm),
+   tag style, image aspect ratio, highlight format and CTA
+   format. They are companions, not a primary and its
+   subordinate, so the variation comes from content rather
+   than from structure.
 
-   Design rationale:
-   - Equal-width columns (6:6) give both projects the
-     same visual importance — they are companions, not
-     a primary and its subordinate
-   - Both cards share identical architecture: same bezel
-     scale, heading size (heading-sm), tag style, image
-     aspect ratio, highlight format, and CTA format
-   - Natural variation comes from content (different
-     images, descriptions, tags), not structural inequality
-   - Both use compact-link CTAs (not pill buttons),
-     creating a clear collective step-down from Ludex's
-     btn-primary/btn-secondary treatment
-   - No eyebrow label (Ludex uses the budget)
-   - Section heading uses heading-lg (vs Ludex heading-xl)
+   Both use compact-link CTAs rather than pill buttons, which
+   keeps the whole section a step below the case studies in
+   `#work` without needing a second layout.
 
-   Skills applied:
-   - design-taste-frontend: editorial magazine layout,
-     identical containers with different stories, no
-     repetitive chapter pattern, no dashboard grid
-   - high-end-visual-design: double-bezel containers,
-     custom cubic-bezier [0.32, 0.72, 0, 1], macro
-     whitespace, button-in-button not needed (compact
-     links are the right weight here)
-   - full-output-enforcement: complete implementation,
-     no placeholders, no truncation
+   ── Two sources per shot, and that is the point ──
+   Verdict's screenshots are full-page captures — up to
+   5760x5628, near-square or portrait. Fed straight into the
+   card's `aspect-[16/10]` `object-cover` box they centre-crop
+   to an unreadable middle band, and the headline metric is
+   the first thing lost. So a `Shot` carries TWO files: a
+   hand-checked 16:10 crop for the card, and the whole region
+   at full resolution for the lightbox. See the `Shot` docs.
    ══════════════════════════════════════════════════════ */
+
+/**
+ * One screenshot, in its two forms.
+ *
+ * `card` is a 16:10 crop, so the card's `object-cover` box has nothing left
+ * to trim; `full` is the same view uncropped, which is what "zoom" is for.
+ * They were one field, and that only worked while every shot happened to be
+ * a wide browser capture — a full-page one loses its most important third to
+ * the crop, silently and with no error anywhere.
+ *
+ * `w`/`h` are the natural size of `full`, not of `card`. Lightbox reads them
+ * to pick its layout: above h/w 1.2 it renders at native width and lets the
+ * overlay scroll, instead of fitting a tall page into 72vh where it would be
+ * far smaller than the card it was opened from.
+ */
+interface Shot {
+    card: string;
+    full: string;
+    w: number;
+    h: number;
+    /** Optional line under the image in the lightbox. */
+    caption?: string;
+}
 
 interface ProjectData {
     title: string;
@@ -47,30 +59,73 @@ interface ProjectData {
     highlights: string[];
     github: string;
     demo: string | null;
-    images: string[];
+    images: Shot[];
 }
 
 
 const projects: ProjectData[] = [
     {
-        title: "PlayNexus",
-        tag: "Full Stack / Data Platform",
+        title: "Verdict",
+        tag: "Applied ML / Payments",
         description:
-            "Full-stack data platform with a multi-region price aggregation pipeline, custom value-scoring algorithm, and vibe-based discovery. Engineered for data-driven decision making at scale.",
+            "Diagnoses why a payment failed, then decides the economically correct recovery action — instead of treating failure as one undifferentiated bucket. Two models and an agent: one classifies the failure, one estimates the odds a retry would work, and only then is anything decided. Built for the Razorpay AI Buildathon.",
         highlights: [
-            "Real-time Steam API integration",
-            "Multi-region price comparison",
-            "Custom value score algorithm",
-            "Vibe-based game discovery system",
+            "XGBoost failure classifier — 0.943 accuracy vs 0.809 for a decline-code lookup",
+            "92.5% of recoverable revenue captured using 46% fewer retry attempts",
+            "Fraud hard-block proven by construction — 207 diagnosed, 0 actioned, 0 scored",
+            "Calibrated recovery model with uncertainty intervals, across 166 tests",
         ],
-        github: "https://github.com/AdityaH1305/PlayNexus",
-        demo: "https://playnexus-io.vercel.app",
+        github: "https://github.com/AdityaH1305/Verdict",
+        demo: "https://verdict-1v70.onrender.com/",
         images: [
-            "/projects/playnexus2.webp",
-            "/projects/playnexus-new.webp",
-            "/projects/playnexus3.webp",
-            "/projects/playnexus4.webp",
-            "/projects/playnexus5.webp",
+            {
+                card: "/projects/verdict1.webp",
+                full: "/projects/verdict1-full.webp",
+                w: 1736,
+                h: 2200,
+                caption:
+                    "The pinned 300-payment batch: ₹1,00,744 recovered of ₹4,42,395 failed, and 52.8% of everything acted on came back.",
+            },
+            {
+                card: "/projects/verdict2.webp",
+                full: "/projects/verdict2-full.webp",
+                w: 2200,
+                h: 1406,
+                caption:
+                    "Every rupee, end to end — what failed, why, what Verdict did about it, and where it ended up.",
+            },
+            {
+                card: "/projects/verdict3.webp",
+                full: "/projects/verdict3-full.webp",
+                w: 2200,
+                h: 1007,
+                caption:
+                    "Four policies over the same 1,600 held-out payments. No policy can see the outcome it is scored against.",
+            },
+            {
+                card: "/projects/verdict4.webp",
+                full: "/projects/verdict4-full.webp",
+                w: 2200,
+                h: 1375,
+                caption:
+                    "Net value depends entirely on what one retry costs, so the whole range is swept rather than one flattering figure reported.",
+            },
+            {
+                card: "/projects/verdict5.webp",
+                full: "/projects/verdict5-full.webp",
+                w: 2200,
+                h: 1604,
+                caption:
+                    "The retry loop was built without a cap first, on purpose. The cap costs 21 recoveries, and the dashboard says so.",
+            },
+            {
+                card: "/projects/verdict6.webp",
+                full: "/projects/verdict6-full.webp",
+                w: 2200,
+                h: 1593,
+                caption:
+                    "Any decision expands into the reasoning behind it — grounded in a verified table of published decline codes, never invented.",
+            },
         ],
     },
     {
@@ -85,14 +140,32 @@ const projects: ProjectData[] = [
         ],
         github: "https://github.com/AdityaH1305/SynthRescue",
         demo: "https://synthrescue.vercel.app/",
-        images: ["/projects/synth1.webp", "/projects/synth2.webp"],
+        /* Card and full are the same file here: both are ordinary browser
+           captures that already read correctly at 16:10. The `w`/`h` are still
+           worth passing — synth2 is portrait (640x871), and without them the
+           lightbox fits it to 72vh and renders it NARROWER than the card it
+           was opened from. */
+        images: [
+            {
+                card: "/projects/synth1.webp",
+                full: "/projects/synth1.webp",
+                w: 1918,
+                h: 797,
+            },
+            {
+                card: "/projects/synth2.webp",
+                full: "/projects/synth2.webp",
+                w: 640,
+                h: 871,
+            },
+        ],
     },
 ];
 
 /* ═══════════════════════════════════════════════════════
    ProjectCard — Shared card architecture
 
-   Both PlayNexus and SynthRescue use this component.
+   Both Verdict and SynthRescue use this component.
    Identical structure ensures visual parity:
    - Double-bezel hero image (16:10 aspect)
    - Click-to-lightbox with gallery navigation
@@ -152,9 +225,16 @@ function ProjectCard({
     const goPrev = () => setCurrent((i) => (i - 1 + count) % count);
     const goNext = () => setCurrent((i) => (i + 1) % count);
 
-    const lightboxImages = project.images.map((src, i) => ({
-        src,
+    /* The lightbox opens `full`, never `card`. The card's source is a 16:10
+       crop, so handing it to the viewer would make "zoom" show exactly what
+       was already on screen, only larger and no more complete. `w`/`h` go
+       with it because Lightbox picks its layout from them. */
+    const lightboxImages = project.images.map((shot, i) => ({
+        src: shot.full,
         alt: `${project.title} screenshot ${i + 1} of ${count}`,
+        w: shot.w,
+        h: shot.h,
+        caption: shot.caption,
     }));
 
     const baseDelay = staggerIndex * 0.1;
@@ -174,17 +254,19 @@ function ProjectCard({
                                 stacked and cross-faded.
 
                                 Stacking is the tidier-looking option and it
-                                costs this section 5x its image weight:
-                                PlayNexus is 388 KB across five shots against
-                                the 27.5 KB of the one on screen, and every
-                                byte of that would be fetched for a reader who
-                                never touches an arrow. Swapping the src on a
+                                costs this section several times its image
+                                weight: Verdict is 316 KB across six card
+                                crops against the 42 KB of the one on screen,
+                                and every byte of that would be fetched for a
+                                reader who never touches an arrow. The `full`
+                                sources are heavier still and are not fetched
+                                at all until the lightbox opens. Swapping the src on a
                                 single element does not flash either — a
                                 browser keeps painting the current frame until
                                 the replacement has decoded, so the transition
                                 is a hold, not a blank. */}
                             <Image
-                                src={project.images[current]}
+                                src={project.images[current].card}
                                 alt={`${project.title} screenshot ${current + 1} of ${count}`}
                                 fill
                                 className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/card-img:scale-[1.02]"

@@ -189,7 +189,7 @@ export default function GaitShowcase() {
 
             {/* ═══════════ GALLERY 1 — RESULTS & ANALYSIS ═══════════ */}
             <div className="section-container">
-                <div className="mt-20 md:mt-28">
+                <div className="mt-12 md:mt-28">
                     <Reveal stagger={0.08} className="mb-6">
                         <p data-reveal-child className="label">
                             Results &amp; Analysis
@@ -216,7 +216,7 @@ export default function GaitShowcase() {
                 figures — showing all three at once, small and crisp, makes
                 the distinction from the results gallery obvious. */}
             <div className="section-container">
-                <div className="mt-24 md:mt-32">
+                <div className="mt-14 md:mt-32">
                     <Reveal stagger={0.08} className="mb-6">
                         <p data-reveal-child className="label">
                             Preprocessed Input · CASIA-B
@@ -279,7 +279,7 @@ export default function GaitShowcase() {
                 Sits directly after the input strip: the reader has just seen
                 the three silhouettes, and this shows what the pipeline does
                 to them — computed live from those same three files. */}
-            <div className="mt-24 md:mt-32">
+            <div className="mt-14 md:mt-32">
                 <GaitPipeline />
             </div>
 
@@ -287,7 +287,7 @@ export default function GaitShowcase() {
             <div className="section-container">
                 <Reveal
                     stagger={0.08}
-                    className="mt-20 md:mt-24 flex flex-col items-start gap-8"
+                    className="mt-12 md:mt-24 flex flex-col items-start gap-8"
                 >
                     <p
                         data-reveal-child
