@@ -11,6 +11,7 @@ import { gsap } from "@/lib/motion";
 import { getLenis, lockScroll, unlockScroll } from "@/lib/lenis";
 import { claimEntrance, releaseEntrance } from "@/lib/entrance";
 import { publishBurst } from "@/lib/handoff";
+import { track } from "@/lib/analytics";
 import { FrameEstimate, renderScale, setRenderScale } from "@/lib/renderScale";
 import { ATLAS_QUIET_EVENT, CURSOR_TINT_EVENT } from "@/lib/zone";
 import { deviceTier, dprCap } from "@/lib/deviceTier";
@@ -1221,7 +1222,60 @@ export default function SignalGate() {
                is a small annoyance rather than a broken page. */
         }
         announce();
+        /* IN `commit`, NOT in `reconnect`. This function's own comment above
+           says it: "Everything that must happen exactly once, whichever path
+           gets there" — both the normal and the reduced-motion branches of
+           `reconnect` pass through here exactly once.
+
+           `reducedRef` is a ref, so reading it disturbs neither the dep array
+           nor a render. The property is free, and given how much of the
+           entrance is designed around the reduced-motion path, knowing what
+           share of readers take it is worth having. */
+        track("gate_entered", { reduced: reducedRef.current });
     }, []);
+
+    /* ── THE OTHER HALF OF THE NUMBER: people who never pressed ──
+       `gate_entered` alone tells you nothing. What matters is the ratio, and
+       how long they sat there before giving up — that is the number that says
+       whether the entrance is the problem.
+
+       Four decisions, none of them obvious:
+
+       A RETURNING VISITOR INSIDE THEIR CLEARANCE IS NEVER COUNTED, and that
+       falls out for free rather than needing a guard. `getServerSnapshot`
+       returns true so the gate ships in the HTML for everyone, but the first
+       CLIENT render uses `getClientSnapshot`, which returns false for a
+       cleared visitor — `open` is already false here, so this never arms. It
+       looks like a gap, which is why it is written down.
+
+       `pagehide` ONLY, NEVER `visibilitychange`. Alt-tabbing is not
+       abandonment; this screen is explicitly designed to sit there as long as
+       the reader takes. Counting a tab switch as a bounce would inflate the
+       number in exactly the direction that makes you redesign a screen that
+       is working. `pagehide` is also the one that fires reliably on iOS
+       Safari, and it does not defeat bfcache.
+
+       KEYED ON [open, phase], which the field effect below is emphatically
+       NOT. That warning is about a canvas DRAW LOOP, where a rebuild discards
+       physics state and respawns the field. This owns one listener and a
+       scalar; rebuilding it is free, and leaving `idle` is precisely the
+       signal to stop listening. Do not "fix" it to match.
+
+       IT UNDERCOUNTS, and that is stated rather than hidden. `pagehide` gives
+       handlers very little time and neither sink guarantees `sendBeacon`.
+       Treat it as a floor, not a count. */
+    useEffect(() => {
+        if (!open || phase !== "idle") return;
+        const at = performance.now();
+        let sent = false;
+        const leave = () => {
+            if (sent) return;
+            sent = true;
+            track("gate_abandoned", { ms: Math.round(performance.now() - at) });
+        };
+        window.addEventListener("pagehide", leave);
+        return () => window.removeEventListener("pagehide", leave);
+    }, [open, phase]);
 
     /* Tearing down is its own step, and the in-memory flag MUST NOT be
        cleared before it.

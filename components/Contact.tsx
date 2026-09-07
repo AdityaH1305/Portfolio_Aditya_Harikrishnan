@@ -2,6 +2,7 @@
 
 import Reveal from "@/components/Reveal";
 import MagneticLink from "@/components/MagneticLink";
+import { EMAIL, GITHUB_URL, LINKEDIN_URL } from "@/lib/site";
 
 /* ══════════════════════════════════════════════════════
    Contact Section
@@ -61,14 +62,14 @@ export default function Contact() {
                         className="mt-14 flex flex-col sm:flex-row gap-4"
                     >
                         <MagneticLink
-                            href="mailto:adityaharikrishnan@gmail.com"
+                            href={`mailto:${EMAIL}`}
                             className="btn-primary"
                         >
                             Email Me
                         </MagneticLink>
 
                         <MagneticLink
-                            href="https://github.com/AdityaH1305"
+                            href={GITHUB_URL}
                             external
                             className="btn-secondary"
                         >
@@ -76,7 +77,7 @@ export default function Contact() {
                         </MagneticLink>
 
                         <MagneticLink
-                            href="https://www.linkedin.com/in/aditya-harikrishnan-3932192a4/"
+                            href={LINKEDIN_URL}
                             external
                             className="btn-secondary"
                         >

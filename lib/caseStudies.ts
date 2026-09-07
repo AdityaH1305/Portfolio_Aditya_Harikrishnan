@@ -10,6 +10,8 @@
      • CaseStudyChrome — the route header, which only knows a
        pathname and has to recover the title from it
      • CommandPalette — the Ctrl K jump list
+     • app/sitemap.ts — one <url> per slug
+     • lib/structuredData.ts — the TechArticle node
 
    Every number here is copied from the case study it links
    to. If one changes there, change it here: two numbers that
@@ -56,6 +58,36 @@ export interface Cta {
 
 export interface CaseStudy {
     slug: string;
+    /**
+     * ISO `YYYY-MM-DD`. Written once, when the write-up first shipped, and
+     * never bumped — `datePublished` is what orders a person's work, and
+     * inventing one from the build clock is simply a lie. Because it never
+     * changes, it cannot rot.
+     *
+     * All three are 2026-08-09, which is when the three route files under
+     * app/work were first committed — the date the write-up first existed at
+     * a URL. If a study was
+     * actually published somewhere earlier, that earlier date is the true one
+     * and belongs here instead.
+     */
+    published: string;
+    /**
+     * ISO `YYYY-MM-DD`. Bump when the WRITE-UP changes — not when the site
+     * deploys.
+     *
+     * ── REQUIRED, and hand-bumped, and both are deliberate ──
+     * Optional, it gets forgotten on study #4 and the sitemap silently ships
+     * an entry with no `lastmod`. Required, it is a `tsc` error, which is the
+     * loud failure this file's existing discipline already calls for.
+     *
+     * Hand-bumped rather than `new Date()` at build time because that would
+     * be false — nothing about the Gait write-up changes because a font
+     * weight did, and this repo deploys for CSS tweaks. Google demonstrably
+     * discounts `lastmod` from sites where it is always "now": a value that
+     * always changes carries no information, so you would be paying a field
+     * to be ignored.
+     */
+    updated: string;
     /** Eyebrow — matches the tag inside the case study itself. */
     tag: string;
     title: string;
@@ -106,6 +138,8 @@ export interface CaseStudy {
 export const CASE_STUDIES: CaseStudy[] = [
     {
         slug: "gait-multi-modal-fusion",
+        published: "2026-08-09",
+        updated: "2026-09-07",
         tag: "Gait Biometrics / Computer Vision",
         title: "Gait Recognition via Multi-Modal Fusion",
         context: "ISRO · Liquid Propulsion Systems Centre",
@@ -175,6 +209,8 @@ export const CASE_STUDIES: CaseStudy[] = [
     },
     {
         slug: "ludex",
+        published: "2026-08-09",
+        updated: "2026-09-07",
         tag: "Recommendation Systems",
         title: "Ludex",
         thesis:
@@ -240,6 +276,8 @@ export const CASE_STUDIES: CaseStudy[] = [
     },
     {
         slug: "modified-double-unet",
+        published: "2026-08-09",
+        updated: "2026-09-07",
         tag: "Medical Imaging / Deep Learning",
         title: "Modified Double U-Net",
         thesis:
@@ -303,6 +341,11 @@ export const CASE_STUDIES: CaseStudy[] = [
     },
 ];
 
+export function caseStudyBySlug(slug: string): CaseStudy | undefined {
+    return CASE_STUDIES.find((c) => c.slug === slug);
+}
+
 export function caseStudyByPath(pathname: string): CaseStudy | undefined {
-    return CASE_STUDIES.find((c) => pathname === `/work/${c.slug}`);
+    const m = /^\/work\/([^/]+)$/.exec(pathname);
+    return m ? caseStudyBySlug(m[1]) : undefined;
 }

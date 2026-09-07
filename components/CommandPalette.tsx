@@ -4,9 +4,8 @@ import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { lockScroll, unlockScroll, scrollToSection } from "@/lib/lenis";
 import { CASE_STUDIES } from "@/lib/caseStudies";
-
-const RESUME_URL =
-    "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
+import { RESUME_URL, GITHUB_URL } from "@/lib/site";
+import { paletteEvent, track } from "@/lib/analytics";
 
 interface Command {
     id: string;
@@ -70,7 +69,7 @@ function getCommands(
             label: "GitHub",
             section: "Links",
             icon: "↗",
-            action: () => openExternal("https://github.com/AdityaH1305"),
+            action: () => openExternal(GITHUB_URL),
         },
         {
             id: "stress-test",
@@ -163,12 +162,31 @@ export default function CommandPalette({
        locks in an overlapping effect. */
     useEffect(() => {
         if (!open) return;
+        /* HERE rather than in `togglePalette`, which also CLOSES — and a side
+           effect inside a `setOpen(prev => …)` updater is wrong under
+           StrictMode, where updaters are double-invoked. This effect runs
+           exactly once per open, after commit. */
+        track("palette_opened");
         lockScroll();
         return unlockScroll;
     }, [open]);
 
     const runCommand = useCallback((cmd: Command) => {
         setOpen(false);
+
+        /* THE ONE PLACE THAT NEEDS AN IMPERATIVE CALL. Telemetry's delegated
+           listener sees anchor clicks; `openExternal` is `window.open`, so
+           there is no DOM event for it to see. Routed through `paletteEvent`
+           into the SAME named events as the DOM surfaces rather than a
+           parallel `command_run` funnel, so "how many resume views" stays one
+           answerable number instead of two you have to remember to add up.
+           The seven NAV ids map to null. */
+        const hit = paletteEvent(
+            cmd.id,
+            CASE_STUDIES.map((c) => c.slug),
+            REPORT_URL,
+        );
+        if (hit) track(hit.name, hit.props);
 
         /* Release the lock HERE rather than leaving it to the effect cleanup.
            React has not committed the close yet when this runs, so the

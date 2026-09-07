@@ -36,7 +36,7 @@ import NotFoundCubes from "@/components/NotFound/NotFoundCubes";
    ══════════════════════════════════════════════════════ */
 
 export const metadata: Metadata = {
-    title: "404 — Aditya Harikrishnan",
+    title: "404",
     description: "That page does not exist.",
 
     /* NOT INHERITED, and this is the line that matters. The root layout sets

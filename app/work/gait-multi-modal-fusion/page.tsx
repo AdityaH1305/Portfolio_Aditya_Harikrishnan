@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import { OG_IMAGE } from "@/lib/socialCard";
+import JsonLd from "@/components/JsonLd";
+import { caseStudyLd } from "@/lib/structuredData";
 import CaseStudyHero from "@/components/CaseStudyHero";
 import GaitShowcase from "@/components/GaitShowcase";
 
 export const metadata: Metadata = {
-    title: "Gait Recognition via Multi-Modal Fusion — Aditya Harikrishnan",
+    /* The "— Aditya Harikrishnan" suffix comes from the root layout's title
+       template now. */
+    title: "Gait Recognition via Multi-Modal Fusion",
     description:
         "Cross-view gait recognition built on GaitSet and extended with a multi-modal fusion branch. 98.00% Rank-1 under normal walking on CASIA-B. Built at ISRO's Liquid Propulsion Systems Centre.",
     alternates: { canonical: "/work/gait-multi-modal-fusion" },
@@ -24,6 +28,7 @@ export const metadata: Metadata = {
 export default function GaitCaseStudy() {
     return (
         <div className="pt-16 md:pt-24 pb-24 md:pb-32">
+            <JsonLd data={caseStudyLd("gait-multi-modal-fusion")} />
             <CaseStudyHero slug="gait-multi-modal-fusion" />
             <div className="mt-20 md:mt-28">
                 <GaitShowcase />

@@ -1,10 +1,14 @@
 import type { Metadata } from "next";
 import { OG_IMAGE } from "@/lib/socialCard";
+import JsonLd from "@/components/JsonLd";
+import { caseStudyLd } from "@/lib/structuredData";
 import CaseStudyHero from "@/components/CaseStudyHero";
 import LudexShowcase from "@/components/LudexShowcase";
 
 export const metadata: Metadata = {
-    title: "Ludex — Aditya Harikrishnan",
+    /* The "— Aditya Harikrishnan" suffix comes from the root layout's title
+       template now. */
+    title: "Ludex",
     description:
         "A hybrid recommendation engine fusing content-based and collaborative signals into one ranking, with a +27% Precision@20 improvement over the content-based baseline.",
     alternates: { canonical: "/work/ludex" },
@@ -24,6 +28,7 @@ export const metadata: Metadata = {
 export default function LudexCaseStudy() {
     return (
         <div className="relative pt-16 md:pt-24 pb-24 md:pb-32">
+            <JsonLd data={caseStudyLd("ludex")} />
             <CaseStudyHero slug="ludex" />
             <div className="mt-20 md:mt-28">
                 <LudexShowcase />

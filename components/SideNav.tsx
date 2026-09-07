@@ -3,9 +3,11 @@
 import { useEffect, useState, useRef, useCallback } from "react";
 import useMagnetic from "@/hooks/useMagnetic";
 import Logo from "@/components/Logo";
-
-const RESUME_URL =
-    "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
+/* RESUME_URL used to be declared here, and identically in Hero.tsx and
+   CommandPalette.tsx. One copy now, in lib/site.ts, for the reason
+   lib/socialCard.ts states about its own existence. */
+import { RESUME_URL, EMAIL } from "@/lib/site";
+import { track } from "@/lib/analytics";
 
 /* Must stay index-aligned with SECTION_IDS in
    components/LivingArchitecture/stages.ts — the atlas draws one
@@ -38,6 +40,14 @@ function MagneticResumeLink() {
             href={RESUME_URL}
             target="_blank"
             rel="noopener noreferrer"
+            /* The delegated listener in components/Telemetry.tsx would
+               otherwise classify this as a generic `outbound_clicked` at
+               drive.google.com, identically to the island and hero copies.
+               Naming it is what makes "who opened the CV, and from where" an
+               answerable question. Inert attributes — nothing here touches
+               `.resume-pill`'s measured position or its sweep. */
+            data-analytics="resume_viewed"
+            data-analytics-surface="rail"
             /* blur-md, not blur-xl, and an 85% fill rather than 60%: this is
                fixed over a scrolling page, so its backdrop is re-blurred every
                frame the page moves, and blur cost scales with radius. The
@@ -120,6 +130,12 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
 
         if (clickTimestamps.current.length >= REQUIRED_CLICKS) {
             clickTimestamps.current = [];
+            /* `via: "rail"` covers the mobile island's logo too — it pushes
+               into this same timestamp ring. Splitting them would mean
+               threading a source through a handler whose comment deliberately
+               designed it to be shared, for a distinction nobody would act
+               on. */
+            track("game_found", { via: "rail" });
             onOpenGame();
         }
     }, [onOpenGame]);
@@ -207,7 +223,7 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                     </a>
                     <div className="flex items-center gap-3">
                         <a
-                            href="mailto:adityaharikrishnan@gmail.com"
+                            href={`mailto:${EMAIL}`}
                             className="text-xs text-tertiary hover:text-accent transition-colors"
                         >
                             Email
@@ -216,6 +232,8 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                             href={RESUME_URL}
                             target="_blank"
                             rel="noopener noreferrer"
+                            data-analytics="resume_viewed"
+                            data-analytics-surface="island"
                             /* `border` is load-bearing, not decoration.
                                This carried `hover:border-accent` with no
                                border utility on the element, so the hover

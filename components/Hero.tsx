@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useGSAP } from "@gsap/react";
 import { gsap, EASE } from "@/lib/motion";
 import { onEntranceReady } from "@/lib/entrance";
+import { RESUME_URL } from "@/lib/site";
 
 /* ══════════════════════════════════════════════════════
    Hero
@@ -40,8 +41,6 @@ const facts = [
     { label: "Status", lines: ["Open to internships", "& research roles"] },
 ];
 
-const RESUME_URL =
-    "https://drive.google.com/file/d/1vzrKEpDGGLUcU3jRtCm9lk6MLR7-7NG-/view?usp=sharing";
 
 const hidden = (y: number) => ({
     opacity: 0,
@@ -318,6 +317,8 @@ export default function Hero() {
                             target="_blank"
                             rel="noopener noreferrer"
                             className="btn-secondary"
+                            data-analytics="resume_viewed"
+                            data-analytics-surface="hero"
                         >
                             View Resume
                         </a>

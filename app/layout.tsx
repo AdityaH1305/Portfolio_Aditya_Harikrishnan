@@ -3,8 +3,17 @@ import { Inter, JetBrains_Mono, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import ScrollProvider from "@/components/ScrollProvider";
 import { OG_IMAGE } from "@/lib/socialCard";
+import {
+  GA_ID,
+  SITE_DESCRIPTION,
+  SITE_TITLE,
+  SITE_URL,
+} from "@/lib/site";
+import JsonLd from "@/components/JsonLd";
+import { personLd, websiteLd } from "@/lib/structuredData";
 import RouteScrollReset from "@/components/RouteScrollReset";
 import Cursor from "@/components/Cursor";
+import Telemetry from "@/components/Telemetry";
 
 /* ── TWO FAMILIES DO THE TEXT NOW, AND THAT REVERSES A DECISION ──
    This comment used to argue for Inter alone, and it named Space Grotesk as
@@ -67,14 +76,22 @@ const spaceGrotesk = Space_Grotesk({
   weight: ["400"],
 });
 
-const SITE_URL = "https://adityaharikrishnan.vercel.app";
-const TITLE = "Aditya Harikrishnan — ML Systems & Full-Stack Engineering";
-const DESCRIPTION =
-  "CS undergrad at IIIT Pune building recommendation systems, data platforms, and applied AI. Ludex: a hybrid recommender with +27% Precision@20 over baseline.";
+/* Both live in lib/site.ts now — the JSON-LD Person node uses the same two
+   strings, and two descriptions that disagree is a credibility problem a
+   validator will never report. */
+const TITLE = SITE_TITLE;
+const DESCRIPTION = SITE_DESCRIPTION;
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: TITLE,
+  /* A template rather than a bare string, so the three case studies stop
+     hand-writing the suffix and case study #4 is correct by default. Renders
+     byte-identically to what shipped before.
+
+     A route that ever wants NO suffix must use `title: { absolute: "…" }` —
+     none do today, and this is the note so the first one that does is not a
+     silent double-suffix. */
+  title: { default: TITLE, template: "%s — Aditya Harikrishnan" },
   description: DESCRIPTION,
   keywords: [
     "Aditya Harikrishnan",
@@ -187,8 +204,44 @@ export default function RootLayout({
             __html: `try{var p=(localStorage.getItem("signal:cleared")||"").split(":"),t=+p[0],d=Math.min(+p[1],60000),x=Date.now()-t;if(p.length===2&&isFinite(t)&&isFinite(d)&&d>0&&x>=0&&x<d){document.documentElement.classList.add("signal-connected")}}catch(e){}`,
           }}
         />
+
+        {/* ── THE GA OPT-OUT, AND IT IS A SECOND SCRIPT ON PURPOSE ──
+            `window['ga-disable-<ID>']` is gtag's own documented opt-out and is
+            checked by gtag at every send, so it only has to EXIST before
+            gtag.js does. The alternative — read localStorage in an effect,
+            then conditionally render <GoogleAnalytics> — costs an extra frame
+            for everyone and races the mount.
+
+            SAFER HERE THAN THE SCRIPT ABOVE, which is worth stating: this one
+            sets a `window` property rather than a DOM attribute, so unlike
+            `signal-connected` it produces no hydration mismatch and leans on
+            no `suppressHydrationWarning`.
+
+            NOT MERGED WITH THE SCRIPT ABOVE. That one is documented as
+            "deliberately blocking and tiny — it reads one key and sets one
+            class", and its whole value is being verifiable by eye against
+            gate.ts. Folding an unrelated concern into the one thing on the
+            page that has to stay honest is how it stops being honest.
+
+            The key is written out again because a pre-paint script cannot
+            import a module. It is kept a bare literal with no internal format,
+            precisely so it cannot drift from `OPT_OUT_KEY` in
+            lib/analytics.ts — the same discipline, for the same reason, as
+            gate.ts and the script above. */}
+        {GA_ID && (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `try{if(localStorage.getItem("analytics:off")){window[${JSON.stringify("ga-disable-" + GA_ID)}]=true}}catch(e){}`,
+            }}
+          />
+        )}
       </head>
       <body className="min-h-full flex flex-col">
+        {/* Who this is and what this site is, for the machines. See
+            lib/structuredData.ts on why these are here at all — it is
+            retrieval, not rich results. */}
+        <JsonLd data={personLd()} />
+        <JsonLd data={websiteLd()} />
         <ScrollProvider>
           <RouteScrollReset />
           {/* Sibling of {children}, so it sits OUTSIDE app/template.tsx.
@@ -196,6 +249,20 @@ export default function RootLayout({
               out on every navigation. Mounting here also means one instance
               for the whole site instead of one per page. */}
           <Cursor />
+          {/* Beside <Cursor /> and for the reason stated just above it — one
+              instance for the whole site. NOT in app/template.tsx, and that is
+              the decisive detail: the template REMOUNTS on every navigation,
+              and Vercel's <Analytics> both subscribes to route changes
+              internally AND emits a pageview on mount, so every client-side
+              navigation would be counted twice. Doubling the accurate baseline
+              is exactly what defeats the point of running two tools.
+
+              LiveRings and DeviceTierFlag sit in the template instead, but
+              that is not a counter-precedent: LiveRings is there BECAUSE it
+              rescans the DOM for each route's media. Nothing here rescans, and
+              the delegated listener wants `document`, which a navigation never
+              replaces. */}
+          <Telemetry />
           {children}
         </ScrollProvider>
       </body>

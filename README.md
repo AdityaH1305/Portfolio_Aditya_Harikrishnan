@@ -86,7 +86,25 @@ I enjoy building systems where data, engineering, and usability come together to
 
 ---
 
+## Environment
+
+Both variables are optional — the site builds and runs with neither set.
+
+| Variable | Default | Notes |
+| --- | --- | --- |
+| `NEXT_PUBLIC_SITE_URL` | `https://adityaharikrishnan.vercel.app` | The canonical origin. Feeds `metadataBase`, `sitemap.xml`, `robots.txt` and the JSON-LD, so a custom domain is this one variable. |
+| `NEXT_PUBLIC_GA_ID` | *(unset)* | GA4 measurement ID, `G-XXXXXXXXXX`. Unset, no Google script is rendered at all. |
+
+`NEXT_PUBLIC_*` values are **inlined at build time** — changing one in Vercel
+does nothing until the next deploy.
+
+Analytics is Vercel Web Analytics (cookieless, same-origin) plus GA4. To stop
+counting your own visits on a device, load the site once with `?analytics=off`;
+`?analytics=on` reverses it.
+
+---
+
 ## Connect
 
 **Portfolio:** [adityaharikrishnan.vercel.app](https://adityaharikrishnan.vercel.app)  
-**LinkedIn:** [linkedin.com/in/aditya-harikrishnan-3932192a](https://www.linkedin.com/in/aditya-harikrishnan-3932192a/)
+**LinkedIn:** [linkedin.com/in/aditya-harikrishnan-3932192a4](https://www.linkedin.com/in/aditya-harikrishnan-3932192a4/)
