@@ -1,9 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Analytics } from "@vercel/analytics/next";
-import { track as vaTrack } from "@vercel/analytics";
-import { GoogleAnalytics, sendGAEvent } from "@next/third-parties/google";
+import dynamic from "next/dynamic";
 import { GA_ID } from "@/lib/site";
 import { onEntranceReady } from "@/lib/entrance";
 import {
@@ -44,6 +42,43 @@ import {
    the call is not dead code: it starts recording the day the
    plan changes, with no edit here.
    ══════════════════════════════════════════════════════ */
+
+/* ── EVERY ANALYTICS IMPORT IS DEFERRED, AND THAT IS THE POINT ──
+   Measured on the production build: the chunk holding `@vercel/analytics` and
+   `@next/third-parties` is 16.3 KB gzipped, and as a STATIC import from a
+   component mounted in the root layout it was fetched and evaluated as part of
+   hydration — inside the ~490 ms of long tasks the first second of this page
+   already spends on React and GSAP.
+
+   Nothing here is needed during hydration. Vercel's pageview fires from its own
+   mount effect and is just as correct one tick later; GA was already waiting on
+   the entrance. `ssr: false` is legal here because this file is a client
+   component — the root layout is a server component and could not have written
+   these itself.
+
+   NO EVENT IS LOST. `track()` in lib/analytics.ts buffers until a sink
+   registers and flushes to it at registration; that buffer exists for exactly
+   this window, and the delegated click listener below is attached from an
+   effect in THIS component, which does not wait for the chunks. */
+const Analytics = dynamic(
+    () => import("@vercel/analytics/next").then((m) => m.Analytics),
+    { ssr: false },
+);
+const GoogleAnalytics = dynamic(
+    () => import("@next/third-parties/google").then((m) => m.GoogleAnalytics),
+    { ssr: false },
+);
+
+/** Loaded on demand, so the sink costs nothing until it is registered. */
+async function vaTrack(name: string, props: Record<string, unknown>) {
+    const { track } = await import("@vercel/analytics");
+    track(name, props as never);
+}
+
+async function gaSend(name: string, props: Record<string, unknown>) {
+    const { sendGAEvent } = await import("@next/third-parties/google");
+    sendGAEvent("event", name, props);
+}
 
 /**
  * How long GA may wait for the entrance before loading anyway.
@@ -107,7 +142,7 @@ export default function Telemetry() {
     /* ── 2. The Vercel sink ────────────────────────────
        Registered unconditionally. On Hobby this records nothing and does not
        throw; see the header before deleting it as dead code. */
-    useEffect(() => registerSink("vercel", (n, p) => vaTrack(n, p)), []);
+    useEffect(() => registerSink("vercel", (n, p) => void vaTrack(n, p)), []);
 
     /* ── 3. The GA sink ────────────────────────────────
        Registered only once the script is on the page. `sendGAEvent` pushes
@@ -117,7 +152,7 @@ export default function Telemetry() {
        this runs at all. Two mechanisms, and they do not overlap. */
     useEffect(() => {
         if (!GA_ID || !gaReady) return;
-        return registerSink("ga", (n, p) => sendGAEvent("event", n, p));
+        return registerSink("ga", (n, p) => void gaSend(n, p));
     }, [gaReady]);
 
     /* ── 4. One delegated click listener for the whole site ──

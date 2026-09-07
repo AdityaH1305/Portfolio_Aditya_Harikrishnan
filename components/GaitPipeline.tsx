@@ -133,6 +133,14 @@ export default function GaitPipeline() {
     const pooledCanvas = useRef<HTMLCanvasElement | null>(null);
     const meanCanvas = useRef<HTMLCanvasElement | null>(null);
     const accentRef = useRef<[number, number, number]>([50, 130, 184]);
+    /* The last value handed to `setStage`. The scrub fires ~60 times a second
+       and the rounded stage changes SEVEN times across the whole run, so
+       without this the setter is called about 500 times for seven transitions
+       — see the comment in the ScrollTrigger below, which warned against
+       exactly this and then did it anyway. React's `Object.is` bailout keeps
+       it from re-rendering every frame, but the call, the closure and the
+       scheduling are still paid per frame. */
+    const lastStage = useRef(-1);
 
     const progress = useRef(0);
     const [stage, setStage] = useState(0);
@@ -398,12 +406,14 @@ export default function GaitPipeline() {
                     scrub: true,
                     onUpdate: (self) => {
                         progress.current = self.progress * (STAGES.length - 1);
-                        setStage(
-                            Math.min(
-                                STAGES.length - 1,
-                                Math.round(progress.current),
-                            ),
+                        const next = Math.min(
+                            STAGES.length - 1,
+                            Math.round(progress.current),
                         );
+                        if (next !== lastStage.current) {
+                            lastStage.current = next;
+                            setStage(next);
+                        }
                         // Written straight to the DOM: this fires every
                         // frame, and a setState per frame would re-render
                         // the whole stage list for a 1px bar.
@@ -420,6 +430,7 @@ export default function GaitPipeline() {
                coupling, and let the caption list stand on its own. */
             mm.add("(prefers-reduced-motion: reduce)", () => {
                 progress.current = STAGES.length - 1;
+                lastStage.current = STAGES.length - 1;
                 setStage(STAGES.length - 1);
                 if (barRef.current) barRef.current.style.transform = "scaleX(1)";
                 draw();

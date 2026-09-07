@@ -16,6 +16,20 @@ const nextConfig: NextConfig = {
      the default. */
   distDir: process.env.BUILD_DIR || ".next",
 
+  /* ── The Google barrel ships four components; we import one ──
+     `@next/third-parties/google` re-exports GoogleAnalytics, GoogleTagManager,
+     GoogleMapsEmbed and YouTubeEmbed from one index. A named import from that
+     barrel pulls the whole file in, so a build that uses only GoogleAnalytics
+     was still shipping the GTM, Maps and YouTube components to every visitor —
+     confirmed by grepping the built chunk for `YouTubeEmbed`, which was there.
+
+     This rewrites the barrel import to the specific module at build time. The
+     package has no subpath exports, so a hand-written deep import is not an
+     option; this is the supported mechanism. */
+  experimental: {
+    optimizePackageImports: ["@next/third-parties"],
+  },
+
   images: {
     /* The Double U-Net figures are authored as AVIF. Without this, Next's
        default output format is WebP only, so those sources would be

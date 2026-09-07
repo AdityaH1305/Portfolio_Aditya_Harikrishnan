@@ -80,31 +80,35 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
 
     /* ── Intersection Observer for active section tracking ── */
     useEffect(() => {
-        const observers: IntersectionObserver[] = [];
+        /* ONE observer watching seven targets, not seven watching one each.
+           Every one of them had identical options, so a single instance is
+           exactly equivalent — and an IntersectionObserver is not free: each
+           carries its own root/margin bookkeeping and is visited during the
+           same post-layout pass. components/LiveRings.tsx already uses the
+           one-observer-many-targets shape; this file predates it.
 
-        sections.forEach(({ id }) => {
-            const element = document.getElementById(id);
-            if (!element) return;
-
-            const observer = new IntersectionObserver(
-                (entries) => {
-                    entries.forEach((entry) => {
-                        if (entry.isIntersecting) {
-                            setActiveSection(id);
-                        }
-                    });
-                },
-                {
-                    rootMargin: "-40% 0px -55% 0px",
-                    threshold: 0,
+           `entry.target.id` replaces the per-observer closure over `id`, which
+           is the only reason seven were needed in the first place. */
+        const observer = new IntersectionObserver(
+            (entries) => {
+                for (const entry of entries) {
+                    if (entry.isIntersecting) {
+                        setActiveSection(entry.target.id);
+                    }
                 }
-            );
+            },
+            {
+                rootMargin: "-40% 0px -55% 0px",
+                threshold: 0,
+            },
+        );
 
-            observer.observe(element);
-            observers.push(observer);
-        });
+        for (const { id } of sections) {
+            const element = document.getElementById(id);
+            if (element) observer.observe(element);
+        }
 
-        return () => observers.forEach((o) => o.disconnect());
+        return () => observer.disconnect();
     }, []);
 
     /* ── Easter egg: 5 rapid clicks on nav ── */

@@ -588,3 +588,124 @@ Unchanged from the plan above, and worth not rediscovering:
   The browser available while this was written does not composite, so rAF is paused
   and no frame timing is possible in it — the trap documented in `CLAUDE.md` under
   *Verifying in a browser*. §5's protocol still needs running in real Chrome.
+
+---
+
+# 7. Third pass — the first one with numbers attached
+
+Prompted by a suspicion that adding analytics had cost the site speed. It had,
+but not in the way expected, and most of this round is measurement rather than
+change.
+
+## 7.1 The frame-rate gap is still open, and it is now bounded
+
+§6.5 ends "no frame-rate measurement has been taken for any of this". That is
+still true and the reason is unchanged: the browser pane available here reports
+`document.visibilityState === "visible"` and then delivers **zero rAF callbacks
+in 1000 ms**, so nothing scroll-linked or ticker-driven can be timed. No real
+Chrome was connected either.
+
+What changed is that the *JS* half no longer needs a compositor to be measured.
+Every per-frame hot path is a pure module, so it can be benchmarked in node at
+the exact scale it runs at. Measured at 1440x900, node v24:
+
+| Per-frame work | ms/frame | share of a 60 fps frame |
+|---|---|---|
+| `ZoneTitle` emerge, 80 cubes | 0.021 | 0.1% |
+| `GlyphA` at rest, 27 cubes | 0.007 | 0.0% |
+| `SignalGate` idle, 6 cubes + repulsion | 0.005 | 0.0% |
+| Atlas `blendStages` | 0.0009 | 0.0% |
+| **All four, if they ever coincided** | **0.033** | **0.2%** |
+| *(control)* the pre-§6.2 allocating path, 80 cubes | 0.061 | 0.4% |
+
+**The geometry JS is not a bottleneck and cannot become one.** §6.2's
+`orderedFaces` work is real — 3x cheaper than the path it replaced — but both
+numbers were already far inside the budget. Any remaining jank is paint,
+composite or hydration, not arithmetic. Do not spend another round optimising
+this arithmetic; the ceiling is 0.2%.
+
+`SkillOrbit`'s `solve()` — the one non-trivial init computation — is 0.010 ms.
+Also not a bottleneck.
+
+## 7.2 The style-recalc trap is still armed, and nothing is standing on it
+
+The §1.1 mechanism is worth re-measuring rather than assuming, because the DOM
+has grown (659 -> 729 nodes):
+
+| Operation on `<html>` | Then | Now |
+|---|---|---|
+| Write one custom property, force recalc | 33.8 ms | **42.5 ms** |
+| Toggle `zone-immersive`, force layout | ~33 ms | **0.68 ms** |
+| Toggle a class that inherits nothing | 0.65 ms | 0.01 ms |
+
+So §1.1's fix landed completely — the boundary that used to cost ~30 ms a frame
+for 1200 ms now costs **0.68 ms, once**. But the underlying trap is worse than
+it was: **any** custom-property write on `:root` now costs 42.5 ms, two and a
+half frames. Verified by grep that nothing writes one per frame today. If
+anything ever needs to, it must not go on `:root`.
+
+## 7.3 What analytics actually cost, and the fix
+
+The suspicion was right, but the mechanism was not bundle size.
+
+`components/Telemetry.tsx` is mounted in the root layout and statically
+imported `@vercel/analytics` and `@next/third-parties`. That put a **16.3 KB
+gzipped chunk into the initial hydration graph** — fetched and evaluated inside
+the long tasks the first second already spends on React and GSAP.
+
+Measured on the production build, gate skipped, warm cache, 1440x900:
+
+| | long tasks in first 2.5 s | total blocking |
+|---|---|---|
+| Static import | 2 (50 ms + 218 ms) | **268 ms** |
+| `next/dynamic`, `ssr: false` | 1 (173 ms) / 2 (61+87 ms) | **173 / 148 ms** |
+
+**~40% less main-thread blocking during load**, and the analytics libraries are
+now absent from every chunk the initial HTML references — verified by grepping
+each one for `googletagmanager` and `_vercel/insights` and finding nothing.
+
+Nothing is lost. The pageview fires from `<Analytics>`'s own mount effect and is
+just as correct a tick later; GA was already deferred behind the entrance; and
+`track()` in `lib/analytics.ts` buffers until a sink registers. Confirmed live:
+`window.va` is a function, `window.vaq` is its queue, and the insights script
+tag is on the page at 426 ms.
+
+Note this only works because `Telemetry` is a client component — `ssr: false` is
+illegal in the server layout that mounts it.
+
+**`@next/third-parties` also ships a barrel.** `YouTubeEmbed`, `GoogleMapsEmbed`
+and `GoogleTagManager` were all in the built chunk despite only `GoogleAnalytics`
+being imported (grep for `YouTubeEmbed` found it). The package declares no
+subpath exports, so a deep import is not available; `optimizePackageImports` in
+`next.config.ts` is the supported mechanism and is now set.
+
+## 7.4 Two carry-overs cleared
+
+- **`SideNav` built seven `IntersectionObserver`s** where one does the same job
+  — §6.5 flagged it, `LiveRings.tsx` already shows the pattern. Every one had
+  identical options, so a single instance with seven targets is exactly
+  equivalent; `entry.target.id` replaces the per-observer closure that was the
+  only reason for seven, and `getElementById(id)` guarantees `entry.target.id
+  === id` by construction.
+
+- **`GaitPipeline` called `setStage` on every scrub frame**, directly above a
+  comment explaining why per-frame `setState` is wrong. The rounded value
+  changes **seven times** across the whole run, so the setter was being called
+  roughly 500 times for seven transitions. React's `Object.is` bailout stopped
+  it re-rendering, which is why it was invisible, but the call and the
+  scheduling were still paid. Now gated on a `lastStage` ref, both call sites.
+
+## 7.5 Still open
+
+- **Frame rate, still.** §5's protocol needs a real compositing browser. What
+  §7.1 establishes is that if jank is ever measured, the JS is not where to look.
+- **Three full-viewport canvases are composited at once** on the home page —
+  `living-architecture`, `glyph-a` and `zone-title` are each `position: fixed`
+  at 100vw x 100vh permanently, 3x viewport overdraw (measured). `ZoneTitle`
+  draws for roughly 1,170 px of an 18,974 px page and correctly early-outs and
+  clears, so the per-frame cost is near zero — but the *layer* is held for the
+  whole page, which is ~21 MB of texture each at DPR 2. Gating `display` outside
+  each canvas's scroll window would drop two full-screen layers. **Not done: it
+  cannot be shown to help without a compositor, and CLAUDE.md records several
+  ways canvas re-sizing goes wrong silently.** Measure before touching.
+- §2.2 theme trim and `fetchPriority` on the first zone poster, unchanged.
