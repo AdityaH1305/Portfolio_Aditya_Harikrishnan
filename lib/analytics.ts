@@ -60,7 +60,11 @@ export type AnalyticsEvent =
     | "contact_clicked"
     | "outbound_clicked"
     | "palette_opened"
-    | "game_found";
+    | "game_found"
+    | "copy_link"
+    | "copy_email"
+    | "print_page"
+    | "replay_entrance";
 
 /**
  * The intersection of what both sinks accept. Vercel rejects nested objects
@@ -84,6 +88,10 @@ const EVENTS: readonly AnalyticsEvent[] = [
     "outbound_clicked",
     "palette_opened",
     "game_found",
+    "copy_link",
+    "copy_email",
+    "print_page",
+    "replay_entrance",
 ];
 
 function isEvent(v: string | null): v is AnalyticsEvent {
@@ -239,14 +247,36 @@ export function paletteEvent(
     slugs: readonly string[],
     reportUrl: string,
 ): Classified | null {
+    /* `pdf:<href>` — the PDF rows are derived from each study's own CTA list
+       (lib/commands.ts), so their ids carry the file with them and one branch
+       covers all of them, however many there come to be. This replaced a
+       hardcoded `report` id that could only ever name one of the three. */
+    if (id.startsWith("pdf:")) {
+        return {
+            name: "pdf_opened",
+            props: { file: id.slice(4), section: "palette" },
+        };
+    }
+
     switch (id) {
         case "resume":
             return { name: "resume_viewed", props: { surface: "palette" } };
         case "report":
+            /* Retired id, kept so a clearance written by an older deploy — or
+               a bookmark of the old label — still reports as a PDF open rather
+               than as nothing. */
             return {
                 name: "pdf_opened",
                 props: { file: reportUrl, section: "palette" },
             };
+        case "copy-link":
+            return { name: "copy_link", props: { surface: "palette" } };
+        case "copy-email":
+            return { name: "copy_email", props: { surface: "palette" } };
+        case "print":
+            return { name: "print_page", props: { surface: "palette" } };
+        case "replay-entrance":
+            return { name: "replay_entrance", props: { surface: "palette" } };
         case "github":
             return {
                 name: "contact_clicked",

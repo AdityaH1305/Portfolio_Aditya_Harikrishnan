@@ -882,7 +882,10 @@ export default function Cursor() {
                the class that hides the native cursor. A viewport-width gate
                would hide this layer on a narrow desktop window while the
                native cursor stayed hidden — leaving no cursor at all. */
-            className="fixed inset-0 z-[10000] pointer-events-none opacity-0
+            /* `cursor-layer` carries NO screen-side rule. It exists so the
+               print block can hide this layer, which is otherwise reachable
+               only through its Tailwind utilities. */
+            className="cursor-layer fixed inset-0 z-[10000] pointer-events-none opacity-0
                        transition-opacity duration-200"
         >
             {/* Soft ambient glow — the old CursorGlow, now DOM instead of a

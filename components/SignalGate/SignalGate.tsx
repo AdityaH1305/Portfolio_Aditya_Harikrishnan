@@ -12,6 +12,7 @@ import { getLenis, lockScroll, unlockScroll } from "@/lib/lenis";
 import { claimEntrance, releaseEntrance } from "@/lib/entrance";
 import { publishBurst } from "@/lib/handoff";
 import { track } from "@/lib/analytics";
+import useFocusTrap from "@/hooks/useFocusTrap";
 import { FrameEstimate, renderScale, setRenderScale } from "@/lib/renderScale";
 import { ATLAS_QUIET_EVENT, CURSOR_TINT_EVENT } from "@/lib/zone";
 import { deviceTier, dprCap } from "@/lib/deviceTier";
@@ -304,6 +305,17 @@ export default function SignalGate() {
     const liveRef = useRef(REST_LIVE);
 
     const open = wanted && !dismissed;
+
+    /* ── The gate has ONE focusable child, and still needs the trap ──
+       Not for the wrap — with a single button, Tab already lands back on it.
+       For the page BEHIND it, which is fully server-rendered and fully
+       tabbable: without this, Tab from the entrance walked into a portfolio
+       the reader had explicitly not entered yet, reading out a page they
+       could not see.
+
+       `buttonRef` is handed in because the effect below already focuses it on
+       open, and the two would otherwise both claim the first frame. */
+    useFocusTrap(gateRef, open, buttonRef);
 
     /* Derived so the hold below runs once per state CHANGE rather than once
        per phase. `idle` and `parting` are both "held"; `burst` is the release. */

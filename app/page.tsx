@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import SideNav from "@/components/SideNav";
 import Hero from "@/components/Hero";
@@ -12,18 +11,14 @@ import Skills from "@/components/Skills";
 import Journey from "@/components/Journey";
 import Contact from "@/components/Contact";
 import ScrollProgress from "@/components/ScrollProgress";
-import CommandPalette from "@/components/CommandPalette";
 import BackgroundAtmosphere from "@/components/BackgroundAtmosphere";
 import AtmosphereParallax from "@/components/AtmosphereParallax";
 import ZoneTint from "@/components/ZoneTint";
 import SignalGate from "@/components/SignalGate/SignalGate";
+import CanvasBoundary from "@/components/CanvasBoundary";
 import UplinkTimer from "@/components/SignalGate/UplinkTimer";
 
 /* ── Lazy-load heavy client-only modules — zero cost until needed ── */
-const SpaceInvadersModal = dynamic(
-    () => import("@/components/SpaceInvadersModal"),
-    { ssr: false, loading: () => null },
-);
 const LivingArchitecture = dynamic(
     () => import("@/components/LivingArchitecture/LivingArchitecture"),
     { ssr: false },
@@ -38,13 +33,16 @@ const GlyphA = dynamic(() => import("@/components/GlyphA/GlyphA"), {
 });
 
 export default function Home() {
-    const [showGame, setShowGame] = useState(false);
-
-    const openGame = useCallback(() => setShowGame(true), []);
-    const closeGame = useCallback(() => setShowGame(false), []);
-
+    /* `id="main"` matches /work/*'s landmark for consistency, but the skip
+       link does NOT target it here — everything worth skipping (the gate, the
+       canvases, the nav rail) is inside this element, so home targets
+       `#intro` instead. See components/SkipLink.tsx. */
     return (
-        <main className="bg-surface-0 text-primary min-h-screen relative">
+        <main
+            id="main"
+            tabIndex={-1}
+            className="bg-surface-0 text-primary min-h-screen relative"
+        >
             {/* Renders OVER everything below, never instead of it: the whole
                 page is server-rendered underneath, so crawlers and no-JS
                 visitors are unaffected and the LCP is not deferred behind an
@@ -71,13 +69,24 @@ export default function Home() {
             <ZoneTint />
             <BackgroundAtmosphere />
             <AtmosphereParallax />
-            <LivingArchitecture />
-            <GlyphA />
+            {/* Ornament only. A throw in either used to unmount the whole
+                tree — both are mounted at page level, so there was nothing
+                above them to catch it. The boundary renders null, so a failure
+                looks exactly like a machine that never loaded the chunk. */}
+            <CanvasBoundary label="atlas">
+                <LivingArchitecture />
+            </CanvasBoundary>
+            <CanvasBoundary label="glyph">
+                <GlyphA />
+            </CanvasBoundary>
             <ScrollProgress />
 
             {/* ── Navigation ── */}
-            <SideNav onOpenGame={openGame} />
-            <CommandPalette onOpenGame={openGame} />
+            {/* The palette and the game modal moved to
+                components/SiteCommands.tsx in the root layout, so Ctrl K works
+                on /work/* and the 404 too. SideNav reaches the game through
+                GAME_OPEN_EVENT now — see lib/zone.ts. */}
+            <SideNav />
 
             {/* ── Content Flow ── */}
             {/* Section order is a contract: it must match SECTION_IDS in
@@ -95,9 +104,6 @@ export default function Home() {
             <Skills />
             <Journey />
             <Contact />
-
-            {/* ── Space Invaders — triggered by easter egg or command palette ── */}
-            {showGame && <SpaceInvadersModal onClose={closeGame} />}
         </main>
     );
 }

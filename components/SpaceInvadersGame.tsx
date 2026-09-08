@@ -162,7 +162,25 @@ export default function SpaceInvadersGame() {
 
   /* ── keyboard ── */
   useEffect(() => {
+    /* ── THE GAME MUST NOT EAT ITS OWN MODAL'S BUTTONS ──
+       This binds to `window` and preventDefaults Space and all four arrows,
+       which is right for the canvas and wrong for everything else in the
+       dialog around it: Space is how a keyboard user activates a <button>, so
+       the modal's own Close control and its "View Source" link could not be
+       pressed at all while the game was mounted. Space also restarted the
+       game from anywhere, including from those controls.
+
+       Focus is the discriminator. If the reader has tabbed onto a real
+       control, the keystroke belongs to that control; otherwise it is the
+       ship's. */
+    const typingTarget = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      return !!t?.closest?.("button, a[href], input, select, textarea");
+    };
+
     const dn = (e: KeyboardEvent) => {
+      if (typingTarget(e)) return;
+
       keys.current.add(e.key);
       if (["ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight", " "].includes(e.key)) {
         e.preventDefault();
@@ -240,8 +258,18 @@ export default function SpaceInvadersGame() {
   useEffect(() => {
     const c = cvs.current;
     if (!c) return;
-    const ctx = c.getContext("2d")!;
-    if (!ctx) return;
+    /* The `!` here made the guard on the next line dead code to TypeScript
+       while still running at runtime — the worst of both, since it read as
+       checked and type-checked as if it could never be null.
+
+       The re-bind is not ceremony: `ctx` is read inside `render()` and a dozen
+       other nested closures, and TypeScript does not carry a narrowing across
+       a closure boundary for a `let`-shaped binding. Assigning the narrowed
+       value to its own `const` is what makes every use below non-null without
+       an assertion. */
+    const raw = c.getContext("2d");
+    if (!raw) return;
+    const ctx = raw;
     ctx.imageSmoothingEnabled = false;
 
     /* ── spawn a new wave of enemies ── */

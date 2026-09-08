@@ -8,6 +8,7 @@ import { useGSAP } from "@gsap/react";
 import { gsap, ScrollTrigger } from "@/lib/motion";
 import { caseStudyByPath, CASE_STUDIES } from "@/lib/caseStudies";
 import Logo from "@/components/Logo";
+import CanvasBoundary from "@/components/CanvasBoundary";
 
 /* ══════════════════════════════════════════════════════
    CaseStudyChrome
@@ -67,7 +68,9 @@ export default function CaseStudyChrome({
 
     return (
         <>
-            <LivingArchitecture ambient />
+            <CanvasBoundary label="atlas">
+                <LivingArchitecture ambient />
+            </CanvasBoundary>
 
             {/* Reading progress. Fixed, hairline, above the atlas. */}
             <div
@@ -145,7 +148,14 @@ export default function CaseStudyChrome({
                 </div>
             </header>
 
-            <main className="relative z-[1]">{children}</main>
+            {/* The skip link's target on this route: it comes after the
+                sticky header, so skipping to it skips exactly what it should.
+                `tabIndex={-1}` because without it the browser moves the
+                viewport but leaves focus behind, and the next Tab returns to
+                the top of the page. */}
+            <main id="main" tabIndex={-1} className="relative z-[1]">
+                {children}
+            </main>
 
             {/* Onward link — a case study should never be a dead end. */}
             {next && (

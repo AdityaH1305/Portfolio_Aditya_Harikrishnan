@@ -168,7 +168,13 @@ export default function LudexShowcase() {
                     >
                         {narrative.map((n) => (
                             <div key={n.title} data-reveal-child>
-                                <h3 className="heading-sm">{n.title}</h3>
+                                {/* h2, not h3. This route's only other heading
+                                    is the h1 in CaseStudyHero, so an h3 here
+                                    skipped a level and left the page with no
+                                    h2 at all. `heading-sm` is unchanged, and
+                                    the ladder is class-driven, so this renders
+                                    identically. */}
+                                <h2 className="heading-sm">{n.title}</h2>
                                 <p className="body-sm mt-3">{n.body}</p>
                             </div>
                         ))}

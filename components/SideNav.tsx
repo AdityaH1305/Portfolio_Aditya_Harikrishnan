@@ -8,6 +8,7 @@ import Logo from "@/components/Logo";
    lib/socialCard.ts states about its own existence. */
 import { RESUME_URL, EMAIL } from "@/lib/site";
 import { track } from "@/lib/analytics";
+import { GAME_OPEN_EVENT } from "@/lib/zone";
 
 /* Must stay index-aligned with SECTION_IDS in
    components/LivingArchitecture/stages.ts — the atlas draws one
@@ -26,9 +27,9 @@ const sections = [
 const REQUIRED_CLICKS = 5;
 const CLICK_WINDOW_MS = 2000;
 
-interface SideNavProps {
-    onOpenGame: () => void;
-}
+/* No props. `onOpenGame` used to come down from app/page.tsx; the game modal
+   now lives in components/SiteCommands.tsx in the root layout, which is ABOVE
+   this component, so the egg announces itself instead. See GAME_OPEN_EVENT. */
 
 /* ── Magnetic wrapper for resume link ── */
 function MagneticResumeLink() {
@@ -67,7 +68,7 @@ function MagneticResumeLink() {
     );
 }
 
-export default function SideNav({ onOpenGame }: SideNavProps) {
+export default function SideNav() {
     const [activeSection, setActiveSection] = useState("intro");
     const [mounted, setMounted] = useState(false);
     const clickTimestamps = useRef<number[]>([]);
@@ -140,9 +141,9 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                designed it to be shared, for a distinction nobody would act
                on. */
             track("game_found", { via: "rail" });
-            onOpenGame();
+            window.dispatchEvent(new CustomEvent(GAME_OPEN_EVENT));
         }
-    }, [onOpenGame]);
+    }, []);
 
     return (
         <>
@@ -160,6 +161,13 @@ export default function SideNav({ onOpenGame }: SideNavProps) {
                         className={`side-nav-item ${
                             activeSection === section.id ? "active" : ""
                         }`}
+                        /* The rail already knew which section was active and
+                           said so only in colour. `aria-current` is the same
+                           fact, announced. Zero visual change: nothing in
+                           globals.css selects on it. */
+                        aria-current={
+                            activeSection === section.id ? "true" : undefined
+                        }
                         onClick={handleEasterEgg}
                     >
                         <span className="side-nav-dot" />

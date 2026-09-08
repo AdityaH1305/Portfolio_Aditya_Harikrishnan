@@ -171,6 +171,12 @@ export default function Hero() {
         <section
             ref={root}
             id="intro"
+            /* The skip link's target on the home page — `<main>` there opens
+               with the gate, the canvases and the nav rail, so skipping to it
+               would skip nothing. `-1` keeps this out of the Tab order while
+               making it programmatically focusable; without it the viewport
+               moves and focus stays on the link. */
+            tabIndex={-1}
             /* pt-20/pb-14 on a phone, down from pt-24/pb-20. Every `mt-*`
                below gained an `md:` partner in the same pass; together they
                take the hero from 921px to 812px at 375x812, which is what

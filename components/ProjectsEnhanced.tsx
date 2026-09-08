@@ -245,9 +245,24 @@ function ProjectCard({
             <Reveal y={28} duration={0.8} delay={0.06 + baseDelay}>
                 <div className="shell-bezel compact-bezel">
                     <div className="core-bezel overflow-hidden">
-                        <div
+                        {/* A <button>, not a <div onClick>. This was the ONLY
+                            control on the site that could not be reached from a
+                            keyboard — every other expand affordance
+                            (CaseStudyStage, LudexShowcase, FigureGallery) is
+                            already a real button.
+
+                            The UA button styles are reset inline so this renders
+                            byte-identically to the div it replaces: no
+                            appearance, no border, no padding, no font
+                            inheritance break, and `text-align: inherit` because
+                            a button centres its content by default. */}
+                        <button
+                            type="button"
                             data-cursor="zoom"
-                            className="relative w-full aspect-[16/10] cursor-pointer group/card-img"
+                            aria-label={`Enlarge ${project.title} screenshot`}
+                            className="relative block w-full aspect-[16/10] cursor-pointer group/card-img
+                                       appearance-none bg-transparent border-0 p-0 m-0
+                                       font-inherit text-left"
                             onClick={() => setLightboxOpen(true)}
                         >
                             {/* ONE <Image> whose `src` swaps, NOT every shot
@@ -281,7 +296,7 @@ function ProjectCard({
                                    the image that paints on arrival. */
                                 preload={staggerIndex === 0 && current === 0}
                             />
-                        </div>
+                        </button>
                     </div>
                 </div>
 

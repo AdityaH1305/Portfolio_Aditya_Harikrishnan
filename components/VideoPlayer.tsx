@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { lockScroll, unlockScroll } from "@/lib/lenis";
+import useFocusTrap from "@/hooks/useFocusTrap";
 
 /* ══════════════════════════════════════════════════════
    VideoPlayer — expanded playback for the Ludex walkthroughs
@@ -142,8 +143,16 @@ export default function VideoPlayer({
 
     const progress = duration > 0 ? (time / duration) * 100 : 0;
 
+    const dialogRef = useRef<HTMLDivElement>(null);
+
+    /* All five dialogs declared `aria-modal="true"` while letting Tab walk
+       straight out into the page behind them, and closing dropped focus on
+       <body>. See hooks/useFocusTrap.ts. */
+    useFocusTrap(dialogRef, true);
+
     return (
         <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={`${label} — expanded player`}

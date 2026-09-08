@@ -4473,3 +4473,290 @@ html.glyph-dragging body {
 html.gate-locked {
   overflow: hidden;
 }
+
+/* ══════════════════════════════════════════════════════
+   FOCUS — the baseline
+
+   There were six `:focus-visible` rules before this, all
+   scoped to a class, three different offsets, two colours,
+   and four of them setting `outline: none` and substituting
+   a colour change. Everything NOT wearing one of those
+   classes fell through to the browser's default ring: every
+   control in the lightbox, the video player, the figure
+   galleries and the game modal, both Expand buttons, and all
+   three SkillOrbit buttons.
+
+   ── `:where()`, AND THAT IS THE WHOLE TRICK ──
+   `:where()` has ZERO specificity, so every one of those six
+   existing rules still wins — including the four that
+   deliberately remove the outline in favour of an underline
+   or a colour shift. This is a floor, not an override, and
+   it cannot be defeated by source order the way a plain
+   selector in this file could be. (globals.css is loaded
+   after Tailwind's utilities, which is why `.section-container`
+   kills `mt-*`; a normal selector here would have beaten
+   rules it has no business beating.)
+
+   The values are copied from the two most-used existing
+   rules — `.btn-primary:focus-visible` and
+   `.uplink-timer-chip:focus-visible` — so the floor matches
+   what the site already does rather than introducing a
+   seventh treatment.
+   ══════════════════════════════════════════════════════ */
+:where(
+    a[href],
+    button,
+    input,
+    select,
+    textarea,
+    summary,
+    [role="button"],
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+  border-radius: 2px;
+}
+
+/* The palette's search field carries Tailwind's `outline-none` with nothing
+   put back, so the `:where()` floor above cannot reach it — a utility beats
+   zero specificity. This is the one place that needs a real selector. */
+.command-palette-input:focus-visible {
+  outline: 2px solid var(--accent-text);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+/* ══════════════════════════════════════════════════════
+   SKIP LINK
+
+   Off-canvas, not `display: none` — a hidden element cannot
+   be focused, and being focusable is the entire feature.
+
+   It comes into view only on `:focus-visible`, so a pointer
+   user who happens to click it never sees it move.
+   ══════════════════════════════════════════════════════ */
+.skip-link {
+  position: fixed;
+  top: 0;
+  left: 0;
+  z-index: 10001; /* above the cursor layer, which is 10000 */
+
+  /* Clipped to nothing rather than moved off-screen with a huge negative
+     offset: a `left: -9999px` link is still laid out, and on some screen
+     readers it is announced with a position that scrolls the page. */
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+
+  padding: 0.7rem 1.2rem;
+  border-radius: 999px;
+  border: 1px solid var(--accent-border);
+  background: var(--surface-0);
+  color: var(--text-primary);
+  font-family: var(--font-jetbrains-mono), ui-monospace, monospace;
+  font-size: 12px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.skip-link:focus-visible {
+  width: auto;
+  height: auto;
+  overflow: visible;
+  clip-path: none;
+  top: 1rem;
+  left: 1rem;
+  outline: 2px solid var(--accent-text);
+  outline-offset: 3px;
+}
+
+/* THE GATE OWNS THE SCREEN WHILE IT IS UP. Tabbing into a page the reader has
+   not entered yet is worse than having no skip link, and the gate's own focus
+   trap would be fighting this for the first Tab. */
+body:has(.signal-gate) .skip-link {
+  display: none;
+}
+
+/* ══════════════════════════════════════════════════════
+   PRINT
+
+   Until this block existed there was not one print rule in
+   this file, and saving a case study to PDF — which is a
+   thing recruiters actually do — produced: near-white text
+   on white paper, twelve blank canvas boxes, every fixed
+   overlay stamped onto page one, and every below-the-fold
+   section missing entirely.
+
+   ── THE MECHANISM IS THE TOKEN RAMP, NOT A REWRITE ──
+   Every colour on this site resolves through --surface-*,
+   --text-* and --accent-*. Redefining those here flips the
+   whole document in one place, and anything added to the
+   site later inherits print support for free. There are no
+   per-component colour rules below and there should not be.
+
+   ── NO `print-color-adjust: exact` ──
+   That property exists to FORCE backgrounds to print. The
+   goal here is the exact opposite — let the paper be paper.
+   Setting it would print a black page and waste a cartridge.
+
+   ── The desktop choreography mostly disables itself ──
+   `.zone-scroll`'s sticky stage lives behind
+   `(min-width: 1024px)`, and in print that width is the
+   PAGE width — 794px on A4, 816px on Letter — so the query
+   does not match and the stacked layout, which is the CSS
+   default, already applies. The overrides below are
+   defensive, for landscape and large paper.
+   ══════════════════════════════════════════════════════ */
+@media print {
+  :root {
+    /* The ramp, inverted. Every value below clears 4.5:1 on white;
+       --text-quaternary stays decorative and is the only one that does not,
+       exactly as on screen. */
+    --surface-0: #ffffff;
+    --surface-1: #ffffff;
+    --surface-2: #ffffff;
+    --surface-3: #f4f6f8;
+
+    --text-primary: #10181d;
+    --text-secondary: #2b3a44;
+    --text-tertiary: #4a5b66;
+    --text-quaternary: #8b9aa4;
+
+    /* The accent has to darken too: #3282B8 is 3.69:1 on white and carries
+       metric numerals and links. */
+    --accent-rgb: 16 85 127;
+    --accent-text: #10557f;
+    --accent-hover: #10557f;
+    --accent-border: rgb(16 85 127 / 0.4);
+    --accent-muted: rgb(16 85 127 / 0.18);
+    --accent-subtle: rgb(16 85 127 / 0.08);
+
+    /* Ice-on-dark hairlines are invisible on paper. Same alphas, dark ink. */
+    --border-subtle: rgb(16 24 29 / 0.1);
+    --border-default: rgb(16 24 29 / 0.18);
+    --border-strong: rgb(16 24 29 / 0.3);
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: var(--text-primary);
+  }
+
+  /* ── The ornament. None of it means anything on paper ──
+     `canvas` as a bare element selector covers all twelve at once, including
+     any added later. The rest are the fixed overlays, which Chrome otherwise
+     stamps onto page one over the content. */
+  canvas,
+  .cursor-layer,
+  .scroll-progress,
+  .side-nav,
+  .mobile-island,
+  .kbd-hint,
+  .resume-pill,
+  .signal-gate,
+  .uplink-timer,
+  .zone-bar,
+  .zone-vignette,
+  .zone-tint,
+  .atmosphere-root,
+  .glyph-a-hit,
+  .not-found-cubes,
+  .gallery-nav {
+    display: none !important;
+  }
+
+  /* ── THE RESCUE, FOR THE THIRD TIME ──
+     `[data-reveal]` and `[data-hero]` ship at `opacity: 0` and are restored
+     by GSAP on scroll. Print never scrolls, so without this every section
+     below the first screen prints blank — the single worst symptom of the
+     old behaviour. The identical rescue already exists under
+     `(scripting: none)` and under `prefers-reduced-motion: reduce`; print is
+     the third context that needs it and was the only one missing. */
+  [data-reveal],
+  [data-reveal-child],
+  [data-hero] {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+  }
+
+  /* ── Un-pin everything ──
+     A sticky stage and three absolutely-stacked acts collapse to one
+     illegible box on paper. Static + visible puts them back into document
+     order, which is the reading order the markup was authored in. */
+  .zone-scroll,
+  .zone-stage,
+  .zone-act,
+  .zone-act-slots {
+    position: static !important;
+    height: auto !important;
+    min-height: 0 !important;
+    overflow: visible !important;
+    transform: none !important;
+  }
+
+  .zone-act,
+  .zone-act-beat,
+  .zone-act-slide,
+  .zone-act-head,
+  .zone-act-media,
+  .zone-act-ctas {
+    opacity: 1 !important;
+    visibility: visible !important;
+    transform: none !important;
+    position: static !important;
+  }
+
+  /* Anything still sticky — the case-study header rail. */
+  [class*="sticky"],
+  header {
+    position: static !important;
+  }
+
+  /* ── Page-break hygiene ──
+     A figure split across a page fold is worse than a short page. */
+  .shell-bezel,
+  .core-bezel,
+  figure,
+  .capability-card,
+  .metric-card,
+  img,
+  table {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  h1,
+  h2,
+  h3 {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  /* ── Where a link went ──
+     Scoped to `main`, so the (hidden) nav and the case-study CTA rail do not
+     each grow a URL. Internal links are left alone: a bare `/work/ludex` on
+     paper tells the reader nothing they can act on. */
+  main a[href^="http"]::after {
+    content: " (" attr(href) ")";
+    font-size: 0.85em;
+    color: var(--text-tertiary);
+    word-break: break-all;
+  }
+
+  /* The one thing that must never print: a skip link is an on-screen
+     affordance and it is positioned off-canvas, so it would otherwise
+     reserve a blank strip at the top of page one. */
+  .skip-link {
+    display: none !important;
+  }
+
+  @page {
+    margin: 16mm;
+  }
+}

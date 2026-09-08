@@ -1,7 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { lockScroll, unlockScroll } from "@/lib/lenis";
+import useFocusTrap from "@/hooks/useFocusTrap";
 
 /* ══════════════════════════════════════════════════════
    Lightbox — fullscreen image viewer
@@ -44,6 +45,18 @@ export default function Lightbox({
 }) {
     const canNavigate = images.length > 1;
     const current = images[index];
+    const dialogRef = useRef<HTMLDivElement>(null);
+
+    /* ABOVE the `if (!current) return null` below — hooks cannot be called
+       conditionally. `active` carries the same condition instead, so the trap
+       is inert on the render where there is nothing to show.
+
+       This dialog declared `aria-modal="true"` while letting Tab walk straight
+       out into the page behind it, and it is portalled to document.body, so
+       closing dropped focus on <body> and put the reader back at the top of
+       the tab order. See hooks/useFocusTrap.ts. */
+    useFocusTrap(dialogRef, !!current);
+
 
     const goPrev = useCallback(() => {
         if (!canNavigate) return;
@@ -97,6 +110,7 @@ export default function Lightbox({
 
     return (
         <div
+            ref={dialogRef}
             role="dialog"
             aria-modal="true"
             aria-label={current.alt}

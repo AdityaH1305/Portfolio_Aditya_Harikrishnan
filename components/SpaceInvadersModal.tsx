@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useCallback, useState } from "react";
+import useFocusTrap from "@/hooks/useFocusTrap";
 import SpaceInvadersGame from "./SpaceInvadersGame";
 import { lockScroll, unlockScroll } from "@/lib/lenis";
 
@@ -78,6 +79,11 @@ function Starfield() {
 
 export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps) {
   const [mounted, setMounted] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  /* Declared `aria-modal="true"` and let Tab walk out into the page behind it.
+     See hooks/useFocusTrap.ts. */
+  useFocusTrap(dialogRef, true);
 
   /* ── ESC to close ── */
   const handleKey = useCallback(
@@ -116,6 +122,7 @@ export default function SpaceInvadersModal({ onClose }: SpaceInvadersModalProps)
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Space Invaders Easter Egg"

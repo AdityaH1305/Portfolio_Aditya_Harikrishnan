@@ -55,3 +55,21 @@ export const ATLAS_QUIET_EVENT = "atlas:quiet";
  * touched.)
  */
 export const CURSOR_TINT_EVENT = "cursor:tint";
+
+/**
+ * "Open the stress test."
+ *
+ * `detail` is unused; the event's existence is the message.
+ *
+ * The game modal used to be owned by `app/page.tsx`, which handed `onOpenGame`
+ * down to `SideNav` and `CommandPalette` as a prop. It moved to
+ * `components/SiteCommands.tsx` in the ROOT LAYOUT so the palette exists on
+ * `/work/*` and on the 404 as well — and that broke the prop path, because
+ * `SideNav` is mounted by the page and the layout is above it.
+ *
+ * An event for the reason given at the top of this file: the two ends are in
+ * different subtrees with no props path between them, and lifting the state
+ * any higher would put a `useState` in a server component. `SideNav`'s
+ * five-click easter egg dispatches it; `SiteCommands` listens.
+ */
+export const GAME_OPEN_EVENT = "game:open";

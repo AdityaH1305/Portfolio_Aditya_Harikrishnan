@@ -6,8 +6,9 @@
    the mobile island nav.
 
    ── Built from type, not from artwork ──
-   `public/` holds no logo asset, and the five SVGs in there are unreferenced
-   Next scaffold. Authoring a raster or a bespoke glyph would introduce the
+   `public/` holds no logo asset and, since the Next scaffold SVGs were
+   deleted, no vector art at all. Authoring a raster or a bespoke glyph would
+   introduce the
    one thing this design system does not have — an image that carries brand
    weight and cannot be restyled by a token.
 

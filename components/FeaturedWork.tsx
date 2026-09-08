@@ -7,6 +7,8 @@ import CaseStudyZone from "@/components/CaseStudyZone";
 
 /* The title, built out of the atlas. `ssr: false` like the other two canvases
    — it is decoration over a heading that is already in the HTML. */
+import CanvasBoundary from "@/components/CanvasBoundary";
+
 const ZoneTitle = dynamic(() => import("@/components/ZoneTitle/ZoneTitle"), {
     ssr: false,
 });
@@ -106,7 +108,12 @@ export default function FeaturedWork() {
                 </Reveal>
             </div>
 
-            <ZoneTitle />
+            {/* Ornament. The <h2> it draws over stays in the DOM and stays
+                the heading either way, so a caught throw costs the cube word
+                and nothing else. */}
+            <CanvasBoundary label="zone-title">
+                <ZoneTitle />
+            </CanvasBoundary>
 
             {/* The immersive sequence replaces the card list. Each panel
                 still links to its /work/* route, so this is an index with a

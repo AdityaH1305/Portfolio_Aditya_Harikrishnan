@@ -1,90 +1,59 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { lockScroll, unlockScroll, scrollToSection } from "@/lib/lenis";
 import { CASE_STUDIES } from "@/lib/caseStudies";
-import { RESUME_URL, GITHUB_URL } from "@/lib/site";
 import { paletteEvent, track } from "@/lib/analytics";
+import {
+    ACTION_COPY_EMAIL,
+    ACTION_COPY_LINK,
+    ACTION_GAME,
+    ACTION_PRINT,
+    ACTION_REPLAY_ENTRANCE,
+    ACTION_SHORTCUTS,
+    commandsFor,
+    filterCommands,
+    type CommandSpec,
+} from "@/lib/commands";
+import { EMAIL } from "@/lib/site";
+import { expiredClearance } from "@/components/SignalGate/gate";
+import useFocusTrap from "@/hooks/useFocusTrap";
 
-interface Command {
-    id: string;
-    label: string;
-    section: string;
-    icon: string;
-    action: () => void;
-}
+/* The `Command` interface, the `NAV` array and the whole `getCommands` table
+   used to live here. They are in lib/commands.ts now — as DATA rather than
+   closures, so the one thing worth asserting about them (that the Navigate
+   rows change verb off the home page, where the section ids do not exist)
+   became testable. That bug shipped: seven rows, present and selectable, that
+   did nothing at all on every /work/* route. */
 
 const REPORT_URL = "/ludex-technical-report.pdf";
-
-/** Navigate entries mirror SideNav's `sections` array. */
-const NAV: { id: string; label: string; icon: string }[] = [
-    { id: "intro", label: "Intro", icon: "↑" },
-    { id: "research", label: "Approach", icon: "→" },
-    { id: "work", label: "Projects", icon: "★" },
-    { id: "projects", label: "Experiments", icon: "◆" },
-    { id: "stack", label: "Stack", icon: "→" },
-    { id: "journey", label: "Journey", icon: "→" },
-    { id: "contact", label: "Contact", icon: "✉" },
-];
 
 const openExternal = (url: string) =>
     window.open(url, "_blank", "noopener,noreferrer");
 
-function getCommands(
-    onOpenGame: () => void,
-    push: (href: string) => void,
-): Command[] {
-    return [
-        ...NAV.map(({ id, label, icon }) => ({
-            id,
-            label,
-            icon,
-            section: "Navigate",
-            action: () => scrollToSection(id),
-        })),
-        ...CASE_STUDIES.map((study) => ({
-            id: study.slug,
-            label: study.title,
-            icon: "▸",
-            section: "Projects",
-            action: () => push(`/work/${study.slug}`),
-        })),
-        {
-            id: "resume",
-            label: "Resume",
-            section: "Links",
-            icon: "↗",
-            action: () => openExternal(RESUME_URL),
-        },
-        {
-            id: "report",
-            label: "Ludex Technical Report (PDF)",
-            section: "Links",
-            icon: "↗",
-            action: () => openExternal(REPORT_URL),
-        },
-        {
-            id: "github",
-            label: "GitHub",
-            section: "Links",
-            icon: "↗",
-            action: () => openExternal(GITHUB_URL),
-        },
-        {
-            id: "stress-test",
-            label: "Initialize System Stress Test",
-            section: "System",
-            icon: "▶",
-            action: onOpenGame,
-        },
-    ];
+/* Best-effort, and deliberately quiet.
+
+   `navigator.clipboard` is unavailable on an insecure origin and can be
+   refused outright by permissions policy. There is nowhere on screen to
+   report that — the palette has already closed — and a copy that silently did
+   not happen is a small loss next to a thrown promise in the console of a
+   portfolio. */
+async function copy(text: string): Promise<void> {
+    try {
+        await navigator.clipboard?.writeText(text);
+    } catch {
+        /* No clipboard. Nothing to do and nothing to say. */
+    }
 }
 
 export default function CommandPalette({
     onOpenGame,
+    onOpenShortcuts,
 }: {
+    /** Both owned by components/SiteCommands.tsx, which owns the overlays. */
     onOpenGame: () => void;
+    onOpenShortcuts: () => void;
 }) {
     const [open, setOpen] = useState(false);
     const [query, setQuery] = useState("");
@@ -92,15 +61,14 @@ export default function CommandPalette({
     const [render, setRender] = useState(false);
     const [shown, setShown] = useState(false);
     const inputRef = useRef<HTMLInputElement>(null);
+    const panelRef = useRef<HTMLDivElement>(null);
     const router = useRouter();
+    const pathname = usePathname();
 
-    const commands = getCommands(onOpenGame, (href) => router.push(href));
-
-    const filtered = query.trim()
-        ? commands.filter((c) =>
-              c.label.toLowerCase().includes(query.toLowerCase())
-          )
-        : commands;
+    /* The list is now a pure function of the route — see lib/commands.ts on
+       why the seven Navigate rows have to change verb off the home page. */
+    const commands = commandsFor(pathname);
+    const filtered = filterCommands(commands, query);
 
     /* Reset query and selection on every toggle rather than in an
        effect — setState inside an effect triggers a cascading render
@@ -171,7 +139,62 @@ export default function CommandPalette({
         return unlockScroll;
     }, [open]);
 
-    const runCommand = useCallback((cmd: Command) => {
+    /* `render`, not `open`: the panel stays mounted through the close
+       transition, and tearing the trap down early would restore focus while
+       the palette is still on screen. `inputRef` is handed in because this
+       component already focuses the search field itself — without it the trap
+       and that effect would fight over the first frame. */
+    useFocusTrap(panelRef, render, inputRef);
+
+    /* ── The four verbs ──
+       lib/commands.ts decides WHICH verb a row gets; this decides what each
+       verb does. Keeping them apart is what let the routing rule become a
+       unit test instead of a closure nobody could assert on. */
+    const perform = useCallback(
+        (cmd: CommandSpec) => {
+            switch (cmd.kind) {
+                case "scroll":
+                    scrollToSection(cmd.payload);
+                    return;
+                case "route":
+                    router.push(cmd.payload);
+                    return;
+                case "external":
+                    openExternal(cmd.payload);
+                    return;
+                case "action":
+                    switch (cmd.payload) {
+                        case ACTION_COPY_LINK:
+                            void copy(window.location.href);
+                            return;
+                        case ACTION_COPY_EMAIL:
+                            void copy(EMAIL);
+                            return;
+                        case ACTION_PRINT:
+                            window.print();
+                            return;
+                        case ACTION_GAME:
+                            onOpenGame();
+                            return;
+                        case ACTION_SHORTCUTS:
+                            onOpenShortcuts();
+                            return;
+                        case ACTION_REPLAY_ENTRANCE:
+                            /* Backdated, never deleted — gate.ts documents why
+                               (a deleted key reads as "no clearance exists",
+                               which is a different state). The gate itself does
+                               not return until the next load, by design, so
+                               this reloads. */
+                            expiredClearance();
+                            window.location.reload();
+                            return;
+                    }
+            }
+        },
+        [router, onOpenGame, onOpenShortcuts],
+    );
+
+    const runCommand = useCallback((cmd: CommandSpec) => {
         setOpen(false);
 
         /* THE ONE PLACE THAT NEEDS AN IMPERATIVE CALL. Telemetry's delegated
@@ -197,8 +220,8 @@ export default function CommandPalette({
            The rAF then lets the close commit before the scroll begins, so
            the palette fades as the page starts moving. */
         unlockScroll();
-        requestAnimationFrame(() => cmd.action());
-    }, []);
+        requestAnimationFrame(() => perform(cmd));
+    }, [perform]);
 
     const handleKeyDown = useCallback(
         (e: React.KeyboardEvent) => {
@@ -221,7 +244,10 @@ export default function CommandPalette({
     );
 
     // Group filtered commands by section
-    const grouped: { section: string; items: (Command & { globalIndex: number })[] }[] = [];
+    const grouped: {
+        section: string;
+        items: (CommandSpec & { globalIndex: number })[];
+    }[] = [];
     let globalIdx = 0;
     for (const cmd of filtered) {
         const existing = grouped.find((g) => g.section === cmd.section);
@@ -243,6 +269,7 @@ export default function CommandPalette({
                 shown ? "opacity-100" : "opacity-0"
             }`}
             onClick={() => setOpen(false)}
+            ref={panelRef}
             role="dialog"
             aria-modal="true"
             aria-label="Command Palette"
@@ -286,7 +313,7 @@ export default function CommandPalette({
                             setSelectedIndex(0);
                         }}
                         placeholder="Type a command…"
-                        className="flex-1 bg-transparent text-sm text-primary placeholder:text-tertiary outline-none"
+                        className="command-palette-input flex-1 bg-transparent text-sm text-primary placeholder:text-tertiary outline-none"
                         autoComplete="off"
                         spellCheck={false}
                     />

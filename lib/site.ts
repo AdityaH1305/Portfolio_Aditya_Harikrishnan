@@ -100,6 +100,22 @@ export const RESUME_URL =
 export const GA_ID = process.env.NEXT_PUBLIC_GA_ID ?? "";
 
 /**
+ * `--surface-0`, the page ground, for the consumers that cannot read CSS.
+ *
+ * ── THIS REDUCES THE COPIES, IT DOES NOT ADD ONE ──
+ * app/layout.tsx used to write this hex TWICE as a literal — once for
+ * `viewport.themeColor` and once for the inline `<html>` background that
+ * covers the pre-stylesheet paint — and its own comment said all copies must
+ * move together. Adding a manifest would have made four. There are now two:
+ * this constant, and `--surface-0` in globals.css, which cannot import
+ * TypeScript.
+ */
+export const SURFACE_0 = "#1B262C";
+
+/** `--text-primary`. Paired with SURFACE_0 wherever a token is unreachable. */
+export const ICE = "#BBE1FA";
+
+/**
  * When the HOME page's content last meaningfully changed. ISO `YYYY-MM-DD`.
  *
  * HAND-BUMPED, like `published`/`updated` on each case study, and for the

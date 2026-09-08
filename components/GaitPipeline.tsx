@@ -110,7 +110,12 @@ function toCanvas(gray: Gray, rgb: [number, number, number]): HTMLCanvasElement 
     const c = document.createElement("canvas");
     c.width = N;
     c.height = N;
-    const ctx = c.getContext("2d")!;
+    /* Guarded, not asserted. `getContext` returns null when the context is
+       already taken with different attributes or when the tab is out of GPU
+       memory, and the `!` here turned that into a throw during RENDER — which,
+       before CanvasBoundary existed, took the whole route down. */
+    const ctx = c.getContext("2d");
+    if (!ctx) return c;
     const img = ctx.createImageData(N, N);
     for (let i = 0; i < N * N; i++) {
         img.data[i * 4] = rgb[0];

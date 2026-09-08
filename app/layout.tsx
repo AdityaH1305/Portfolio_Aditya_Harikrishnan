@@ -8,12 +8,15 @@ import {
   SITE_DESCRIPTION,
   SITE_TITLE,
   SITE_URL,
+  SURFACE_0,
 } from "@/lib/site";
 import JsonLd from "@/components/JsonLd";
 import { personLd, websiteLd } from "@/lib/structuredData";
 import RouteScrollReset from "@/components/RouteScrollReset";
 import Cursor from "@/components/Cursor";
 import Telemetry from "@/components/Telemetry";
+import SiteCommands from "@/components/SiteCommands";
+import SkipLink from "@/components/SkipLink";
 
 /* ── TWO FAMILIES DO THE TEXT NOW, AND THAT REVERSES A DECISION ──
    This comment used to argue for Inter alone, and it named Space Grotesk as
@@ -133,7 +136,7 @@ export const viewport: Viewport = {
   /* Must track --surface-0. It paints the mobile browser chrome and the
      overscroll gutter, so a stale value shows as a hairline of the old
      palette above and below the page. */
-  themeColor: "#1B262C",
+  themeColor: SURFACE_0,
   colorScheme: "dark",
 };
 
@@ -159,13 +162,12 @@ export default function RootLayout({
          HTML and applies at parse time, so the very first frame is already
          #1B262C and the gate simply resolves out of the right ground.
 
-         THIRD COPY OF THIS HEX, and deliberately so: `--surface-0` in
-         globals.css is the source, `themeColor` above mirrors it for the
-         mobile browser chrome, and this mirrors it for the pre-stylesheet
-         paint. All three exist for the same reason — they are consumed by
-         something that cannot read a CSS custom property — and all three must
-         move together. */
-      style={{ background: "#1B262C" }}
+         BOTH THIS AND `themeColor` ABOVE now read `SURFACE_0` from
+         lib/site.ts, which app/manifest.ts also reads. There used to be three
+         hand-copies of the hex and a manifest would have made four; there are
+         now two — that constant, and `--surface-0` in globals.css, which
+         cannot import TypeScript. They still must move together. */
+      style={{ background: SURFACE_0 }}
       /* The script below adds `signal-connected` to this element BEFORE React
          hydrates, which is the whole point of it running pre-paint. React then
          compares the class list it rendered on the server against the one in
@@ -237,6 +239,9 @@ export default function RootLayout({
         )}
       </head>
       <body className="min-h-full flex flex-col">
+        {/* FIRST focusable element in the document, and it has to stay first —
+            a skip link the reader reaches on the third Tab is not one. */}
+        <SkipLink />
         {/* Who this is and what this site is, for the machines. See
             lib/structuredData.ts on why these are here at all — it is
             retrieval, not rich results. */}
@@ -263,6 +268,10 @@ export default function RootLayout({
               the delegated listener wants `document`, which a navigation never
               replaces. */}
           <Telemetry />
+          {/* Ctrl K, everywhere. It used to be mounted by app/page.tsx, so it
+              did nothing on /work/* or the 404 — the pages a shared link
+              actually lands on. Renders null until opened. */}
+          <SiteCommands />
           {children}
         </ScrollProvider>
       </body>

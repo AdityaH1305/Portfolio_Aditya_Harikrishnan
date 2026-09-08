@@ -56,7 +56,9 @@ export default function ScrollProgress() {
     return (
         <div
             ref={barRef}
-            className="fixed top-0 left-0 h-[2px] w-full z-[60] origin-left"
+            /* `scroll-progress` carries NO screen-side rule — a print-only
+               hook, like `cursor-layer` in Cursor.tsx. */
+            className="scroll-progress fixed top-0 left-0 h-[2px] w-full z-[60] origin-left"
             style={{
                 transform: "scaleX(0)",
                 background:

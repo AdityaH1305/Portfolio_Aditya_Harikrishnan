@@ -320,6 +320,13 @@ export default function SkillOrbit({ children }: { children: React.ReactNode }) 
                         occupied by a system. Taking the space out of the
                         field's geometry is the only arrangement where overlap
                         is impossible rather than merely unlikely. */}
+                    {/* NOT wrapped in CanvasBoundary, unlike every other
+                        ornament on the site. This component renders the canvas
+                        AND the DOM skill list it receives as `children`, and
+                        that list is the server-rendered, accessible interface —
+                        a boundary here would delete 27 skills from the page to
+                        save a decoration. Splitting the two to make one
+                        catchable is possible and has not been judged worth it. */}
                     <div ref={wrapRef} className="skill-orbit-field">
                         <canvas
                             ref={canvasRef}

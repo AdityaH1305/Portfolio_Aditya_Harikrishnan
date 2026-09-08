@@ -229,9 +229,13 @@ export default function DoubleUNetShowcase() {
             <div className="section-container">
                 <div className="mt-12 md:mt-28 grid lg:grid-cols-2 gap-14 lg:gap-16 items-start">
                         <Reveal y={20}>
-                            <h3 className="heading-sm">
+                            {/* h2, not h3 — see LudexShowcase. The h1 is in
+                                CaseStudyHero and there was no h2 on this route
+                                at all, so both of these skipped a level. Class
+                                unchanged; renders identically. */}
+                            <h2 className="heading-sm">
                                 Extending it to three classes
-                            </h3>
+                            </h2>
                             <p className="body-sm mt-3 max-w-lg">
                                 The source paper evaluates on binary tasks only.
                                 Extending the output head to background, benign and
@@ -265,7 +269,7 @@ export default function DoubleUNetShowcase() {
                         {/* Naming the weakness is the point — it is the honest
                             reading of the per-class numbers in the report. */}
                         <Reveal y={20} delay={0.1}>
-                            <h3 className="heading-sm">Where it falls short</h3>
+                            <h2 className="heading-sm">Where it falls short</h2>
                             <p className="body-sm mt-3 max-w-lg">
                                 Malignant lesions are the hardest class — Dice 0.46,
                                 IoU 0.39 — because their boundaries are irregular
