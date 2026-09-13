@@ -1,4 +1,9 @@
 import type Lenis from "lenis";
+/* Explicit `./scroll.ts`, NOT `@/lib/scroll`. This module is in
+   lib/lenis.test.ts's own import graph, and Node's ESM resolver — which is
+   what runs the tests — cannot resolve the `@/` alias or an extensionless
+   specifier. CLAUDE.md's Commands section says not to "fix" these. */
+import { JUMP_DURATION, JUMP_EASING } from "./scroll.ts";
 
 /* ══════════════════════════════════════════════════════
    Lenis access + scroll locking
@@ -74,6 +79,18 @@ export function unlockScroll(): void {
  * `force` makes the scroll execute even while Lenis is stopped, which is
  * what lets the command palette scroll during its own close transition
  * instead of having the request silently dropped.
+ *
+ * ── THE CURVE IS PASSED EXPLICITLY, AND HAS TO BE ──
+ * Without these two options Lenis fills them from the instance, which is the
+ * WHEEL's tuning: 1.8s of ease-out expo, a curve that opens at ~6.9x its own
+ * average speed. Over a section-to-section flight that is ~930px in a single
+ * frame, and the page's scroll-linked systems render it as one jolt. See the
+ * note above JUMP_EASING in lib/scroll.ts.
+ *
+ * components/ScrollProvider.tsx passes the SAME pair to Lenis's `anchors`, so
+ * the nav rail and the command palette move identically. They must stay in
+ * step; two ways of reaching the same section that feel different is worse
+ * than either one being slightly wrong.
  */
 export function scrollToSection(id: string, force = true): void {
     const el = document.getElementById(id);
@@ -83,5 +100,9 @@ export function scrollToSection(id: string, force = true): void {
         el.scrollIntoView({ behavior: "auto" });
         return;
     }
-    instance.scrollTo(el, { force });
+    instance.scrollTo(el, {
+        force,
+        duration: JUMP_DURATION,
+        easing: JUMP_EASING,
+    });
 }

@@ -6,6 +6,8 @@ import type Lenis from "lenis";
 import { gsap, ScrollTrigger, registerGsap } from "@/lib/motion";
 import { registerLenis } from "@/lib/lenis";
 import {
+    JUMP_DURATION,
+    JUMP_EASING,
     SCROLL_DURATION,
     SCROLL_DURATION_REDUCED,
     SCROLL_EASING,
@@ -90,7 +92,25 @@ export default function ScrollProvider({
                     ? SCROLL_DURATION_REDUCED
                     : SCROLL_DURATION,
                 easing: SCROLL_EASING,
-                anchors: true,
+                /* ── AN OPTIONS OBJECT, NOT `true` ──
+                   `anchors` is how the nav rail scrolls: its items are plain
+                   `<a href="#stack">` and Lenis intercepts the click itself,
+                   so nothing in this repo passes options for that path. With
+                   a bare `true` it inherited the two lines above — the WHEEL's
+                   tuning — and 1.8s of ease-out expo opens a 14,500px flight
+                   at roughly 930px per frame. That was the reported chop.
+
+                   Lenis reads this object at click time and hands it straight
+                   to `scrollTo` (its own `onClick`), so this is the only hook
+                   that reaches the rail without taking the anchor click over
+                   from it. Scoped to anchors — the wheel above is untouched.
+
+                   IT MUST MATCH `scrollToSection` in lib/lenis.ts, which is
+                   the command palette's path to the same sections. */
+                anchors: {
+                    duration: JUMP_DURATION,
+                    easing: JUMP_EASING,
+                },
                 autoRaf: false,
                 // Touch devices have their own momentum; smoothing it again
                 // makes the page feel detached from the finger.
