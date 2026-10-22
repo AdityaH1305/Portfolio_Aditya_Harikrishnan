@@ -87,14 +87,17 @@ export const CATEGORIES: Category[] = [
     },
 ];
 
-/* Project ids. Six of them, which happens to match the category count —
-   convenient for the regroup, since the field does not have to change
-   density when it re-clusters. */
+/* Project ids. Seven of them — one more than the category count. They used to
+   match, and nothing needed them to: the regroup clusters around ONE project
+   at a time (`solveByProject`), so the field's density never depends on how
+   many there are. What the seventh does cost is the readout's chip row, which
+   lists every project for Python — see `--orbit-readout-h` in globals.css. */
 export const PROJECTS: { id: string; label: string }[] = [
     { id: "gait", label: "Gait Fusion" },
     { id: "dun", label: "Modified Double U-Net" },
     { id: "ludex", label: "Ludex" },
     { id: "verdict", label: "Verdict" },
+    { id: "playnexus", label: "PlayNexus" },
     { id: "synth", label: "SynthRescue" },
     { id: "site", label: "This portfolio" },
 ];
@@ -118,8 +121,8 @@ export const SKILLS: Skill[] = [
 
     // ── Systems & Backend ──
     { name: "Python", category: "sys", projects: [EVERY_PROJECT], where: "Every project" },
-    { name: "Flask · FastAPI", category: "sys", projects: ["ludex", "verdict"], where: "Ludex · Verdict" },
-    { name: "Real-time APIs", category: "sys", projects: ["verdict"], where: "Verdict" },
+    { name: "Flask · FastAPI", category: "sys", projects: ["ludex", "verdict", "playnexus"], where: "Ludex · Verdict · PlayNexus" },
+    { name: "Real-time APIs", category: "sys", projects: ["verdict", "playnexus"], where: "Verdict · PlayNexus" },
     { name: "Java · C · C++", category: "sys", projects: [], where: "Coursework" },
 
     // ── Frontend ──

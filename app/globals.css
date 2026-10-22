@@ -860,7 +860,7 @@ body {
 /* ── Not on a weak device ──
    A conic gradient under a two-layer `mask-composite` cannot be composited:
    the element repaints in full on every frame the angle moves, and the home
-   page has FOURTEEN of these. On a phone that is fourteen full-box repaints a
+   page has SIXTEEN of these. On a phone that is sixteen full-box repaints a
    frame, competing with three canvases for the same budget.
 
    Switching the sweep off is not switching the ring off. The ring, its hover
@@ -2111,9 +2111,11 @@ html.zone-immersive .zone-bar {
   --orbit-field-h: clamp(520px, 72vh, 720px);
   /* 7rem, not 5.75. The strip has a fixed height and `overflow: hidden`, so
      the size is set by the WORST case, which is Python: it is the one skill
-     that belongs to every project, so its readout carries six chips, they
-     wrap to two rows, and 5.75rem clipped them by 7px. The headroom above
-     that also covers the wider fallback metrics before the webfonts swap. */
+     that belongs to every project, so its readout carries a chip for each —
+     seven since PlayNexus came back. From 1024 up they wrap to two rows
+     (measured at 1024, 1280 and 1440), and 5.75rem clipped two rows by 7px.
+     The headroom above that also covers the wider fallback metrics before the
+     webfonts swap. Below 1024 the readout stacks; see the 641–1023 block. */
   --orbit-readout-h: 7rem;
   height: calc(var(--orbit-field-h) + var(--orbit-readout-h));
   /* Deep space, mixed here rather than derived from --surface-*: this panel
@@ -2222,8 +2224,9 @@ html.zone-immersive .zone-bar {
     min-width: 0;
   }
 
-  /* One scrolling line instead of wrapping. Python carries six chips, and on
-     a ~315px panel they wrap to four rows — 218px of content against a strip
+  /* One scrolling line instead of wrapping. Python carries a chip per project
+     (six when this was measured, seven now), and on a ~315px panel six
+     wrapped to four rows — 218px of content against a strip
      that would have to eat a third of the field to contain it. Scrolling caps
      the height at one row on any width.
 
@@ -2245,6 +2248,42 @@ html.zone-immersive .zone-bar {
 
   .skill-orbit-chip {
     flex: 0 0 auto;
+  }
+}
+
+/* ── 641–1023: stacked, and still wrapping ──
+   In the row layout the chips get what is left after the name column's 14rem
+   floor and the paddings — 278px at 768, 410px at 900. Python's seven chips
+   need ~471px for two rows, so that band clipped them: three rows at 900, and
+   four at 768, which was already clipping with six before PlayNexus was added.
+
+   Stacking the name above them hands the chips the strip's full width (519px
+   at the narrowest), which holds seven in two rows across the whole band.
+   Measured 157px of content stacked; 11rem leaves the same kind of headroom
+   for the fallback metrics that the 7rem above leaves.
+
+   Not the phone's scrolling row: here there is room to show every project, and
+   a chip cut off at the edge hides one. Range syntax rather than
+   `max-width: 1023px`, because a fractional viewport (1023.5px under zoom)
+   matches neither that nor Tailwind's `lg`, which is `width >= 64rem`. */
+@media (width > 640px) and (width < 64rem) {
+  .skill-orbit-stage {
+    --orbit-readout-h: 11rem;
+  }
+
+  .skill-orbit-readout {
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .skill-orbit-readout-head {
+    min-width: 0;
+  }
+
+  .skill-orbit-readout-body {
+    width: 100%;
   }
 }
 

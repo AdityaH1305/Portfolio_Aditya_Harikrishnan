@@ -109,13 +109,11 @@ const JOURNEY: YearGroup[] = [
                 title: "First platform shipped",
                 description:
                     "PlayNexus took me from coursework to production: real APIs, real pipelines, real usage.",
-                /* No link. The beat is history and stays, but PlayNexus is no
-                   longer one of the Experiments, so `#projects` would land a
-                   reader on a section that does not mention it. */
-                link: {
-                    href: "https://github.com/AdityaH1305/PlayNexus",
-                    label: "PlayNexus on GitHub",
-                },
+                /* `#projects`, like SynthRescue's beat. While PlayNexus was out
+                   of the Experiments this pointed at the repo instead, because
+                   the section would not have mentioned it; the rebuild put it
+                   back, and its card there links the repo anyway. */
+                link: { href: "#projects", label: "PlayNexus in Experiments" },
             },
         ],
     },
@@ -205,9 +203,9 @@ function BeatLink({ href, label }: { href: string; label: string }) {
         );
     }
     /* An off-site beat needs the same rel as every other external link here.
-       It arrived with PlayNexus: the project left the Experiments section, so
-       its beat — which is history and stays — points at the repo instead of at
-       a section that no longer mentions it. */
+       Nothing takes this branch right now. It was added for PlayNexus's beat
+       while that project was out of the Experiments, and kept because a beat
+       that links off-site is a reasonable thing to want again. */
     if (/^https?:/.test(href)) {
         return (
             <a

@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import Reveal from "@/components/Reveal";
 
 /* ══════════════════════════════════════════════════════
@@ -27,6 +28,11 @@ import Reveal from "@/components/Reveal";
    section's whole point, so entry 04's old evidence — "Currently exploring" —
    was the one thing it could not say. It has been replaced with the ISRO
    work, which is both real and the strongest item on the site. */
+
+/** Separates two projects inside one evidence line; a single ` · ` separates
+ *  facts about the same project. Only the first is a place the line may wrap. */
+const EVIDENCE_GAP = "  ·  ";
+
 const capabilities = [
     {
         number: "01",
@@ -54,7 +60,13 @@ const capabilities = [
         title: "Data-Driven Platforms",
         description:
             "Live APIs, analytics pipelines and custom scoring, with vision in the loop.",
-        evidence: "Verdict · calibrated recovery agent  ·  SynthRescue · YOLO triage",
+        /* Three projects, so the tails are short: at the widest card (488px of
+           12px mono with label tracking, ~8.9px a character) the first two
+           share a line with ~35px spare and SynthRescue takes the second.
+           "Verdict · calibrated recovery agent" alone measured 311px, which
+           left every project on a line of its own. */
+        evidence:
+            "Verdict · recovery agent  ·  PlayNexus · live pricing  ·  SynthRescue · YOLO triage",
     },
 ];
 
@@ -119,8 +131,22 @@ export default function ResearchMindset() {
                                 {item.title}
                             </h3>
                             <p className="body-sm mt-3">{item.description}</p>
+                            {/* With more than one project, one nowrap span each,
+                                so the line can only break BETWEEN projects. 04
+                                names three, and as one string it broke inside
+                                "16-|region" — a hyphen is a break opportunity
+                                like a space. A single project stays plain text:
+                                02 is one project on two lines, and nowrap would
+                                push it out of its card. */}
                             <p className="label-muted mt-5 normal-case tracking-normal text-xs">
-                                {item.evidence}
+                                {item.evidence.includes(EVIDENCE_GAP)
+                                    ? item.evidence.split(EVIDENCE_GAP).map((part, i) => (
+                                          <Fragment key={part}>
+                                              {i > 0 && EVIDENCE_GAP}
+                                              <span className="whitespace-nowrap">{part}</span>
+                                          </Fragment>
+                                      ))
+                                    : item.evidence}
                             </p>
                         </div>
                     ))}

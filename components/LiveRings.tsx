@@ -23,10 +23,10 @@ const RINGED = ".live-ring, .shell-bezel";
 
    ── Why gating is not optional ──
    A conic gradient repaints its element every frame. The
-   home page carries fourteen ringed elements — four
-   capability cards, eight case-study slides, two project
+   home page carries sixteen ringed elements — five
+   capability cards, eight case-study slides, three project
    cards — and the atlas canvas is already drawing. Running
-   all fourteen for the length of a session is exactly the
+   all sixteen for the length of a session is exactly the
    cost this codebase sheds everywhere else. In view, at most
    two or three should ever be running.
 
@@ -50,7 +50,7 @@ const RINGED = ".live-ring, .shell-bezel";
    on the next animation frame whenever one of those styles changes.
 
    ── Why one IntersectionObserver and not a trigger per element ──
-   A ScrollTrigger each would be fourteen entries in the scroll path for
+   A ScrollTrigger each would be sixteen entries in the scroll path for
    what is a binary on/off with no scrub. One IntersectionObserver watching
    every target costs one callback per crossing and nothing in between.
 

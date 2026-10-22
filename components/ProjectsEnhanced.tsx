@@ -6,14 +6,32 @@ import Reveal from "@/components/Reveal";
 import Lightbox from "@/components/Lightbox";
 
 /* ══════════════════════════════════════════════════════
-   Experiments — two companion projects, matched
+   Experiments — three companion projects, matched
 
-   Verdict + SynthRescue in a 2-column grid, both given the
-   same weight: same bezel scale, heading size (heading-sm),
-   tag style, image aspect ratio, highlight format and CTA
+   Verdict, PlayNexus and SynthRescue, all given the same
+   weight: same bezel scale, heading size (heading-sm), tag
+   style, image aspect ratio, highlight format and CTA
    format. They are companions, not a primary and its
-   subordinate, so the variation comes from content rather
+   subordinates, so the variation comes from content rather
    than from structure.
+
+   ── Three across only where three fit ──
+   At 1280 and up a third of the column is ~330px, which holds
+   a heading-sm title and the highlights comfortably. At 1024
+   it would be ~245px, which does not. So the GRID is one
+   column until xl, and each CARD reshapes for the width it
+   is given instead:
+
+     < 1024      stacked: image, then text, capped at 42rem
+     1024-1279   a row: image 55%, text beside it
+     >= 1280     stacked again, three across
+
+   ── One baseline for the links ──
+   Cards in a row are stretched to the row's height and the
+   GitHub / Live Demo row is pushed to the bottom with
+   `mt-auto`. The three descriptions run to different lengths;
+   without this the link rows sat at three different heights,
+   which is what makes a row of companions read as leftovers.
 
    Both use compact-link CTAs rather than pill buttons, which
    keeps the whole section a step below the case studies in
@@ -129,34 +147,130 @@ const projects: ProjectData[] = [
         ],
     },
     {
+        /* Back after a rebuild. It left this section in Sep 2026 as a Flask
+           monolith with hardcoded data; this is the Oct 2026 rewrite. Every
+           number below is one the PlayNexus repo itself states or contains —
+           the README's backtest table, config.py's sixteen regions,
+           data/pool.json's 1,050 games, services/'s 24 modules.
+
+           The screenshots are captured from the live site and cropped so the
+           first one reads at the same scale as Verdict's — roughly 700 CSS px
+           of UI across a card. A full-width page shrunk into a third of a row
+           reads as texture next to it. */
+        title: "PlayNexus",
+        tag: "Full Stack / Data Platform",
+        description:
+            "A Steam buying guide: what a game costs in 16 regions at live exchange rates, a value score built from real playtime, and a buy-now-or-wait call backed by two years of price history. Rebuilt as one Flask app on Vercel with no build step.",
+        highlights: [
+            "Buy-or-wait rules backtested over 34,257 replayed days — when it says wait for the next big sale, it is right 96% of the time",
+            "16 Steam regions priced at live exchange rates, with a daily Postgres price history on a Vercel cron",
+            "Similar games by cosine similarity on Steam user-tag vectors, across a discovery pool of over 1,000 games",
+            "Rebuilt from a Flask monolith into a 24-module services layer with its own design system and pytest suite",
+        ],
+        github: "https://github.com/AdityaH1305/PlayNexus",
+        demo: "https://playnexus-io.vercel.app",
+        images: [
+            {
+                card: "/projects/playnexus1.webp",
+                full: "/projects/playnexus1-full.webp",
+                w: 1920,
+                h: 2100,
+                caption:
+                    "Every game gets a 0–100 value score from typical playtime, review quality and review count, at the price in your own region.",
+            },
+            {
+                card: "/projects/playnexus2.webp",
+                full: "/projects/playnexus2-full.webp",
+                w: 1920,
+                h: 1200,
+                caption:
+                    "Buy now or wait: a call from the game's own price history, Steam's seasonal sales and its discount rules, with the facts behind it.",
+            },
+            {
+                card: "/projects/playnexus3.webp",
+                full: "/projects/playnexus3-full.webp",
+                w: 1920,
+                h: 1320,
+                caption:
+                    "One game priced in all 16 Steam regions at live exchange rates, measured against the US price.",
+            },
+            {
+                card: "/projects/playnexus4.webp",
+                full: "/projects/playnexus4-full.webp",
+                w: 1920,
+                h: 1740,
+                caption:
+                    "Where is Steam cheapest? A regional price index across Steam's most popular paid games, each region against the US.",
+            },
+            {
+                card: "/projects/playnexus5.webp",
+                full: "/projects/playnexus5-full.webp",
+                w: 1920,
+                h: 1920,
+                caption:
+                    "Discover: pick up to three vibes built from Steam's own user tags, then filter by price, reviews, length and Steam Deck.",
+            },
+            {
+                card: "/projects/playnexus6.webp",
+                full: "/projects/playnexus6-full.webp",
+                w: 1920,
+                h: 1560,
+                caption:
+                    "The home page: what is being played right now, and the best deals of the day.",
+            },
+        ],
+    },
+    {
         title: "SynthRescue",
         tag: "AI / Computer Vision",
+        /* Rewritten to stand beside the other two. The old copy was one
+           sentence and three five-word bullets — with the link rows aligned
+           across the row, that left ~217px of nothing above this card's links
+           at 1440, and it read as the unfinished one. Everything here is from
+           the SynthRescue README: the V3 model's results, the dataset split
+           and the pipeline. Recall is stated alongside precision on purpose;
+           the precision alone would be the flattering half. */
         description:
-            "Real-time structural damage assessment pipeline combining YOLO-based detection with AI-assisted triage for rapid deployment in disaster response.",
+            "Finds people trapped under rubble in drone imagery, then writes the dispatch report. Real photos of people buried in a collapse barely exist, so the training data was made: a procedural Blender engine rendered heavily occluded victims, merged with real disaster images. Built for the Solution Challenge 2026.",
         highlights: [
-            "Real-time image upload and analysis pipeline",
-            "YOLO-based structural damage detection",
-            "AI-generated emergency response reports using Gemini",
+            "YOLOv8 at 96.7% survivor precision and 73.7% recall, trained on ~6,100 images — 3,000 synthetic, 3,115 real",
+            "No hand labelling: YOLO boxes computed from Blender mesh vertices projected through the scene camera",
+            "Rubble-only images kept as empty-label negatives, which is what taught it to ignore broken concrete",
+            "FastAPI inference on Google Cloud Run, Gemini dispatch reports, and a Next.js command console on Vercel",
         ],
         github: "https://github.com/AdityaH1305/SynthRescue",
         demo: "https://synthrescue.vercel.app/",
-        /* Card and full are the same file here: both are ordinary browser
-           captures that already read correctly at 16:10. The `w`/`h` are still
-           worth passing — synth2 is portrait (640x871), and without them the
-           lightbox fits it to 72vh and renders it NARROWER than the card it
-           was opened from. */
+        /* These used to be one file for card and full, under a comment saying
+           both "already read correctly at 16:10". Neither did: synth1 is
+           1918x797 (2.41:1) and synth2 is 640x871 portrait, so `object-cover`
+           cut the sides off one and more than half the height off the other —
+           which is why this card looked unlike its neighbours.
+
+           Now Verdict's treatment: the originals are the `full` files, pixel
+           for pixel, and the cards are deliberate 16:10 crops of the part worth
+           seeing — the detection panel, and the summary block. Both crops are
+           at native resolution (930x581, 600x375), not upscaled; at a third of
+           the row the card is drawn well under either.
+
+           `w`/`h` still matter — synth2's full is portrait, and without them
+           the lightbox fits it to 72vh and renders it NARROWER than the card
+           it was opened from. */
         images: [
             {
                 card: "/projects/synth1.webp",
-                full: "/projects/synth1.webp",
+                full: "/projects/synth1-full.webp",
                 w: 1918,
                 h: 797,
+                caption:
+                    "A scan of a collapse site: every person found is boxed — cyan when confirmed at 50%+ confidence, amber when possible at 30–50%.",
             },
             {
                 card: "/projects/synth2.webp",
-                full: "/projects/synth2.webp",
+                full: "/projects/synth2-full.webp",
                 w: 640,
                 h: 871,
+                caption:
+                    "The detection summary, then the dispatch report Gemini writes from it: situation, actions, resources.",
             },
         ],
     },
@@ -165,7 +279,7 @@ const projects: ProjectData[] = [
 /* ═══════════════════════════════════════════════════════
    ProjectCard — Shared card architecture
 
-   Both Verdict and SynthRescue use this component.
+   All three Experiments use this component.
    Identical structure ensures visual parity:
    - Double-bezel hero image (16:10 aspect)
    - Click-to-lightbox with gallery navigation
@@ -175,7 +289,8 @@ const projects: ProjectData[] = [
    - Compact-link CTAs (GitHub + optional Live Demo)
 
    The stagger index controls entrance animation delay
-   so the two cards reveal in sequence left-to-right.
+   so the cards reveal in sequence, left to right where
+   they share a row.
    ═══════════════════════════════════════════════════════ */
 /* The card's paging arrows.
 
@@ -220,8 +335,8 @@ function ProjectCard({
 
     /* Wraps, like the lightbox's own arrows. Wrapping is what lets both
        controls stay permanently enabled — a disabled button at each end is
-       two more states to style and reason about for no gain in a five-shot
-       gallery. */
+       two more states to style and reason about for no gain in a gallery
+       of six shots at most. */
     const goPrev = () => setCurrent((i) => (i - 1 + count) % count);
     const goNext = () => setCurrent((i) => (i + 1) % count);
 
@@ -240,9 +355,22 @@ function ProjectCard({
     const baseDelay = staggerIndex * 0.1;
 
     return (
-        <div>
+        /* Flex classes only on this wrapper — never a transform. The Lightbox
+           below renders in place rather than through a portal, and any
+           transformed ancestor would become the containing block for its
+           `fixed` overlay. That is also why it sits outside both Reveals,
+           which ship an inline transform as their start state. */
+        <div
+            className="flex flex-col max-w-2xl lg:max-w-none lg:flex-row lg:gap-8
+                       xl:flex-col xl:gap-0"
+        >
             {/* Hero image in double-bezel */}
-            <Reveal y={28} duration={0.8} delay={0.06 + baseDelay}>
+            <Reveal
+                y={28}
+                duration={0.8}
+                delay={0.06 + baseDelay}
+                className="shrink-0 lg:w-[55%] xl:w-auto"
+            >
                 <div className="shell-bezel compact-bezel">
                     <div className="core-bezel overflow-hidden">
                         {/* A <button>, not a <div onClick>. This was the ONLY
@@ -285,7 +413,11 @@ function ProjectCard({
                                 alt={`${project.title} screenshot ${current + 1} of ${count}`}
                                 fill
                                 className="object-cover transition-transform duration-700 ease-[cubic-bezier(0.32,0.72,0,1)] group-hover/card-img:scale-[1.02]"
-                                sizes="(max-width: 768px) 100vw, 50vw"
+                                /* Stacked below 1024 (capped at 42rem), 55% of
+                                   a row to 1279, a third of a capped 1072px
+                                   column above. A bare `30vw` would fetch a
+                                   576px image at 1920 for a 331px slot. */
+                                sizes="(max-width: 1023px) 100vw, (max-width: 1279px) 45vw, 340px"
                                 /* `priority` is deprecated as of Next 16 in
                                    favour of `preload`, which says what it
                                    actually does.
@@ -337,8 +469,15 @@ function ProjectCard({
                 )}
             </Reveal>
 
-            {/* Content */}
-            <Reveal y={14} delay={0.16 + baseDelay} className="mt-7">
+            {/* Content. A flex column that takes the rest of the card, so the
+                link row below can sit on the card's bottom edge. `min-w-0`
+                because in the 1024-1279 row it is a flex item beside the
+                image, and a flex item will not shrink below its longest word. */}
+            <Reveal
+                y={14}
+                delay={0.16 + baseDelay}
+                className="mt-7 lg:mt-0 xl:mt-7 flex flex-1 min-w-0 flex-col"
+            >
                 {/* label-muted, not a bespoke `compact-tag`: the design system
                     declares exactly two micro-label classes, and this is the
                     same semantic slot CaseStudyHero fills with label-muted. */}
@@ -361,8 +500,10 @@ function ProjectCard({
                     ))}
                 </ul>
 
-                {/* CTA links */}
-                <div className="mt-7 flex gap-4 items-center">
+                {/* CTA links. `mt-auto` is what puts the three link rows on
+                    one line when the cards share a row; `pt-7` is the spacing
+                    that used to be `mt-7`, kept as the minimum. */}
+                <div className="mt-auto pt-7 flex gap-4 items-center">
                     <a
                         href={project.github}
                         target="_blank"
@@ -418,7 +559,7 @@ function ProjectCard({
 }
 
 /* ══════════════════════════════════════════════════════
-   Main Section — Balanced Two-Column Composition
+   Main Section — three matched cards
    ══════════════════════════════════════════════════════ */
 export default function ProjectsEnhanced() {
     return (
@@ -439,9 +580,11 @@ export default function ProjectsEnhanced() {
                 </Reveal>
             </div>
 
-            {/* Balanced 2-column grid */}
+            {/* One column until xl, three across from there — see the header.
+                `items-stretch` is what gives every card in a row the same
+                height for the link rows to align against. */}
             <div className="section-container">
-                <div className="mt-12 md:mt-16 grid grid-cols-1 md:grid-cols-2 gap-10 md:gap-8 lg:gap-10 items-start">
+                <div className="mt-12 md:mt-16 grid grid-cols-1 xl:grid-cols-3 gap-14 xl:gap-10 items-stretch">
                     {projects.map((project, i) => (
                         <ProjectCard
                             key={project.title}
